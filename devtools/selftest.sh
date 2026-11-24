@@ -3917,5 +3917,47 @@ assert 'id="seAlert"' in (w / "web" / "index.html").read_text() and 'data-ne="ss
 assert "sstv_alert_tick()" in (w / "bin" / "scheduler.py").read_text()
 PY
 
+echo "== 99 Aufräumen: ein Weg (älter als N Tage oder alle), im Hintergrund mit Fortschritt, Geschütztes bleibt"
+(cd bin && timeout 90 python3 - "$SRC" <<'PY') && ok "Prüfen und Löschen für „älter als“ und „alle“, Fortschritt abfragbar, kein zweiter Lauf gleichzeitig, ★ bleibt" || bad "Aufräumen"
+import sqlite3, sys, time
+from pathlib import Path
+import webapp as W
+W.ensure_schema()
+db = sqlite3.connect(W.DB)
+db.execute("DELETE FROM peak"); db.commit()
+for i in range(60):
+    t = "2020-01-01T10:00:00+00:00" if i < 40 else "2099-01-01T10:00:00+00:00"
+    cur = db.execute("INSERT INTO scan (time, band, center_hz, noise_db, rms_i, rms_q) VALUES (?,?,?,?,?,?)", (t, "40m", 7074000, -90, .1, .1))
+    db.execute("INSERT INTO peak (scan_id, rf_hz, offset_hz, level_db, snr_db, mode, protected) VALUES (?,?,?,?,?,?,?)",
+               (cur.lastrowid, 7074000 + i, 0, -60, 10, "ft8", 1 if i in (0, 50) else 0))
+db.commit(); db.close()
+W.APPLOG.log = lambda *a, **k: None
+ids, kept = W.delete_candidates(7)
+assert len(ids) == 39 and len(kept) == 1, (len(ids), len(kept))
+ids, kept = W.delete_candidates(-36500)                                   # „alle“ in der Vorschau
+assert len(ids) == 58 and len(kept) == 2
+st = W.cleanup_start(7)
+assert st["total"] == 39 and st["running"]
+try:
+    W.cleanup_start(0); raise SystemExit("zweiter Lauf angenommen")
+except ValueError:
+    pass
+for _ in range(100):
+    if not W.CLEANUP["running"]: break
+    time.sleep(0.1)
+assert W.CLEANUP["deleted"] == 39 and W.CLEANUP["done"] == 39 and not W.CLEANUP["error"]
+W.cleanup_start(0)
+for _ in range(100):
+    if not W.CLEANUP["running"]: break
+    time.sleep(0.1)
+db = sqlite3.connect(W.DB)
+left = db.execute("SELECT COUNT(*), SUM(protected) FROM peak").fetchone(); db.close()
+assert left == (2, 2), left                                                # nur die beiden geschützten
+w = Path(sys.argv[1])
+html, js = (w / "web" / "index.html").read_text(), (w / "web" / "app.js").read_text()
+assert 'id="cleanupAll"' not in html and '<option value="0">alle (egal wie alt)</option>' in html and 'id="cleanupFun"' in html
+assert "'/api/cleanup/run'" in js and "/api/cleanup/status" in js and "QRT" in js
+PY
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

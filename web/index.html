@@ -531,25 +531,34 @@
       </section>
       <section class="panel" id="panel-cleanup">
         <h2>Aufräumen</h2>
+        <h3>Einmal löschen</h3>
         <div class="row">
-          <label class="field"><span>Älter als</span>
+          <label class="field"><span>Ungeschützte Treffer</span>
             <select id="cleanupDays">
-              <option value="1">1 Tag</option><option value="3">3 Tage</option>
-              <option value="7" selected>7 Tage</option><option value="14">14 Tage</option><option value="30">30 Tage</option>
+              <option value="1">älter als 1 Tag</option><option value="3">älter als 3 Tage</option>
+              <option value="7" selected>älter als 7 Tage</option><option value="14">älter als 14 Tage</option>
+              <option value="30">älter als 30 Tage</option><option value="60">älter als 60 Tage</option>
+              <option value="90">älter als 90 Tage</option><option value="0">alle (egal wie alt)</option>
             </select>
           </label>
           <button class="btn" id="cleanupPreview">Prüfen</button>
-          <button class="btn btn-danger" id="cleanupOld">Alte löschen</button>
+          <button class="btn btn-danger" id="cleanupOld">Löschen</button>
         </div>
         <div class="save-note" id="cleanupNote" aria-live="polite"></div>
-        <label class="field"><span>Automatisch löschen (ungeschützte Treffer)</span>
+        <div class="cleanup-fun" id="cleanupFun" hidden aria-live="polite">
+          <svg class="cf-ant" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 60V22M24 60l8-38 8 38M26 40h12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><circle cx="32" cy="20" r="3" fill="currentColor"/>
+            <path class="cf-w cf-w1" d="M24 12a11 11 0 0 1 16 0"/><path class="cf-w cf-w2" d="M19 7a18 18 0 0 1 26 0"/><path class="cf-w cf-w3" d="M14 2a25 25 0 0 1 36 0"/></svg>
+          <div class="cf-text"><b id="cleanupJoke"></b><span class="cf-morse no-i18n" id="cleanupMorse"></span>
+            <div class="cf-bar"><span id="cleanupBar"></span></div><small class="muted" id="cleanupProg"></small></div>
+        </div>
+        <h3>Automatisch löschen</h3>
+        <label class="field"><span>Ungeschützte Treffer, täglich</span>
           <select id="cleanupAuto">
             <option value="0">aus</option><option value="7">älter als 7 Tage</option><option value="14">älter als 14 Tage</option>
             <option value="30">älter als 30 Tage</option><option value="60">älter als 60 Tage</option><option value="90">älter als 90 Tage</option>
             <option value="180">älter als 180 Tage</option>
           </select>
         </label>
-        <button class="btn btn-danger btn-wide" id="cleanupAll">Alle ungeschützten Treffer löschen</button>
         <p class="hint">Geschützte Treffer (★) werden nie automatisch gelöscht.</p>
         <details><summary>Löschprotokoll</summary><ul class="plain" id="deletionLog"></ul></details>
       </section>

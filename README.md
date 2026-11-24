@@ -137,6 +137,11 @@ shortwave.
 System page: notices with what to do, live values and history (CPU, memory, temperature – with scans, passes and
 Live marked), services with restart buttons, version and update from GitHub, PSK Reporter spots.
 
+**Cleanup** (*System → Cleanup*): *Delete once* removes unprotected hits with their recordings – older than 1 to 90
+days or all, whatever their age; *Check* shows how many first. Protected hits (★) always stay. Deleting runs in the
+background with progress (and a little ham-radio entertainment until "QRT … 73!"); *Delete automatically* does the
+same daily for hits older than the chosen age.
+
 ![Stations: map of heard callsigns and the list with distance and bearing](docs/screenshots/stations.png)
 *Stations: map (one point per callsign or locator squares) and callsigns heard via FT8/FT4, APRS, CW and RTTY with locator, distance and bearing (ADIF export).*
 

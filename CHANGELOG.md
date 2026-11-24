@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.8.40 – 2026-11-24
+
+- **Cleanup in one way instead of three:** *Delete once* – unprotected hits older than 1, 3, 7, 14, 30, 60, 90 days
+  or **all, whatever their age** – with *Check* (how many, how many protected stay) and *Delete*; *Delete
+  automatically* (daily) clearly separated below. The separate button "Delete all unprotected hits" is gone (it is
+  the choice "all" now). Protected hits (★) always stay.
+- **Deleting runs in the background with progress** (`/api/cleanup/run`, `/api/cleanup/status`) – before it was one
+  long request, with thousands of hits minutes without feedback. Reloading the page keeps showing the progress.
+- **Waiting music:** an antenna whose waves fade away, changing ham-radio sayings ("Returning bits to the noise
+  floor …", "The recycle bin is calling CQ …", "Taking down the dipole …"), QRT in Morse and a progress bar –
+  finally "QRT – 1,234 hits deleted, 5 protected stay. 73!". Respects "reduce motion".
+- Log: `cleanup_done`, `cleanup_failed`.
+- Self-test section 99.
+
 ## 1.8.39 – 2026-11-24
 
 - **SSTV events alert by messenger:** before an event (choose in the SSTV events card: only at the start, 15 min,

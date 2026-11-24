@@ -1261,9 +1261,52 @@
   $('filterAudio').addEventListener('change', e => { filter.audio = e.target.checked; localStorage.setItem('f.audio', filter.audio ? '1' : '0'); loadHits(); });
 
   // Aufräumen
-  $('cleanupPreview').addEventListener('click', async () => { try { const d = await api('/api/delete-preview?days=' + $('cleanupDays').value); note($('cleanupNote'), `${d.delete} würden gelöscht, ${d.protected} geschützte bleiben`); } catch (e) { note($('cleanupNote'), e.message, true); } });
-  $('cleanupOld').addEventListener('click', async () => { const days = $('cleanupDays').value; if (!confirm(`Alle ungeschützten Treffer älter als ${days} Tage löschen?`)) return; try { const d = await post('/api/delete-old', { days: Number(days) }); note($('cleanupNote'), `${d.deleted} gelöscht`); refreshData(); } catch (e) { note($('cleanupNote'), e.message, true); } });
-  $('cleanupAll').addEventListener('click', async () => { if (!confirm('Wirklich ALLE ungeschützten Treffer samt Aufnahmen löschen?')) return; try { const d = await post('/api/delete-all-unprotected'); note($('cleanupNote'), `${d.deleted} gelöscht`); refreshData(); } catch (e) { note($('cleanupNote'), e.message, true); } });
+  // Aufräumen (1.8.40): ein Weg – älter als N Tage oder alle ungeschützten; läuft im Hintergrund, dazu Wartemusik
+  const cleanupWhat = () => { const v = Number($('cleanupDays').value); return v ? (EN ? `older than ${v} days` : `älter als ${v} ${v === 1 ? 'Tag' : 'Tage'}`) : (EN ? 'all, whatever their age' : 'alle, egal wie alt'); };
+  $('cleanupPreview').addEventListener('click', async () => {
+    try { const d = await api('/api/delete-preview?days=' + $('cleanupDays').value); note($('cleanupNote'), EN ? `${d.delete} unprotected hits would be deleted (${cleanupWhat()}), ${d.protected} protected stay` : `${d.delete} ungeschützte Treffer würden gelöscht (${cleanupWhat()}), ${d.protected} geschützte bleiben`); }
+    catch (e) { note($('cleanupNote'), 'Fehler: ' + e.message, true); }
+  });
+  const CF_JOKES = EN
+    ? ['Returning bits to the noise floor …', 'Disposing of the QSL pile …', 'The recycle bin is calling CQ …', 'QRL? – clearing the frequency …',
+       'Desoldering old recordings …', 'Bringing the SWR of the database down …', 'Airing the logbook …', 'Taking down the dipole …',
+       'Signal dropping below S1 …', 'Quick QSY to nowhere …', 'Feeding the dummy load …', 'Rewinding the waterfall …']
+    : ['Bits werden ins Rauschen zurückgegeben …', 'QSL-Stapel wird entsorgt …', 'Der Papierkorb ruft CQ …', 'QRL? – Frequenz wird freigeräumt …',
+       'Alte Aufnahmen werden entlötet …', 'Stehwellenverhältnis der Datenbank wird gesenkt …', 'Logbuch wird gelüftet …', 'Dipol wird eingeholt …',
+       'Signal fällt unter S1 …', 'Kurz QSY ins Nirgendwo …', 'Kunstantenne wird gefüttert …', 'Wasserfall wird zurückgespult …'];
+  const MORSE_QRT = '−−·−  ·−·  −';                       // QRT – Sendebetrieb eingestellt
+  let cfTimer = null, cfJoke = 0;
+  function cleanupFun(on) {
+    $('cleanupFun').hidden = !on;
+    clearInterval(cfTimer); cfTimer = null;
+    $('panel-cleanup').classList.toggle('cleaning', on);
+    if (!on) return;
+    cfJoke = Math.floor(Math.random() * CF_JOKES.length);
+    const tick = () => { $('cleanupJoke').textContent = CF_JOKES[cfJoke++ % CF_JOKES.length];
+      const m = $('cleanupMorse'); m.textContent = MORSE_QRT.slice(0, (cfJoke % (MORSE_QRT.length + 1))); };
+    tick(); cfTimer = setInterval(tick, 2200);
+  }
+  async function cleanupPoll(t0) {
+    let st; try { st = await api('/api/cleanup/status'); } catch (e) { setTimeout(() => cleanupPoll(t0), 2000); return; }
+    const pct = st.total ? Math.round(100 * st.done / st.total) : 100;
+    $('cleanupBar').style.width = pct + '%';
+    $('cleanupProg').textContent = `${st.done.toLocaleString(EN ? 'en' : 'de')} / ${st.total.toLocaleString(EN ? 'en' : 'de')}`;
+    if (st.running || Date.now() - t0 < 2500) { setTimeout(() => cleanupPoll(t0), 600); return; }   // kurz zeigen, auch wenn's schnell ging
+    cleanupFun(false);
+    const n = (st.deleted || 0).toLocaleString(EN ? 'en' : 'de');
+    note($('cleanupNote'), st.error ? (EN ? `Stopped: ${st.error} – ${n} deleted` : `Abgebrochen: ${st.error} – ${n} gelöscht`)
+      : (EN ? `QRT – ${n} hits deleted, ${st.kept} protected stay. 73!` : `QRT – ${n} Treffer gelöscht, ${st.kept} geschützte bleiben. 73!`), !!st.error);
+    refreshData();
+  }
+  $('cleanupOld').addEventListener('click', async () => {
+    if (!confirm(EN ? `Delete unprotected hits ${cleanupWhat()} together with their recordings? Protected hits (★) stay.` : `Ungeschützte Treffer ${cleanupWhat()} samt Aufnahmen löschen? Geschützte (★) bleiben.`)) return;
+    try {
+      const d = await post('/api/cleanup/run', { days: Number($('cleanupDays').value) });
+      note($('cleanupNote'), ''); $('cleanupBar').style.width = '0%'; $('cleanupProg').textContent = `0 / ${d.total}`;
+      cleanupFun(true); cleanupPoll(Date.now());
+    } catch (e) { note($('cleanupNote'), 'Fehler: ' + e.message, true); }
+  });
+  (async () => { try { const st = await api('/api/cleanup/status'); if (st.running) { cleanupFun(true); cleanupPoll(Date.now()); } } catch (e) { } })();   // nach Neuladen weiter zeigen
 
   // ---------- Live-Empfang ----------
   const live = { ctx: null, reader: null, nextT: 0, active: false, rate: 24000 };
@@ -1533,7 +1576,7 @@
     device_opened: 'Empfänger geöffnet', device_open_failed: 'Empfänger lässt sich nicht öffnen', hit: 'Treffer',
     rtl_no_data: 'RTL-SDR liefert keine Daten', rtl_recovered: 'RTL-SDR läuft wieder', rtl_usb_reset: 'RTL-SDR per USB neu angemeldet',
     scan_hung: 'Scan hängt', ft8_watch_failed: 'FT8/FT4-Wache fehlgeschlagen', sstv_watch_failed: 'SSTV-Wache fehlgeschlagen',
-    satellite_start: 'Überflug: Aufnahme startet', satellite_skipped: 'Überflug übersprungen', satellite_retry: 'Überflug: Start wiederholt', satellite_problem: 'Satelliten: Problem', satellite_paused: 'Satelliten pausiert (PMSDR gewählt)', band_scanned: 'Band abgehört', 'live.start': 'Live-Empfang gestartet', 'live.stop': 'Live-Empfang beendet', 'live.tune': 'Live-Empfang abgestimmt', api_error: 'Fehler bei einer Anfrage', stopped_for_live: 'Für Live-Empfang abgebrochen', pass_cancelled: 'Überflug abgebrochen (Benutzer)', satellite_stop_requested: 'Abbruch der Satellitenaufnahme angefordert', pskreporter_sent: 'An PSK Reporter gemeldet', pskreporter_failed: 'PSK Reporter: Fehler', watch_hit: 'Beobachtung ausgelöst', watch_failed: 'Beobachtungsliste: Fehler', live_alert_failed: 'Rufzeichen-Alarm (Live): Fehler', antenna_changed: 'Antenne gewechselt', stick_single_used: 'Einziger Stick wird benutzt', sstv_alert: 'SSTV-Termin gemeldet', sstv_alert_failed: 'SSTV-Meldung: Fehler', sstv_alert_setting: 'SSTV-Vorwarnung eingestellt', stick_merged: 'Doppelter Stick-Eintrag zusammengeführt', scan_waits_for_pass: 'Scan wartet auf den Überflug', scan_request_cancelled: 'Angeforderter Scan verworfen', scan_request_dropped: 'Wartender Scan verworfen', trigger_expired: 'Scan-Anforderung verfallen', scan_request_stale: 'Angeforderter Scan nicht gestartet', scan_start_rejected: 'Scan nicht gestartet (belegt)', stick_busy: 'Stick belegt – Scan nicht gestartet', already_running: 'Scanlauf läuft schon', antenna_profiles_saved: 'Antennen-Profile gespeichert', auto_cleanup: 'Automatisch aufgeräumt', sat_raw_deleted: 'Rohdaten eines Überflugs gelöscht', disk_full: 'Speicherkarte fast voll', disk_low: 'Speicherkarte wird voll', disk_ok: 'Speicherplatz wieder ok', pass_aborted: 'Überflug abgebrochen', scan_skipped_disk_full: 'Scan ausgelassen (Speicher voll)', housekeeping_failed: 'Haushalt fehlgeschlagen',
+    satellite_start: 'Überflug: Aufnahme startet', satellite_skipped: 'Überflug übersprungen', satellite_retry: 'Überflug: Start wiederholt', satellite_problem: 'Satelliten: Problem', satellite_paused: 'Satelliten pausiert (PMSDR gewählt)', band_scanned: 'Band abgehört', 'live.start': 'Live-Empfang gestartet', 'live.stop': 'Live-Empfang beendet', 'live.tune': 'Live-Empfang abgestimmt', api_error: 'Fehler bei einer Anfrage', stopped_for_live: 'Für Live-Empfang abgebrochen', pass_cancelled: 'Überflug abgebrochen (Benutzer)', satellite_stop_requested: 'Abbruch der Satellitenaufnahme angefordert', pskreporter_sent: 'An PSK Reporter gemeldet', pskreporter_failed: 'PSK Reporter: Fehler', watch_hit: 'Beobachtung ausgelöst', watch_failed: 'Beobachtungsliste: Fehler', live_alert_failed: 'Rufzeichen-Alarm (Live): Fehler', antenna_changed: 'Antenne gewechselt', stick_single_used: 'Einziger Stick wird benutzt', sstv_alert: 'SSTV-Termin gemeldet', cleanup_done: 'Aufgeräumt', cleanup_failed: 'Aufräumen abgebrochen', sstv_alert_failed: 'SSTV-Meldung: Fehler', sstv_alert_setting: 'SSTV-Vorwarnung eingestellt', stick_merged: 'Doppelter Stick-Eintrag zusammengeführt', scan_waits_for_pass: 'Scan wartet auf den Überflug', scan_request_cancelled: 'Angeforderter Scan verworfen', scan_request_dropped: 'Wartender Scan verworfen', trigger_expired: 'Scan-Anforderung verfallen', scan_request_stale: 'Angeforderter Scan nicht gestartet', scan_start_rejected: 'Scan nicht gestartet (belegt)', stick_busy: 'Stick belegt – Scan nicht gestartet', already_running: 'Scanlauf läuft schon', antenna_profiles_saved: 'Antennen-Profile gespeichert', auto_cleanup: 'Automatisch aufgeräumt', sat_raw_deleted: 'Rohdaten eines Überflugs gelöscht', disk_full: 'Speicherkarte fast voll', disk_low: 'Speicherkarte wird voll', disk_ok: 'Speicherplatz wieder ok', pass_aborted: 'Überflug abgebrochen', scan_skipped_disk_full: 'Scan ausgelassen (Speicher voll)', housekeeping_failed: 'Haushalt fehlgeschlagen',
     satellite_failed: 'Satelliten: Fehler', satellite_warning: 'Satelliten: Hinweis', pass_start: 'Überflug: Aufnahme läuft',
     pass_done: 'Überflug fertig', pass_failed: 'Überflug fehlgeschlagen', pass_eval_failed: 'Überflug: Auswertung fehlgeschlagen',
     pass_recording_problem: 'Überflug: Aufnahme gestört', loop_exception: 'Scheduler: Fehler in der Schleife',

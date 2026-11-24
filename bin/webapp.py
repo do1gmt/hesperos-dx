@@ -1556,6 +1556,51 @@ def bulk_delete(days):
     return len(ids), len(kept)
 
 
+CLEANUP = {"running": False, "done": 0, "total": 0, "deleted": None, "kept": 0, "days": None, "error": None,
+           "started": None, "finished": None}
+_cleanup_lock = threading.Lock()
+
+
+def cleanup_start(days):
+    """Ungeschützte Treffer löschen – im Hintergrund, mit Fortschritt für die Karte (1.8.40; vorher eine lange
+    Anfrage, bei tausenden Treffern minutenlang ohne Rückmeldung). days > 0: älter als days Tage, 0: alle."""
+    days = int(days)
+    if days < 0 or days > 3650:
+        raise ValueError("Tage zwischen 0 (alle) und 3650")
+    with _cleanup_lock:
+        if CLEANUP["running"]:
+            raise ValueError("Es wird schon aufgeräumt")
+        if days:
+            ids, kept = delete_candidates(days)
+        else:
+            db = db_connect()
+            ids = [r[0] for r in db.execute("SELECT id FROM peak WHERE COALESCE(protected,0)=0").fetchall()]
+            kept = [r[0] for r in db.execute("SELECT id FROM peak WHERE COALESCE(protected,0)=1").fetchall()]
+            db.close()
+        CLEANUP.update(running=True, done=0, total=len(ids), deleted=None, kept=len(kept), days=days, error=None,
+                       started=time.time(), finished=None)
+    action = f"older_than_{days}d" if days else "all_unprotected"
+
+    def run():
+        n = 0
+        try:
+            for pid in ids:
+                try:
+                    delete_hit(pid, action=action)
+                    n += 1
+                except ValueError:                      # inzwischen weg (z. B. von Hand gelöscht)
+                    pass
+                CLEANUP["done"] += 1
+        except Exception as e:
+            CLEANUP["error"] = f"{type(e).__name__}: {e}"
+            APPLOG.log("WARN", "webapp", "cleanup_failed", error=CLEANUP["error"], deleted=n)
+        finally:
+            CLEANUP.update(running=False, deleted=n, finished=time.time())
+            APPLOG.log("INFO", "webapp", "cleanup_done", days=days or "alle", deleted=n, protected=len(kept))
+    threading.Thread(target=run, daemon=True).start()
+    return dict(CLEANUP)
+
+
 def delete_all_unprotected():
     db = db_connect()
     ids = [r[0] for r in db.execute("SELECT id FROM peak WHERE COALESCE(protected,0)=0").fetchall()]
@@ -2786,9 +2831,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json(stats())
             if path == "/api/deletion-log":
                 return self.send_json({"entries": deletion_log()})
-            if path == "/api/delete-preview":
-                ids, kept = delete_candidates(int(qs.get("days", 7)))
+            if path == "/api/delete-preview":                 # days=0: alle ungeschützten (1.8.40)
+                ids, kept = delete_candidates(int(qs.get("days", 7)) or -36500)
                 return self.send_json({"delete": len(ids), "protected": len(kept)})
+            if path == "/api/cleanup/status":
+                return self.send_json(dict(CLEANUP))
             if path == "/api/download-iq":
                 db = db_connect()
                 row = db.execute("SELECT recording_path FROM peak WHERE id=?", (int(qs.get("peak_id", 0)),)).fetchone()
@@ -3616,6 +3663,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json({"ok": True, "deleted": n, "protected": kept})
             if path == "/api/delete-all-unprotected":
                 return self.send_json({"ok": True, "deleted": delete_all_unprotected()})
+            if path == "/api/cleanup/run":
+                return self.send_json({"ok": True, **cleanup_start(data.get("days", 7))})
             self.send_json({"ok": False, "error": "Nicht gefunden"}, 404)
         except Exception as e:
             APPLOG.log("WARN", "webapp", "api_error", path=path, error=str(e))
