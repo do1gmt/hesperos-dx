@@ -3959,5 +3959,47 @@ assert 'id="cleanupAll"' not in html and '<option value="0">alle (egal wie alt)<
 assert "'/api/cleanup/run'" in js and "/api/cleanup/status" in js and "QRT" in js
 PY
 
+echo "== 100 Englisch: neue Hinweise (Neustart, SSTV-Termin, Stickwechsel, Update-Prüfung) und Dashboard-Texte übersetzt"
+(cd bin && timeout 30 python3 - <<'PY') && ok "Hinweistexte auf Englisch: Neustart, SSTV-Termin mit Wochentag, anderer Stick, keine Zugriffsrechte, GitHub nicht erreichbar, WLAN schwach" || bad "englische Hinweistexte"
+import notices as NT
+E = NT.english
+assert E("Neuer Kernel 6.6.62+rpt-rpi-v8 ist installiert, es läuft noch 6.6.51+rpt-rpi-v8. Ein automatischer Neustart ist dafür nicht vorgesehen.") \
+    == "New kernel 6.6.62+rpt-rpi-v8 is installed, 6.6.51+rpt-rpi-v8 is still running. No automatic restart is planned for this."
+assert E("Das Systemupdate hat Kernel, Firmware oder Systembibliotheken erneuert. Er startet heute Nacht um 03:00 Uhr von selbst neu, wenn nichts läuft.").endswith("tonight at 03:00 if nothing is running.")
+assert E("ARISS SSTV · 145.800 MHz · PD120 · bis Do 26.11. 18:00 UTC (19:00 Ortszeit).") == "ARISS SSTV · 145.800 MHz · PD120 · until Thu 26.11. 18:00 UTC (19:00 local time)."
+assert E("bis So 29.11. Achtung: „Satelliten“ ist bei Bänder & Betriebsarten aus – Hesperos DX nimmt so nichts auf.").startswith("until Sun 29.11. Note:")
+assert E("Beginn Mi 25.11. 10:00 UTC · 145.800 MHz.") == "Starts Wed 25.11. 10:00 UTC · 145.800 MHz."
+assert E("Warte · bis morgen.") == "Warte · bis morgen."                           # nur echte Termine
+assert E("Anderer Stick wird benutzt: NESDR 2724") == "Another stick is used: NESDR 2724"
+assert "with its gain, ppm and shortwave setting" in E("Der Haupt-Stick A (Seriennummer 1) steckt nicht – Scan, Satelliten und Live laufen solange mit B (Seriennummer ohne, mit dessen Verstärkung, ppm und Kurzwellen-Einstellung). Steckt der Haupt-Stick wieder, wird er wieder benutzt.")
+assert E("Der angesteckte Stick soll dauerhaft Haupt-Stick sein? Unter System → Geräte als Haupt-Stick festlegen.").startswith("Keep the connected stick")
+assert E("Seit 01.11. erreicht der Pi GitHub nicht (timeout). Installiert ist 1.8.40 – neuere Versionen kämen so nie an.").startswith("Since 01.11. the Pi cannot reach GitHub")
+assert E("System → Systemupdates: „Jetzt neu starten“.") == "System → System updates: “Restart now”."
+assert E("Scan → Bänder & Betriebsarten: „Satelliten“ einschalten.") == "Scan → Bands & modes: switch on “Satellites”."
+assert "below -78 dBm" in E("Der Pi empfängt das WLAN „x“ seit 15 min nur mit etwa -82 dBm – unter -78 dBm reißt die Verbindung leicht ab.")
+PY
+if command -v node >/dev/null && node -e "require('jsdom')" 2>/dev/null; then
+    node - "$SRC/web/i18n.js" "$SRC/web/app.js" <<'JS' && ok "Dashboard auf Englisch: Hinweise zu Antenne, Sicherung, Netz, PSK Reporter, Zeitplan, USB-Stick übersetzt; PSK-Hinweis Teil für Teil übersetzt (jsdom)" || bad "englische Dashboard-Texte"
+const fs = require('fs'), { JSDOM } = require('jsdom');
+const d = new JSDOM('<body></body>', { runScripts: 'outside-only', url: 'http://x/' });
+d.window.localStorage.setItem('lang', 'en'); d.window.fetch = () => Promise.reject(new Error('aus'));
+d.window.eval(fs.readFileSync(process.argv[2], 'utf8'));
+const t = d.window.I18N.t, bad = [];
+const want = {
+  'Zeitplan „Nacht“ aktiv bis 06:00 UTC – gescannt wird gerade: 40m, 80m': 'Schedule “Nacht” active until 06:00 UTC – now scanning: 40m, 80m',
+  'Kein Internet seit 12:00 – die Spots werden nachgemeldet.': null, '✓ 12000 Einträge': '✓ 12000 entries', 'nicht verbunden': 'not connected',
+  'verbunden · 100 MBit/s': 'connected · 100 Mbit/s', '12:00 ISS – veröffentlicht': '12:00 ISS – published', 'Vom anderen Profil übernehmen': null,
+  'Passwort löschen? Sicherungen enthalten danach keine Zugangsdaten mehr.': null, 'wird oben gewählt': 'chosen above',
+  'Welche Antenne Live benutzt – fest oder automatisch nach Band. Steht bei gehörten Stationen, PSK-Reporter-Meldungen und Bildern dabei.': null,
+  'steckt nicht (busy) – beim Anstecken wird er von selbst eingehängt.': 'is not plugged in (busy) – it is mounted by itself when plugged in.',
+  'Melden ist aus – Einstellungen → Station → „FT8/FT4-Spots an PSK Reporter melden“.': null,
+};
+for (const [k, v] of Object.entries(want)) { const r = t(k); if (r === k || (v && r !== v) || /[äöüß]/.test(r)) bad.push(k + ' → ' + r); }
+const app = fs.readFileSync(process.argv[3], 'utf8');
+if (!app.includes("parts.map(p => I18N.t(p)).join(' ')")) bad.push('PSK-Hinweis nicht teilweise übersetzt');
+if (bad.length) { console.log(bad.join('\n')); process.exit(1); }
+JS
+fi
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

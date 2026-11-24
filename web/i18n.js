@@ -334,6 +334,27 @@
     'Passwort zu kurz (mindestens 8 Zeichen)': 'Password too short (at least 8 characters)',
     'Anmeldung': 'Login', 'Abgemeldet': 'Logged out', 'Anmeldung fehlgeschlagen': 'Login failed', 'Anmeldung gesperrt': 'Login blocked',
     'Passwort gesetzt': 'Password set', 'Zugangsschutz ausgeschaltet': 'Access protection switched off',
+    // 1.8.41: Lücken aus dem Durchgang über alle Karten
+    'Abgebrochene Überflüge liegen noch als Rohdaten vor – retten per SSH: cd ~/HesperosDX && python3 bin/sat_recover.py (sonst nach 48 h gelöscht)':
+      'Cancelled passes are still kept as raw data – recover via SSH: cd ~/HesperosDX && python3 bin/sat_recover.py (otherwise deleted after 48 h)',
+    'Passwort löschen? Sicherungen enthalten danach keine Zugangsdaten mehr.': 'Delete the password? Backups will then no longer contain credentials.',
+    'Für USB-Stick und Netzwerkfreigabe einmal „Jetzt aktualisieren“ (System → Update) – danach geht es hier.':
+      'For USB stick and network share, run “Update now” once (System → Update) – after that it works here.',
+    'USB-Stick': 'USB stick', 'nicht verbunden': 'not connected', 'in WordPress öffnen': 'open in WordPress', 'Vom anderen Profil übernehmen': 'Take over from the other profile',
+    'Welche Antenne der Scan benutzt (auch für Überflüge) – fest oder automatisch nach Band (das Profil, dessen Frequenzbereich passt). Wird sofort gespeichert. Profile anlegen: System → Geräte → Antennen.':
+      'Which antenna the scan uses (also for passes) – fixed or automatically by band (the profile whose frequency range fits). Saved immediately. Create profiles: System → Devices → Antennas.',
+    'Welche Antenne Live benutzt – fest oder automatisch nach Band. Steht bei gehörten Stationen, PSK-Reporter-Meldungen und Bildern dabei.':
+      'Which antenna Live uses – fixed or automatically by band. Shown with heard stations, PSK Reporter spots and images.',
+    'Mail-Passwort, Telegram-/ntfy-Token, Anwendungspasswort der Webseite und Zugangsschutz': 'Mail password, Telegram/ntfy token, website application password and access protection',
+    'So wie im Windows-Explorer, nur mit Schrägstrichen: //Rechner/Freigabe, auch mit Unterordner. FRITZ!Box mit USB-Speicher: //192.168.178.1/FRITZ.NAS':
+      'As in Windows Explorer, just with forward slashes: //computer/share, also with a subfolder. FRITZ!Box with USB storage: //192.168.178.1/FRITZ.NAS',
+    'Nur nötig, wenn das Ziel nicht oben unter „Wohin sichern“ gewählt wird – etwa ein selbst eingehängtes Laufwerk. Nicht die Speicherkarte selbst.':
+      'Only needed if the target is not chosen above under “Where to back up” – for example a drive you mounted yourself. Not the SD card itself.',
+    'wird oben gewählt': 'chosen above',
+    'Gilt überall: Dashboard, Hinweise, Mail, Telegram, Webseite. Jede Zeit trägt ihre Kennung. Die Uhr oben rechts zeigt immer beides.':
+      'Applies everywhere: dashboard, notices, mail, Telegram, website. Every time carries its label. The clock top right always shows both.',
+    'Eingespielt wird, sobald kein Scan und kein Überflug läuft. Der bisherige Stand von Einstellungen und Datenbeständen wird vorher nach': 'It is restored as soon as no scan and no pass is running. The previous state of settings and data is first moved to',
+    'gelegt; Aufnahmen werden ergänzt, nicht gelöscht. Danach starten die Dienste neu und die Seite lädt sich neu.': '; recordings are added, not deleted. Then the services restart and the page reloads.',
   };
 
   // Textteile mit eingesetzten Werten (Reihenfolge zählt)
@@ -477,7 +498,7 @@
     [/^Arbeitsspeicher frei von (\d+) MB$/, 'memory free of $1 MB'], [/^(\d+) Tage$/, '$1 days'], [/^Version – neu: (.+)$/, 'Version – new: $1'],
     [/Neue Version (.+) verfügbar – auf dem Pi: bin\/update\.sh/, 'New version $1 available – on the Pi: bin/update.sh'],
     [/^Frequenz: (.+)$/, 'Frequency: $1'], [/^Rufzeichen: (.+)$/, 'Callsign: $1'], [/^Ereignis: (.+)$/, 'Event: $1'], [/^Entfernung ab: (.+)$/, 'Distance from: $1'],
-    [/ · Mail\/Push/, ' · mail/push'], [/^(\d+) Treffer \/ (\d+) Abstimmungen$/, '$1 hits / $2 tunings'], [/^Zeitplan „(.+)“ aktiv bis (\d\d:\d\d) – gescannt wird gerade: (.+)$/, 'Schedule "$1" active until $2 – now scanning: $3'],
+    [/ · Mail\/Push/, ' · mail/push'], [/^(\d+) Treffer \/ (\d+) Abstimmungen$/, '$1 hits / $2 tunings'], [/^Zeitplan „(.+)“ aktiv bis (\d\d:\d\d(?: [A-Za-z]+)?) – gescannt wird gerade: (.+)$/, 'Schedule “$1” active until $2 – now scanning: $3'],
     [/^Uhrzeiten in der Ortszeit des Pi \(jetzt (.+)\)\.$/, "Times in the Pi's local time (now $1)."], [/^täglich · /, 'daily · '], [/ \(vorher speichern\)$/, ' (save first)'],
     [/ · Ruhe (\d+) min/, ' · quiet $1 min'], [/SSTV-Bild von der ISS/g, 'SSTV image from the ISS'], [/SSTV-Bild \(alle\)/g, 'SSTV image (any)'],
     [/APRS über die ISS/g, 'APRS via the ISS'], [/Satellit gehört \(alle Treffer im Band Satelliten\)/g, 'Satellite heard (any hit in the band Satellites)'], [/(\d+)° (NO|SO)$/, (m, a, d) => a + '° ' + d.replace('O', 'E')], [/(\d+)° O$/, '$1° E'],
@@ -531,6 +552,23 @@
     [/\bKanal\b/g, 'channel'], [/\bSprache\b/g, 'voice'], [/\bBake\b/g, 'beacon'], [/\b\/ Daten\b/g, '/ data'],
     [/ISS-Relais/g, 'ISS repeater'], [/SSTV-Aktionen/g, 'SSTV events'], [/APRS-Digipeater/g, 'APRS digipeater'], [/\(Mitte\)/g, '(centre)'],
     [/^Spektrum um (.+) MHz$/, 'Spectrum around $1 MHz'], [/^SSTV-Bild$/, 'SSTV image'], [/^Satelliten\/ISS /, 'Satellites/ISS '],
+    // 1.8.41: Lücken aus dem Durchgang über alle Karten
+    [/^✓ (\d+) Einträge$/, '✓ $1 entries'],
+    [/^Zeitplan „(.+)“ gilt gerade – Antenne: (.+)\. Die Wahl hier gilt danach wieder\.$/, (m, n, a) => `Schedule “${n}” is active – antenna: ${a === 'automatisch nach Band' ? 'automatic by band' : a}. The choice here applies again afterwards.`],
+    [/^USB-Stick (.*?) ?ist ausgeworfen – kann abgezogen werden\. Wieder angesteckt, wird er von selbst eingehängt\.$/, 'USB stick $1 is ejected – it can be unplugged. Plugged in again, it is mounted by itself.'],
+    [/^ist ausgeworfen – kann abgezogen werden\. Wieder angesteckt, wird er von selbst eingehängt\.$/, 'is ejected – it can be unplugged. Plugged in again, it is mounted by itself.'],
+    [/^steckt nicht(?: \((.+)\))? – beim Anstecken wird er von selbst eingehängt\.$/, (m, e) => `is not plugged in${e ? ' (' + e + ')' : ''} – it is mounted by itself when plugged in.`],
+    [/^verbunden(?: · (\d+) MBit\/s)?$/, (m, s) => `connected${s ? ' · ' + s + ' Mbit/s' : ''}`], [/^Kabel \((.+)\)$/, 'Cable ($1)'], [/^MAC Kabel$/, 'MAC cable'], [/^WLAN \((.+)\)$/, 'Wi-Fi ($1)'],
+    [/ · Kurzwelle möglich, aber: (.+)$/, ' · shortwave possible, but: $1'], [/ · Kurzwelle per Direktabtastung$/, ' · shortwave via direct sampling'],
+    [/^Swap bis (\d+) MB in diesem Zeitraum – zu Zeiten mit viel Swap können Aufnahmen Lücken haben\.\s*/, 'Swap up to $1 MB in this period – recordings may have gaps at times with a lot of swap. '],
+    [/^✓ Testbild ·$/, '✓ Test image ·'],
+    [/^(\S+ .+) – (veröffentlicht|Entwurf|wartet|aufgegeben|zu unvollständig|Bild fehlt)$/, (m, a, s) => `${a} – ${{ 'veröffentlicht': 'published', 'Entwurf': 'draft', 'wartet': 'waiting', 'aufgegeben': 'given up', 'zu unvollständig': 'too incomplete', 'Bild fehlt': 'image missing' }[s]}`],
+    [/^Hesperos DX hängt seit (.+) in einem anderen Netz \((.+)\)\. Wurde der Pi woanders hingestellt\? Stimmt der Locator (.+) noch\?$/, (m, s, n, l) => `Hesperos DX has been in a different network since ${s} (${n.replace(' statt ', ' instead of ')}). Was the Pi moved somewhere else? Is the locator ${l === '(keiner)' ? '(none)' : l} still right?`],
+    [/^Kein Internet seit (.+) – die Spots werden nachgemeldet\.$/, 'No internet since $1 – the spots will be sent later.'],
+    [/^Melden ist aus – Einstellungen → Station → „FT8\/FT4-Spots an PSK Reporter melden“\.$/, 'Reporting is off – Settings → Station → “Report FT8/FT4 spots to PSK Reporter”.'],
+    [/^Rufzeichen und Locator fehlen \(Einstellungen → Station\)\.$/, 'Callsign and locator are missing (Settings → Station).'],
+    [/^Letzte Meldung (.*): (\d+) Paket\(e\)(?: – damals noch mit (.+?))?\. Je Rufzeichen, Band und Art ein Spot pro Meldung, höchstens alle 5 Minuten\. Gezeigt die neuesten 15\.$/,
+      (m, w, n, d) => `Last report ${w}: ${n} packet(s)${d ? ' – back then still with ' + d : ''}. One spot per callsign, band and mode per report, at most every 5 minutes. Showing the newest 15.`],
   ];
 
   // Einträge mit HTML (<b>, <a> …) passen nie auf einen Textknoten: in ihre Textstücke zerlegen und diese einzeln

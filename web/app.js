@@ -336,20 +336,20 @@
     const iv = $('interval'), sec = estimate.seconds || 0, cur = Number(iv.value);
     for (const o of iv.options) {
       const m = Number(o.value), tooShort = m > 0 && sec > m * 60;
-      o.textContent = intervalLabel(m) + (tooShort ? ' – Scan dauert länger' : '');
+      o.textContent = intervalLabel(m) + (tooShort ? (EN ? ' – scan takes longer' : ' – Scan dauert länger') : '');
       o.disabled = tooShort && m !== cur;
     }
     const hint = $('intervalHint');
     // „aus“ betrifft nur die Bandscans – Überflüge laufen über das Band „Satelliten“ weiter (sah aus wie ein Scan)
     const satOn = cur === 0 && (settings.selected_bands || []).includes('Satelliten');
-    const satTxt = satOn ? 'Automatischer Scan aus. Satelliten-Überflüge werden trotzdem aufgenommen – zum Abschalten unter „Bänder & Betriebsarten“ das Band „Satelliten“ ausschalten. ' : '';
+    const satTxt = satOn ? EN ? 'Automatic scan off. Satellite passes are still recorded – to stop them, switch off the band “Satellites” under “Bands & modes”. ' : 'Automatischer Scan aus. Satelliten-Überflüge werden trotzdem aufgenommen – zum Abschalten unter „Bänder & Betriebsarten“ das Band „Satelliten“ ausschalten. ' : '';
     if (!estimate.parts || !estimate.parts.length) { hint.textContent = satTxt; hint.classList.remove('warn-text'); return; }
     const min = Math.ceil(sec / 60);
     const minOk = settings.allowed_intervals.find(m => m > 0 && m * 60 >= sec);
     const det = estimate.parts.map(p => `${p.band} ${p.tunes}× ≈ ${fmtDur(p.seconds)}${p.measured ? '' : ' (geschätzt)'}`).join(', ');
     let txt = `Ein Scan mit dieser Auswahl dauert etwa ${fmtDur(sec)} (${det}, Vor-/Nachlauf ≈ ${fmtDur(estimate.overhead)}).`;
-    if (cur > 0 && sec > cur * 60) txt += ` ⚠ Länger als das Intervall – die Scans laufen dann mit 30 s Pause hintereinander, der Stick ist fast nie frei.`;
-    else if (minOk) txt += ` Kürzestes sinnvolles Intervall: ${intervalLabel(minOk).replace('alle ', '')}.`;
+    if (cur > 0 && sec > cur * 60) txt += EN ? ' ⚠ Longer than the interval – the scans then run back to back with a 30 s pause, the stick is hardly ever free.' : ` ⚠ Länger als das Intervall – die Scans laufen dann mit 30 s Pause hintereinander, der Stick ist fast nie frei.`;
+    else if (minOk) txt += EN ? ` Shortest sensible interval: ${I18N.t(intervalLabel(minOk)).replace('every hour', '1 hour').replace('every ', '')}.` : ` Kürzestes sinnvolles Intervall: ${intervalLabel(minOk).replace('alle ', '')}.`;
     hint.textContent = satTxt + txt;
     hint.classList.toggle('warn-text', cur > 0 && sec > cur * 60);
   }
@@ -391,7 +391,7 @@
       b.innerHTML = `<b>${esc(short(id))}${id === 'rtlsdr' && settings.rtl_serial ? ` <small class="stick-sn no-i18n">SN ${esc(settings.rtl_serial)}</small>` : ''}</b>${state}`;
       b.addEventListener('click', async () => {
         if (settings.active_device === id || !present) return;
-        try { const d = await post('/api/settings', { active_device: id }); settings = Object.assign(settings, d.settings); note($('scanSaveNote'), '✓ Gerät umgestellt – Antenne am ' + short(id) + ' anschließen'); }
+        try { const d = await post('/api/settings', { active_device: id }); settings = Object.assign(settings, d.settings); note($('scanSaveNote'), (EN ? '✓ Device switched – connect the antenna to the ' + short(id) : '✓ Gerät umgestellt – Antenne am ' + short(id) + ' anschließen')); }
         catch (e) { note($('scanSaveNote'), 'Fehler: ' + e.message, true); }
         renderDeviceSwitch(); renderBands(); renderSchedules();
       });
@@ -400,7 +400,7 @@
     const act = settings.active_device, choice = settings.active_device_choice || act;
     const ant = (settings.antennas || {})[act];
     const rtlHf = act === 'rtlsdr' && settings.rtl_caps && settings.rtl_caps.hf_ok;
-    let hint = `${ant ? ant + ' am ' + short(act) + '. ' : ''}${rtlHf ? 'Gescannt werden die VHF/UHF-Bänder und Kurzwelle bis 28,8 MHz (Direktabtastung – Kurzwellenantenne nötig).' : `Gescannt werden nur die ${act === 'rtlsdr' ? 'VHF/UHF-Bänder' : 'Kurzwellenbänder'}.`}`;
+    let hint = EN ? `${ant ? ant + ' on the ' + short(act) + '. ' : ''}${rtlHf ? 'Scanning the VHF/UHF bands and shortwave up to 28.8 MHz (direct sampling – shortwave antenna needed).' : `Scanning only the ${act === 'rtlsdr' ? 'VHF/UHF bands' : 'shortwave bands'}.`}` : `${ant ? ant + ' am ' + short(act) + '. ' : ''}${rtlHf ? 'Gescannt werden die VHF/UHF-Bänder und Kurzwelle bis 28,8 MHz (Direktabtastung – Kurzwellenantenne nötig).' : `Gescannt werden nur die ${act === 'rtlsdr' ? 'VHF/UHF-Bänder' : 'Kurzwellenbänder'}.`}`;
     if (choice !== act) hint = `${short(choice)} nicht angeschlossen – automatisch ${short(act)}. ` + hint;
     if (!hw.pmsdr?.present && !hw.rtlsdr?.present) hint = `Kein Empfänger angeschlossen – ${devName('rtlsdr')} oder ${devName('pmsdr')} anstecken.`;
     $('deviceHint').textContent = hint;
@@ -714,7 +714,7 @@
     const nextPast = s.next_scan_at && new Date(s.next_scan_at) < Date.now();
     const pp = s.scan_postponed;
     $('nextRun').textContent = s.scan_interval_minutes === 0 ? 'aus' : busy ? 'läuft gerade'
-      : pp && nextPast ? `nach Überflug ${pp.name} (${tfmt(pp.until, { date: false })})`
+      : pp && nextPast ? `${EN ? 'after pass' : 'nach Überflug'} ${pp.name} (${tfmt(pp.until, { date: false })})`
       : (s.next_scan_at ? (nextPast ? 'fällig – startet gleich' : `${fmtTime(s.next_scan_at, false)} · ${fmtRel(s.next_scan_at)}`) : '–');
     liveBanner(s, busy);
     // nur bei einem Fehler, der gerade passiert (nicht beim Öffnen der Seite für einen alten Lauf)
@@ -883,7 +883,7 @@
       pg.querySelector('[data-hp=next]').disabled = hB >= hitsPage.total;
     });
     if (filter.id) {                                  // nur ein Treffer (aus der Stationsübersicht): Rückweg anbieten
-      $('hitCount').innerHTML = `Treffer #${filter.id} <button type="button" class="btn btn-small" id="hitIdClear">alle Treffer zeigen</button>`;
+      $('hitCount').innerHTML = `${EN ? 'Hit' : 'Treffer'} #${filter.id} <button type="button" class="btn btn-small" id="hitIdClear">alle Treffer zeigen</button>`;
       $('hitIdClear').addEventListener('click', () => { filter.id = null; root.innerHTML = ''; loadHits(); });
       const c = root.querySelector('.hit'); if (c && !c.classList.contains('open')) c.querySelector('.hit-head, summary')?.click();
     }
@@ -962,7 +962,7 @@
     const s = p && p.state;
     if (s === 'veröffentlicht') return ` <span class="pub-st ok">✓ Auf der Webseite${p.link ? ` · <a href="${esc(p.link)}" target="_blank" rel="noopener">ansehen</a>` : ''}</span>`;
     if (s === 'Entwurf') return ` <span class="pub-st ok">✓ Als Entwurf auf der Webseite${p.edit ? ` · <a href="${esc(p.edit)}" target="_blank" rel="noopener">in WordPress freigeben</a>` : ''}</span>`;
-    if (s === 'wartet') return p.error ? ` ${btn('↑ Erneut versuchen')} <span class="pub-st err" title="${esc(p.error)}">Upload hängt: ${esc(p.error)}</span>`
+    if (s === 'wartet') return p.error ? ` ${btn('↑ Erneut versuchen')} <span class="pub-st err" title="${esc(p.error)}">${EN ? 'Upload stuck:' : 'Upload hängt:'} ${esc(p.error)}</span>`
       : ` <span class="pub-st">⏳ Wird in der nächsten Minute hochgeladen</span>`;
     const why = { 'zu unvollständig': 'automatisch nicht hochgeladen (zu unvollständig)', 'aufgegeben': 'Upload aufgegeben', 'Bild fehlt': 'Bild fehlte beim Upload' }[s];
     return ` ${btn('↑ Auf Webseite')}${why ? ` <span class="pub-st">${why}</span>` : ''}`;
@@ -1030,7 +1030,7 @@
     }
     if (h.decodes.length) html += `<div class="px">${renderDecodes(h)}</div>`;
     if (sat) html += `<div class="sat-info px">${SATINFO.has(h.id) ? satInfoHtml(SATINFO.get(h.id)) : '<p class="hint">Angaben zum Satelliten werden geladen …</p>'}</div>`;
-    else if (['ft8', 'ft4', 'cw', 'rtty', 'digital', 'wspr', 'aprs', 'pocsag'].includes(h.mode)) html += `<p class="hint px">Noch nichts dekodiert${h.mode === 'wspr' ? ' – für WSPR gibt es keinen Dekoder auf dem Pi' : ' (läuft nach dem Scan, oder das Signal war zu kurz/zu schwach)'}.</p>`;
+    else if (['ft8', 'ft4', 'cw', 'rtty', 'digital', 'wspr', 'aprs', 'pocsag'].includes(h.mode)) html += EN ? `<p class="hint px">Nothing decoded yet${h.mode === 'wspr' ? ' – there is no WSPR decoder on the Pi' : ' (runs after the scan, or the signal was too short/too weak)'}.</p>` : `<p class="hint px">Noch nichts dekodiert${h.mode === 'wspr' ? ' – für WSPR gibt es keinen Dekoder auf dem Pi' : ' (läuft nach dem Scan, oder das Signal war zu kurz/zu schwach)'}.</p>`;
     html += `<div class="note-row"><input type="text" class="note" placeholder="Notiz / Rufzeichen" value="${esc(h.note)}" maxlength="200"><button type="button" class="btn btn-small" data-act="note">Speichern</button></div>`;
     html += `<div class="hit-actions">
       <button type="button" class="btn btn-small btn-live" data-act="live">▶ Jetzt live hören</button>
@@ -3178,7 +3178,7 @@
       const diff = [L.receiver !== N.receiver && L.receiver, L.locator !== N.locator && L.locator, L.software !== N.software && L.software].filter(Boolean);
       parts.push(`Letzte Meldung ${when}: ${L.packets} Paket(e)${diff.length ? ` – damals noch mit ${diff.join(' · ')}` : ''}. Je Rufzeichen, Band und Art ein Spot pro Meldung, höchstens alle 5 Minuten. Gezeigt die neuesten 15.`);
     }
-    $('pskHint').textContent = parts.join(' ');
+    $('pskHint').textContent = parts.map(p => I18N.t(p)).join(' ');   // Teile einzeln übersetzen – zusammen passt kein Eintrag
   }
   setInterval(() => { if (sysVisible()) loadPsk(); }, 60000);
 

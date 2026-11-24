@@ -168,6 +168,20 @@ def is_active(nid):
 import re as _re
 
 EN_EXACT = {
+    # 1.8.41
+    "System → Systemupdates: „Jetzt neu starten“.": "System → System updates: “Restart now”.",
+    "Scan → Bänder & Betriebsarten: „Satelliten“ einschalten.": "Scan → Bands & modes: switch on “Satellites”.",
+    "Keine Zugriffsrechte auf den Stick": "No access rights to the stick",
+    "Die udev-Regel fehlt: im Dashboard unter System „Jetzt aktualisieren“ bzw. per SSH bin/update.sh ausführen, danach den Stick einmal ab- und wieder anstecken.":
+        "The udev rule is missing: run “Update now” under System in the dashboard or bin/update.sh via SSH, then unplug the stick once and plug it in again.",
+    "Prüfung auf neue Versionen klappt nicht": "Checking for new versions does not work",
+    "Internet und Uhrzeit des Pi prüfen; System → Version · Update → „Auf neue Version prüfen“. Klappt es weiter nicht, auf dem Pi von Hand aktualisieren:":
+        "Check the Pi's internet and clock; System → Version · Update → “Check for new version”. If it still fails, update by hand on the Pi:",
+    "Lese-/Schreibfehler am USB-Datenträger": "Read/write errors on the USB drive",
+    "Die Speicherkarte ist nicht betroffen. Stick bzw. Festplatte abziehen und wieder anstecken – Hesperos DX hängt ihn selbst neu ein. Tritt es öfter auf: über einen aktiven USB-Hub anschließen, am PC prüfen oder einen anderen Stick nehmen.":
+        "The SD card is not affected. Unplug the stick or disk and plug it in again – Hesperos DX mounts it again by itself. If it happens more often: connect it via a powered USB hub, check it on a PC or use another stick.",
+    "Pi oder Router umstellen, einen WLAN-Repeater näher an den Pi bringen, oder ein Netzwerkkabel.":
+        "Move the Pi or the router, bring a Wi-Fi repeater closer to the Pi, or use a network cable.",
     "Systemupdate fehlgeschlagen": "System update failed",
     "System → Systemupdates: Ablauf ansehen und erneut versuchen.": "System → System updates: look at the log and try again.",
     "System → Systemupdates: „System aktualisieren“ – startet, sobald kein Scan läuft.": "System → System updates: “Update system” – starts as soon as no scan is running.",
@@ -229,6 +243,30 @@ EN_EXACT = {
     "Router, WLAN bzw. Netzwerkkabel prüfen.": "Check the router, Wi-Fi or network cable.",
 }
 EN_RX = [
+    # 1.8.41: Neustart, SSTV-Termine, Stickwechsel, Update-Prüfung, USB-Datenträger, WLAN
+    (r"^(Neuer Kernel (\S+) ist installiert, es läuft noch (\S+)\.|Das Systemupdate hat Kernel, Firmware oder Systembibliotheken erneuert\.) "
+     r"(Er startet heute Nacht um (\d\d):00 Uhr von selbst neu, wenn nichts läuft\.|Ein automatischer Neustart ist dafür nicht vorgesehen\.)$",
+     lambda m: (f"New kernel {m[2]} is installed, {m[3]} is still running." if m[2] else
+                "The system update renewed the kernel, firmware or system libraries.") + " "
+               + (f"It restarts by itself tonight at {m[5]}:00 if nothing is running." if m[5] else "No automatic restart is planned for this.")),
+    (r"^(?:(.+?) · )?bis ((?:Mo|Di|Mi|Do|Fr|Sa|So) \d\d\.\d\d\.(?: \d\d:\d\d UTC(?: \(\d\d:\d\d Ortszeit\))?)?)\.?( Achtung: „Satelliten“ ist bei Bänder & Betriebsarten aus – Hesperos DX nimmt so nichts auf\.)?$",
+     lambda m: f"{m[1] + ' · ' if m[1] else ''}until {_en_when(m[2]).rstrip('.')}.{_EN_SAT_OFF if m[3] else ''}"),
+    (r"^Beginn ((?:Mo|Di|Mi|Do|Fr|Sa|So) \d\d\.\d\d\.(?: \d\d:\d\d UTC(?: \(\d\d:\d\d Ortszeit\))?)?)(?: · (.+?))?\.( Achtung: „Satelliten“ ist bei Bänder & Betriebsarten aus – Hesperos DX nimmt so nichts auf\.)?$",
+     lambda m: f"Starts {_en_when(m[1])}{' · ' + m[2] if m[2] else ''}.{_EN_SAT_OFF if m[3] else ''}"),
+    (r"^Anderer Stick wird benutzt: (.+)$", r"Another stick is used: \1"),
+    (r"^Der Haupt-Stick (.+?) \(Seriennummer (\S+)\) steckt nicht – Scan, Satelliten und Live laufen solange mit (.+?) \(Seriennummer (\S+), mit dessen Verstärkung, ppm und Kurzwellen-Einstellung\)\. Steckt der Haupt-Stick wieder, wird er wieder benutzt\.$",
+     lambda m: f"The main stick {m[1]} (serial number {_en_none(m[2])}) is not plugged in – scan, satellites and Live run with {m[3]} meanwhile "
+               f"(serial number {_en_none(m[4])}, with its gain, ppm and shortwave setting). When the main stick is back, it is used again."),
+    (r"^(Der angesteckte Stick|Die Reserve) soll dauerhaft Haupt-Stick sein\? Unter System → Geräte als Haupt-Stick festlegen\.$",
+     lambda m: f"Keep {'the connected stick' if m[1] == 'Der angesteckte Stick' else 'the spare'} as main stick? Set it as main stick under System → Devices."),
+    (r"^(.+) – Hesperos DX darf ihn nicht öffnen, Scans und Live schlagen fehl \(„usb_open error -3“\)\.$",
+     lambda m: m[1].replace("ohne Seriennummer", "no serial number") + " – Hesperos DX may not open it, scans and Live fail (“usb_open error -3”)."),
+    (r"^Seit (.+?) erreicht der Pi GitHub nicht \((.*)\)\. (?:Zuletzt geklappt: (.+?)\. )?Installiert ist (\S+) – neuere Versionen kämen so nie an\.$",
+     lambda m: f"Since {m[1]} the Pi cannot reach GitHub ({m[2]}). " + (f"Last success: {m[3]}. " if m[3] else "")
+               + f"Installed is {m[4]} – newer versions would never arrive this way."),
+    (r"^(\d+)× im Kernel-Protokoll, zuletzt: (.+)$", r"\1× in the kernel log, last: \2"),
+    (r"^Der Pi empfängt das WLAN „(.*)“ seit 15 min nur mit etwa (-?\d+) dBm – unter (-?\d+) dBm reißt die Verbindung leicht ab\.$",
+     r"The Pi has been receiving the Wi-Fi “\1” for 15 min at only about \2 dBm – below \3 dBm the connection drops easily."),
     (r"^SSTV läuft jetzt: (.+)$", r"SSTV running now: \1"), (r"^SSTV in (\d+) min: (.+)$", r"SSTV in \1 min: \2"),
     (r"^Neustart nötig$", "Restart needed"),
     (r"^Stick angesteckt: (.+)$", r"Stick plugged in: \1"), (r"^Stick abgezogen: (.+)$", r"Stick removed: \1"), (r"^Stick wieder angesteckt: (.+)$", r"Stick plugged in again: \1"),
@@ -325,6 +363,20 @@ EN_RX = [
      "Scans, Live, satellites and decoders keep running. Missing: PSK Reporter (the spots of the last hour are reported "
      "later), mail/push (sent later), new orbital elements and time synchronisation."),
 ]
+
+
+_EN_SAT_OFF = " Note: “Satellites” is off under Bands & modes – Hesperos DX records nothing this way."
+_EN_WD = {"Mo": "Mon", "Di": "Tue", "Mi": "Wed", "Do": "Thu", "Fr": "Fri", "Sa": "Sat", "So": "Sun"}
+
+
+def _en_when(s):
+    """„Do 26.11. 18:00 UTC (19:00 Ortszeit)“ → „Thu 26.11. 18:00 UTC (19:00 local time)“"""
+    s = _re.sub(r"^(Mo|Di|Mi|Do|Fr|Sa|So) ", lambda m: _EN_WD[m[1]] + " ", s)
+    return s.replace(" Ortszeit)", " local time)")
+
+
+def _en_none(s):
+    return "none" if s == "ohne" else s
 
 
 def english(text):

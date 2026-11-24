@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.8.41 – 2026-11-24
+
+- **English gaps closed:** a pass over all cards in the English dashboard found texts that were still German –
+  tooltips of the antenna choice (Scan and Live), the credentials and network share fields, the time zone, the
+  backup restore hint, "Take over from the other profile", the scan interval hints (scan takes longer, longer than
+  the interval, shortest sensible interval, automatic scan off), the device hint, "after pass …", "Hit #…",
+  "Nothing decoded yet …", the active schedule note (now also with the time zone label), cancelled passes, USB stick
+  state (ejected, not plugged in), cable/Wi-Fi state, shortwave capability of a stick, swap note, the "moved to a
+  different network" question, the website upload log and the PSK Reporter hint (now translated part by part).
+- **New notices in English:** restart needed (new kernel / system update, with or without the night-time restart),
+  SSTV event alerts (with English weekdays and "local time"), another stick used while the main stick is missing,
+  no access rights to the stick, version check cannot reach GitHub, read/write errors on a USB drive, weak Wi-Fi.
+- The log keeps its data as recorded (German texts of notices stay in the log details).
+- Self-test section 100.
+
 ## 1.8.40 – 2026-11-24
 
 - **Cleanup in one way instead of three:** *Delete once* – unprotected hits older than 1, 3, 7, 14, 30, 60, 90 days
