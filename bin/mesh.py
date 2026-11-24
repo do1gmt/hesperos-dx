@@ -610,6 +610,7 @@ def status():
     s["packet_types"] = {PAYLOAD_TYPES[p] if p < len(PAYLOAD_TYPES) else str(p): recent.count(p) for p in set(recent)}
     s["channels"] = {str(k): v for k, v in (s.get("channels") or {}).items()}
     s["candidates"] = [p for p, _, _ in candidates()]
+    s["unused"] = [p for p in s["candidates"] if p not in _ACTIVE]   # gesteckt, aber nicht in Gebrauch
     s["servers"] = [{k: v for k, v in sv.items() if not k.startswith("_")} for sv in list(SERVERS.values())]
     s["rooms"] = [dict(r, key=k[:12]) for k, r in list(ROOMS.items())]
     return s
@@ -886,7 +887,7 @@ def _worker(p, log, notice, stop, failed):
     try:
         link = Link(p)
     except NoAccess as e:
-        failed[p] = True
+        failed[p] = time.time()
         STATUS.update(state="error", error="no_access", port=p)
         log("WARN", "mesh", "mesh_no_access", port=p, error=str(e))
         if notice:
@@ -894,7 +895,7 @@ def _worker(p, log, notice, stop, failed):
         _ACTIVE.pop(p, None)
         return
     except OSError as e:
-        failed[p] = True
+        failed[p] = time.time()
         log("DEBUG", "mesh", "mesh_open_failed", port=p, error=str(e))
         _ACTIVE.pop(p, None)
         return
@@ -926,7 +927,7 @@ def _worker(p, log, notice, stop, failed):
             cli.loop(lambda: stop(p))
             log("INFO", "mesh", "mesh_stopped", port=p)
             return
-        failed[p] = True
+        failed[p] = time.time()
         log("INFO", "mesh", "mesh_no_answer", port=p, hint="keine MeshCore-Firmware mit Companion (USB) oder Text-Konsole?")
     except (OSError, EOFError) as e:
         log("WARN", "mesh", "mesh_lost", port=p, error=f"{type(e).__name__}: {e}")
@@ -962,8 +963,10 @@ def run(get_port, log, notice=None, stop=lambda: False, rescan=30):
         cands = [(port, os.path.realpath(port), "")] if port != "auto" else candidates()
         present = {p for p, _, _ in cands}
         for p in list(failed):
-            if p not in present:
-                failed.pop(p)                                # abgezogen: beim nächsten Anstecken wieder versuchen
+            # abgezogen: beim nächsten Anstecken wieder versuchen; sonst nach 15 min (Knoten war beim ersten Mal noch
+            # nicht bereit, z. B. nach einem Neustart des Pi beide Boards gleichzeitig)
+            if p not in present or time.time() - failed[p] > 900:
+                failed.pop(p)
         for p, _r, _v in cands:
             if p in failed or p in _ACTIVE:
                 continue

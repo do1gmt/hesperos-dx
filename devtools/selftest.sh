@@ -4279,5 +4279,28 @@ assert "mesh_room" in ST.EVENTS
 PY
 pkill -f "mesh_fake.py $MF" 2>/dev/null; rm -rf "$MF"
 
+echo "== 111 Mesh: fester Anschluss lässt weitere Geräte erkennbar ungenutzt; abgelehnte Geräte nach 15 min neu versucht"
+MF=$(mktemp -d); (python3 "$SRC/devtools/mesh_fake.py" "$MF" > "$MF/o1" 2>&1 &); (python3 "$SRC/devtools/mesh_fake.py" "$MF" room > "$MF/o2" 2>&1 &); sleep 1
+(cd bin && HSP_MESH_DEV_GLOB="$MF/by-id/*" HSP_MESH_SYS_TTY="$MF/sys" timeout 60 python3 - "$SRC" "$MF" <<'PY') && ok "„Knoten am USB“ fest auf den Room-Server: Companion wird nicht benutzt und als ungenutzt gemeldet (Hinweis im Dashboard); nicht antwortende Geräte nach 15 min erneut versucht" || bad "Mesh fester Anschluss"
+import sys, time, threading, tempfile, glob
+from pathlib import Path
+import mesh as M
+M.DB = Path(tempfile.mkdtemp()) / "t.db"
+room = glob.glob(sys.argv[2] + "/by-id/*room*")[0]
+stop = [False]
+threading.Thread(target=M.run, args=(lambda: room, lambda *a, **k: None, None, lambda: stop[0], 2), daemon=True).start()
+for _ in range(40):
+    time.sleep(0.5)
+    if M.status()["servers"]:
+        break
+s = M.status(); stop[0] = True
+assert s["servers"] and s["state"] != "connected" and len(s["unused"]) == 1 and "heltec" in s["unused"][0], s["unused"]
+src = Path(sys.argv[1]); m = (src / "bin" / "mesh.py").read_text(); js = (src / "web" / "app.js").read_text()
+assert "time.time() - failed[p] > 900" in m and "(st.unused || []).length" in js and "automatisch erkennen (alle Geräte)" in js
+assert "Kann dieser Stick Kurzwelle empfangen (Direktabtastung, bis 28,8 MHz)?" in js and "Kurzwelle bleibt der PMSDR" not in js
+assert '<span>Kurzwelle <button type="button" class="info-btn" data-info="Kann dieser Stick' in js
+PY
+pkill -f "mesh_fake.py $MF" 2>/dev/null; rm -rf "$MF"
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

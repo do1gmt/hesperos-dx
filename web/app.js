@@ -2826,6 +2826,10 @@
       off: EN ? 'Switched off.' : 'Ausgeschaltet.',
     };
     $('meshState').textContent = S[st.state] || st.state;
+    // „Knoten am USB“ fest auf ein Gerät: weitere gesteckte Geräte bleiben unbenutzt – deutlich sagen, wie es anders geht
+    if (d.port_setting.startsWith('/dev/') && (st.unused || []).length)
+      $('meshState').textContent += ' ' + (EN ? `– ${st.unused.length} more device(s) on USB not used, because "Node on USB" below is fixed to ${d.port_setting.split('/').pop()}. Choose "detect automatically" to use all of them.`
+        : `– ${st.unused.length} weitere(s) Gerät(e) am USB bleibt unbenutzt, weil unten „Knoten am USB“ fest auf ${d.port_setting.split('/').pop()} steht. „automatisch erkennen“ wählen, dann werden alle benutzt.`);
     // Statistik des Knotens (falls die Firmware sie kennt) an die Zustandszeile hängen
     const sx = st.stats || {};
     if (st.state === 'connected' && sx.uptime_s != null) {
@@ -2883,7 +2887,7 @@
     if (Date.now() - meshPortTouched > 5000) {
       const opts = ['auto', 'off', ...new Set([...(st.candidates || []), ...(d.port_setting.startsWith('/dev/') ? [d.port_setting] : [])])];
       if ([...ps.options].map(o => o.value).join('|') !== opts.join('|'))
-        ps.innerHTML = `<option value="auto">${EN ? 'detect automatically' : 'automatisch erkennen'}</option><option value="off">${EN ? 'off' : 'aus'}</option>`
+        ps.innerHTML = `<option value="auto">${EN ? 'detect automatically (all devices)' : 'automatisch erkennen (alle Geräte)'}</option><option value="off">${EN ? 'off' : 'aus'}</option>`
           + opts.slice(2).map(p => `<option value="${esc(p)}" class="no-i18n">${esc(p.split('/').pop())}</option>`).join('');
       ps.value = d.port_setting;
     }
@@ -3712,7 +3716,7 @@
       if (r.kind === 'rtl') {
         body = `<div class="stick-form" data-key="${esc(r.key)}" data-role="${esc(role)}">
           ${manySticks ? `<label class="field" title="Rolle: Haupt-Stick = wird für Scan, Satelliten und Live benutzt. Reserve = springt ein, wenn der Haupt-Stick fehlt (nur wenn genau eine Reserve steckt), sonst unbenutzt. Ignoriert = Hesperos DX fasst ihn nie an."><span>Rolle</span><select data-f="role">${['', 'main', 'spare', 'ignore'].map(v => `<option value="${v}"${v === role ? ' selected' : ''}>${v === '' ? '– festlegen –' : ROLE_TEXT[v]}</option>`).join('')}</select></label>` : ''}
-          <label class="field" title="Kann dieser Stick Kurzwelle (Direktabtastung)? „automatisch“ richtet sich nach der Modellbezeichnung im Stick – die stimmt nicht immer (ältere Modelle melden sich als neuere, Billigsticks tragen irgendeinen Namen). „nein“: nur 24 MHz – 1,7 GHz, Kurzwelle bleibt der PMSDR."><span>Kurzwelle</span><select data-f="hf_mode">${[['auto', EN ? 'automatic (model)' : 'automatisch (Modell)'], ['on', EN ? 'yes' : 'ja'], ['off', EN ? 'no' : 'nein']].map(([v, l]) => `<option value="${v}"${(r.hf_mode || 'auto') === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
+          <label class="field" title="Kann dieser Stick Kurzwelle empfangen (Direktabtastung, bis 28,8 MHz)? „automatisch (Modell)“: entschieden wird nach der Modellbezeichnung, die im Stick gespeichert ist – die stimmt nicht immer: ältere Sticks melden sich als neuere, No-Name-Sticks tragen beliebige Namen. „ja“: Kurzwelle per Direktabtastung, auch wenn das Modell es nicht angibt – dafür muss eine Kurzwellenantenne am Stick hängen, die Verstärkung ist dann nicht einstellbar. „nein“: nur 24 MHz bis 1,7 GHz; Kurzwelle dann nur mit einem anderen Empfänger (z. B. PMSDR)."><span>Kurzwelle <button type="button" class="info-btn" data-info="Kann dieser Stick Kurzwelle empfangen (Direktabtastung, bis 28,8 MHz)? „automatisch (Modell)“: entschieden wird nach der Modellbezeichnung, die im Stick gespeichert ist – die stimmt nicht immer: ältere Sticks melden sich als neuere, No-Name-Sticks tragen beliebige Namen. „ja“: Kurzwelle per Direktabtastung, auch wenn das Modell es nicht angibt – dafür muss eine Kurzwellenantenne am Stick hängen, die Verstärkung ist dann nicht einstellbar. „nein“: nur 24 MHz bis 1,7 GHz; Kurzwelle dann nur mit einem anderen Empfänger (z. B. PMSDR).">ⓘ</button></span><select data-f="hf_mode">${[['auto', EN ? 'automatic (model)' : 'automatisch (Modell)'], ['on', EN ? 'yes' : 'ja'], ['off', EN ? 'no' : 'nein']].map(([v, l]) => `<option value="${v}"${(r.hf_mode || 'auto') === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
           <details class="stick-more"${r.ppm != null || r.gain != null ? ' open' : ''}><summary>${EN ? 'Advanced' : 'Erweitert'}</summary><div class="stick-more-grid">
           ${manySticks ? '' : `<label class="field" title="Rolle: Haupt-Stick = wird für Scan, Satelliten und Live benutzt. Reserve = springt ein, wenn der Haupt-Stick fehlt (nur wenn genau eine Reserve steckt), sonst unbenutzt. Ignoriert = Hesperos DX fasst ihn nie an."><span>Rolle</span><select data-f="role">${['', 'main', 'spare', 'ignore'].map(v => `<option value="${v}"${v === role ? ' selected' : ''}>${v === '' ? '– festlegen –' : ROLE_TEXT[v]}</option>`).join('')}</select></label>`}
           <label class="field" title="Frequenzkorrektur des Sticks in ppm (Quarzfehler). Leer = Wert aus dem Bandplan. Sticks mit TCXO wie der NESDR SMArt brauchen meist 0."><span>ppm</span><input data-f="ppm" type="number" step="1" min="-200" max="200" placeholder="–" value="${r.ppm ?? ''}"></label>

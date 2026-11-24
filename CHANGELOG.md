@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.8.51 – 2026-11-24
+
+- **Fix: companion not used while the room server works.** With *Node on USB* fixed to one device (chosen earlier
+  when only one node was plugged in), any other node on USB was silently ignored – the card said "no companion on
+  USB" although one was plugged in. Now the card says how many devices are plugged in but unused and that
+  *detect automatically (all devices)* uses all of them; the option is named that way.
+- A device that did not answer is tried again after 15 minutes, not only after unplugging it (e.g. both boards
+  still booting after a restart of the Pi).
+- **System → Devices → shortwave choice of an RTL stick:** the German explanation was unclear (what "yes" does
+  was missing, and "shortwave stays with the PMSDR" assumed a PMSDR). Rewritten for all three choices, and now also
+  as an ⓘ button – the tooltip alone did not work on phones.
+- Self-test section 111.
+
 ## 1.8.50 – 2026-11-24
 
 - **Notice board of your room server, live:** with a companion and the room server both on USB, the Pi logs the
