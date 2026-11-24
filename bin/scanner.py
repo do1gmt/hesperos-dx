@@ -1562,6 +1562,27 @@ def eibi_scan(dev, cfg, plan_entry, db):
     return len(plan_entry["centers_hz"])
 
 
+STALL_FILE = BASE / "log" / "scanner_stall.txt"
+
+
+def stall_dump_on_signal():
+    """SIGUSR1 schreibt, wo jeder Faden des Scanners gerade steht, nach log/scanner_stall.txt (faulthandler, läuft
+    auch, wenn Python selbst festhängt). Der Scheduler schickt das Signal, bevor er einen hängenden Scan beendet
+    (1.8.29) – so steht im Protokoll und im Diagnose-Paket, worauf er gewartet hat. Ohne Signal wird nichts
+    geschrieben (die Datei ist nur geöffnet)."""
+    import faulthandler
+    import signal
+    try:
+        STALL_FILE.parent.mkdir(parents=True, exist_ok=True)
+        if STALL_FILE.exists() and STALL_FILE.stat().st_size > 1_000_000:
+            STALL_FILE.write_text(STALL_FILE.read_text(encoding="utf-8", errors="replace")[-500_000:], encoding="utf-8")
+        fh = open(STALL_FILE, "a", encoding="utf-8")
+        faulthandler.register(signal.SIGUSR1, file=fh, all_threads=True, chain=False)
+        stall_dump_on_signal.fh = fh                     # offen halten
+    except Exception:
+        pass
+
+
 def main():
     parser = argparse.ArgumentParser()
 
@@ -1575,6 +1596,7 @@ def main():
 
     import devices as _DV
     _DV.enable_yield()                                   # Überflug kann den Stick anfordern (scan_yield)
+    stall_dump_on_signal()                               # hängt der Scan, holt der Scheduler damit ein Abbild
     _DV.heartbeat()
     base_cfg = load_config()
     cfg = base_cfg

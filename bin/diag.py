@@ -251,6 +251,7 @@ def write(fileobj, stream=True):
         add("log/scan-cycle.log", _tail(BASE / "log" / "scan-cycle.log", 1_000_000))       # Ausgabe der Scanläufe
         add("log/scheduler.log", _tail(BASE / "log" / "scheduler.log", 500_000))
         add("log/webapp_stall.txt", _tail(BASE / "log" / "webapp_stall.txt", 1_000_000))   # Aussetzer des Dashboards
+        add("log/scanner_stall.txt", _tail(BASE / "log" / "scanner_stall.txt", 500_000))   # hängende Scans (1.8.29)
         # letzte Minuten vor dem vorigen Start (nur mit dauerhaftem Systemprotokoll): warum hat er neu gestartet?
         add("journal/previous-boot-tail.txt", _run(["journalctl", "-b", "-1", "-n", "300", "--no-pager", "-o", "short-iso"]).encode())
         add("journal/kernel.txt", _run(["journalctl", "-k", "--since", "-2d", "--no-pager", "-o", "short-iso"], 60)[-3_000_000:])

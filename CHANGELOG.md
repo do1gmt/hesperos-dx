@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.8.29 – 2026-11-24
+
+- **Fix: scans hung for hours on short wave with the RTL stick.** On the dev Pi, from about 01 to 08 UTC every scan
+  stood still at "80m scans 0/x" for 10 minutes until the watchdog ended it – 149 times since 21 Nov, on 24 Nov
+  every run for 6 hours until a reboot. CPU was idle meanwhile and the request to free the stick was not heard:
+  the FT8 slot recording read from `rtl_sdr` without any time limit, so a stick that stopped delivering data
+  blocked the scan, and nothing reset the stick. Now every read in the FT8/FT4 slot recording (RTL and PMSDR)
+  gives up after 6 s without data; for the RTL stick on short wave (slot and long recordings such as SSTV) the
+  stick is then re-registered on USB (like unplugging) and the step tried once more (`rtl_no_data`,
+  `rtl_usb_reset`, `rtl_recovered` in the log). If it still delivers nothing the step fails within seconds with a
+  clear message instead of blocking the scan for 10 minutes.
+- Long recordings now report a sign of life while they run (SSTV up to 120 s).
+- **Hung scan: where was it?** Before ending a hung scan the scheduler has the scanner write a dump of all its
+  threads to `log/scanner_stall.txt` (faulthandler on SIGUSR1, included in the diagnostics); the innermost calls
+  are in the log entry "Scan hung" (field *Location*).
+- Log: readable names for "Scan hung", "RTL-SDR re-registered on USB", "FT8/FT4 watch failed", "SSTV watch failed".
+- Self-test section 88.
+
 ## 1.8.28 – 2026-11-24
 
 - **Less SD card wear in idle.** The diagnostics of the dev Pi showed ~1.7 MB/min written to the card while idle,

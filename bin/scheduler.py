@@ -103,6 +103,74 @@ def scan_running():
 
 
 SCAN_HANG_S = 600
+SCANNER_STALL = BASE / "log" / "scanner_stall.txt"
+
+
+def _scanner_pids():
+    out = []
+    for d in Path("/proc").iterdir():
+        if not d.name.isdigit():
+            continue
+        try:
+            args = (d / "cmdline").read_bytes().split(b"\0")
+        except OSError:
+            continue
+        if any(a.endswith(b"/bin/scanner.py") and a.startswith(str(BASE).encode()) for a in args[:3]):
+            out.append(int(d.name))
+    return out
+
+
+def scanner_stack(wait=2.0):
+    """Hängender Scan: den Scanner per SIGUSR1 schreiben lassen, wo jeder Faden steht (log/scanner_stall.txt),
+    und die innersten Zeilen des Hauptfadens für das Protokoll zurückgeben – z. B. „read_exact devices.py:52 ←
+    capture_slot …“. Vor dem Signal eine Kopfzeile mit Zeit (die Datei kommt ins Diagnose-Paket). 1.8.29"""
+    import signal as _sig
+    pids = _scanner_pids()
+    if not pids:
+        return None
+    try:
+        SCANNER_STALL.parent.mkdir(parents=True, exist_ok=True)
+        with open(SCANNER_STALL, "a", encoding="utf-8") as fh:
+            fh.write(f"\n===== {datetime.now(timezone.utc).isoformat(timespec='seconds')} Scan hängt – Abbild des "
+                     f"Scanners (PID {', '.join(map(str, pids))})\n")
+        start = SCANNER_STALL.stat().st_size
+        for pid in pids:
+            os.kill(pid, _sig.SIGUSR1)
+        t0, last, txt = time.time(), -1, ""
+        while time.time() - t0 < wait:                       # warten, bis das Abbild vollständig ist
+            time.sleep(0.25)
+            size = SCANNER_STALL.stat().st_size
+            if size > start and size == last:
+                break
+            last = size
+        with open(SCANNER_STALL, "rb") as fh:
+            fh.seek(start)
+            txt = fh.read().decode("utf-8", "replace")
+        return stack_summary(txt)
+    except Exception as e:
+        return f"kein Abbild: {type(e).__name__}: {e}"
+
+
+def stack_summary(txt, n=4):
+    """Aus einem faulthandler-Abbild die innersten n Aufrufe des Hauptfadens: „funktion datei:zeile ← …“."""
+    blocks = [b for b in txt.split("\n\n") if "most recent call first" in b]
+    if not blocks:
+        return None
+    main = next((b for b in blocks if b.lstrip().startswith("Current thread")), None) or \
+        next((b for b in blocks if "line" in b and "main" in b.splitlines()[-1]), blocks[-1])
+    frames = []
+    for line in main.splitlines()[1:]:
+        line = line.strip()
+        if line.startswith("File "):                     # File "/x/bin/devices.py", line 52 in read_exact
+            try:
+                path = line.split('"')[1]
+                rest = line.split('"', 2)[2]
+                ln = rest.split("line", 1)[1].split()[0]
+                fn = rest.rsplit(" in ", 1)[1]
+                frames.append(f"{fn} {os.path.basename(path)}:{ln}")
+            except Exception:
+                continue
+    return " ← ".join(frames[:n]) if frames else None
 
 
 def scan_watchdog():
@@ -124,7 +192,8 @@ def scan_watchdog():
         where = st.get("message") or st.get("phase")
     except Exception:
         where = None
-    applog("ERROR", "scheduler", "scan_hung", silent_min=round(age / 60), where=where)
+    stack = scanner_stack()
+    applog("ERROR", "scheduler", "scan_hung", silent_min=round(age / 60), where=where, stack=stack)
     ok = stop_running_scan("Scan hing")
     try:
         import notices as NT

@@ -226,7 +226,12 @@ pass still needs the stick, the scanner is asked to give it up (`data/scan_yield
 or inside a long recording within a second or two, keeps what it found, and the analysis runs afterwards
 without the stick – the pass is already recording meanwhile. Only if it does not respond within 20 s is the run
 ended by force and leftover `rtl_sdr` processes cleaned up. A pass that is already more than half over does not
-interrupt a scan. A scan without a sign of life for 10 minutes is ended and reported. After switching on
+interrupt a scan. A scan without a sign of life for 10 minutes is ended and reported; before that the scanner
+writes where each of its threads stands to `log/scanner_stall.txt` (part of the diagnostics), and the innermost
+calls appear in the log entry "Scan hung" (field *Location*). If the RTL stick stops delivering data on short wave
+(FT8 slot, long recordings), the scan notices it within 6 s, re-registers the stick on USB (like unplugging) and
+tries once more; if it still delivers nothing, that step fails with a clear message instead of blocking the scan.
+After switching on
 "Satellites" or changing the satellite selection or priorities, no pass starts for **60 seconds** (countdown
 with a "now" button in the pass list), so looking around or choosing satellites does not throw out a running
 scan. **Order of precedence:** satellite pass > start of a schedule > Live > normal scan. Live – in the browser or

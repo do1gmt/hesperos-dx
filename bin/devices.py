@@ -37,6 +37,43 @@ class ScanYield(Exception):
     """Scan bricht ab, weil ein Satellitenüberflug den Stick braucht."""
 
 
+class StickNoData(RuntimeError):
+    """Das Empfangsprogramm läuft, liefert aber keine Daten mehr (Stick hängt am USB)."""
+
+
+NO_DATA_S = 6.0                            # so lange ohne Daten gilt ein Stick als hängend
+
+
+def read_exact(fd, n, what, wait=None):
+    """Bis zu n Bytes aus einer Pipe, aber nie länger als NO_DATA_S ohne Daten (dann StickNoData). Früher
+    blockierte p.stdout.read() unbegrenzt – ein hängender Stick hielt so den ganzen Scan fest, auch die
+    Aufforderung „Stick freigeben“ kam nicht mehr an (1.8.29). Bei Ende der Pipe: was da ist."""
+    import select
+    buf = bytearray()
+    while len(buf) < n:
+        r, _, _ = select.select([fd], [], [], NO_DATA_S if wait is None else wait)
+        if not r:
+            raise StickNoData(f"{what}: {NO_DATA_S if wait is None else wait:.0f} s keine Daten")
+        chunk = os.read(fd, n - len(buf))
+        if not chunk:
+            break
+        buf += chunk
+    return bytes(buf)
+
+
+def _stop_proc(p, first=signal.SIGINT):
+    """Empfangsprogramm beenden: erst freundlich (gibt den Stick sauber frei), dann hart – und nie ewig warten."""
+    for sig, wait in ((first, 3), (signal.SIGKILL, 2)):
+        try:
+            p.send_signal(sig)
+            p.wait(timeout=wait)
+            return
+        except subprocess.TimeoutExpired:
+            continue
+        except Exception:
+            return
+
+
 _yield_active = [False]                    # nur im Scanner (Live, Überflüge, Prüfungen sind nicht betroffen)
 
 
@@ -232,8 +269,9 @@ class PmsdrDevice:
                "-r", str(self.rate), "-c", "2", "-t", "raw"]
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         block = int(self.rate) // 20                       # 50 ms
+        fd = p.stdout.fileno()
         try:
-            first = p.stdout.read(block * 4)
+            first = read_exact(fd, block * 4, "arecord (PMSDR)", wait=NO_DATA_S + 2)   # Soundkarte öffnen dauert
             if not first:
                 raise RuntimeError("arecord liefert keine Daten")
             t0 = time.time() - (len(first) // 4) / self.rate   # Zeit des ersten Abtastwerts
@@ -244,17 +282,13 @@ class PmsdrDevice:
             total = len(first) // 4
             end = T + slot_s + 0.3
             while t0 + total / self.rate < end:
-                b = p.stdout.read(block * 4)
+                b = read_exact(fd, block * 4, "arecord (PMSDR)")
                 if not b:
                     raise RuntimeError("arecord abgebrochen")
                 parts.append(b)
                 total += len(b) // 4
         finally:
-            p.terminate()
-            try:
-                p.wait(timeout=2)
-            except subprocess.TimeoutExpired:
-                p.kill()
+            _stop_proc(p, signal.SIGTERM)
         s = np.frombuffer(b"".join(parts), dtype="<i2")
         s = s[: len(s) // 2 * 2].reshape(-1, 2)
         k = int(round((T - t0) * self.rate))
@@ -601,7 +635,29 @@ class RtlHfDevice:
         if seconds <= 12:
             i, q = self.rtl._grab(self.center + self.OFFSET, seconds + 0.05)
             return self._to48(i, q)
-        return self._stream(seconds)
+        return self._recover("Aufnahme", lambda: self._stream(seconds))
+
+    def _recover(self, what, fn):
+        """fn() ausführen; liefert der Stick keine Daten, einmal per USB neu anmelden (wie Ab- und Anstecken)
+        und wiederholen – wie bei kurzen Aufnahmen (_grab). Vorher blieb ein hängender Stick hängen, bis der Pi
+        neu startete; jeder Scan stand 10 min still (1.8.29)."""
+        try:
+            return fn()
+        except StickNoData as e:
+            first = str(e)
+        _applog("WARN", "scanner", "rtl_no_data", attempt=1, freq_hz=int((self.center or 0) + self.OFFSET),
+                hung=True, bytes=0, diagnosis=f"Kurzwelle, {first}")
+        kill_orphan_rtl()
+        ok, how = usb_reset_rtl(self.rtl.index, node=self.rtl.node)
+        _applog("INFO" if ok else "WARN", "scanner", "rtl_usb_reset", ok=ok, detail=how)
+        time.sleep(2.0 if ok else 0.5)
+        try:
+            out = fn()
+        except StickNoData as e:
+            raise RuntimeError(f"RTL-Stick liefert keine Daten (Kurzwelle, {what}) – auch nach dem USB-Neustart "
+                               f"nicht ({e}). Stick ab- und wieder anstecken.") from None
+        _applog("WARN", "scanner", "rtl_recovered", attempt=2, problems=[first])
+        return out
 
     def _stream(self, seconds):
         import select
@@ -622,9 +678,10 @@ class RtlHfDevice:
             while n_done < n_total:
                 if yield_requested():                 # Überflug wartet: das bisher Aufgenommene behalten
                     break
-                r, _, _ = select.select([fd], [], [], 6.0)
+                heartbeat()                           # lange Aufnahmen (SSTV bis 120 s): Lebenszeichen
+                r, _, _ = select.select([fd], [], [], NO_DATA_S)
                 if not r:
-                    raise RuntimeError("Stick liefert keine Daten mehr (Kurzwelle)")
+                    raise StickNoData(f"Datenstrom, {NO_DATA_S:.0f} s keine Daten")
                 chunk = os.read(fd, 1 << 18)
                 if not chunk:
                     break
@@ -644,11 +701,7 @@ class RtlHfDevice:
                 tail = z[-pad:]
                 n_done += len(z)
         finally:
-            try:
-                p.send_signal(signal.SIGINT)
-                p.wait(timeout=3)
-            except Exception:
-                p.kill()
+            _stop_proc(p)
         y = np.concatenate(out) if out else np.zeros(0, np.complex64)
         zi, zq = y.real.astype(np.float64), y.imag.astype(np.float64)
         if self.conj:
@@ -657,15 +710,20 @@ class RtlHfDevice:
 
     def capture_slot(self, slot_s, lead_s=2.0):
         """Genau einen FT8/FT4-Takt ab der UTC-Taktgrenze (wie bei der PMSDR): rtl_sdr läuft vorher an,
-        der Anfang wird über die Ankunftszeit der ersten Daten bestimmt."""
+        der Anfang wird über die Ankunftszeit der ersten Daten bestimmt. Hängt der Stick: USB-Neustart, einmal neu."""
+        return self._recover("FT8-Takt", lambda: self._capture_slot(slot_s, lead_s))
+
+    def _capture_slot(self, slot_s, lead_s=2.0):
         rate = self.WIDE
         T = math.ceil((time.time() + lead_s + 1.0) / slot_s) * slot_s
         cmd = [self.rtl.binary, "-f", str(int(self.center + self.OFFSET)), "-s", str(rate), "-d", str(self.rtl.index),
                "-p", str(self.rtl.ppm)] + list(self.rtl.ds_flags) + (["-T"] if self.rtl.bias_t else []) + ["-"]
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        fd = p.stdout.fileno()
         block = rate // 20
         try:
-            first = p.stdout.read(block * 2)
+            heartbeat()
+            first = read_exact(fd, block * 2, "FT8-Takt")
             if not first:
                 raise RuntimeError("rtl_sdr liefert keine Daten")
             t0 = time.time() - (len(first) // 2) / rate
@@ -675,17 +733,14 @@ class RtlHfDevice:
             end = T + slot_s + 0.3
             while t0 + total / rate < end:
                 check_yield()
-                b = p.stdout.read(block * 2)
+                b = read_exact(fd, block * 2, "FT8-Takt")
                 if not b:
                     raise RuntimeError("rtl_sdr abgebrochen")
                 parts.append(b)
                 total += len(b) // 2
+            heartbeat()
         finally:
-            try:
-                p.send_signal(signal.SIGINT)
-                p.wait(timeout=3)
-            except Exception:
-                p.kill()
+            _stop_proc(p)
         u = np.frombuffer(b"".join(parts), dtype=np.uint8)
         u = u[: len(u) // 2 * 2].reshape(-1, 2)
         k = int(round((T - t0) * rate))

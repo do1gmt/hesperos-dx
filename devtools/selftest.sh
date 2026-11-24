@@ -878,12 +878,13 @@ DV.YIELD_FILE.unlink()
 # 2) Funktionen des Schedulers ohne seine Hauptschleife laden
 src = open("scheduler.py", encoding="utf-8").read()
 fns = [n for n in ast.parse(src).body if isinstance(n, ast.FunctionDef) and n.name in
-       ("scan_running", "cycle_running", "stop_running_scan", "scan_watchdog", "sat_arm_wait")]
+       ("scan_running", "cycle_running", "stop_running_scan", "scan_watchdog", "sat_arm_wait",
+        "scanner_stack", "stack_summary", "_scanner_pids")]
 logs = []
 BASE = Path("..").resolve()
 g = {"BASE": BASE, "LOCK": BASE / "data" / "scan.lock", "time": time, "json": json, "subprocess": subprocess,
      "applog": lambda lv, comp, ev, **d: logs.append(ev), "sat_pass_active": lambda: False, "SCAN_HANG_S": 600,
-     "_RD": __import__("rundir")}
+     "_RD": __import__("rundir"), "os": os, "Path": Path, "SCANNER_STALL": BASE / "log" / "scanner_stall.txt"}
 exec(compile(ast.Module(fns, []), "sched", "exec"), g)
 # Scanner-Attrappe: hält Lauf- und Stick-Sperre, gibt bei scan_yield frei (wie der echte Scanner)
 dummy = f"""
@@ -3415,6 +3416,88 @@ import wsjtx_udp as WX, rundir as RD
 assert str(WX.STATE).startswith(str(RD.directory())), WX.STATE
 src = Path("run_cycle.sh").read_text()
 assert 'LAST_STATUS="$PROGRESS|$MSG"' in src
+PY
+
+echo "== 88 Hängender Stick auf Kurzwelle: Zeitlimit, USB-Neustart, Abbild des Scanners"
+(cd bin && timeout 120 python3 - <<'PY') && ok "FT8-Takt ohne Daten bricht nach Sekunden ab (statt 10 min), USB-Neustart, Abbild zeigt die Stelle" || bad "Stick-Hänger"
+import os, subprocess, sys, tempfile, time, textwrap, types
+from pathlib import Path
+import devices as DV
+DV.NO_DATA_S = 0.5
+d = Path(tempfile.mkdtemp())
+# Lesen mit Zeitlimit
+r, w = os.pipe()
+t0 = time.time()
+try:
+    DV.read_exact(r, 100, "Test"); raise SystemExit("kein Abbruch")
+except DV.StickNoData:
+    pass
+assert time.time() - t0 < 2
+os.write(w, b"x" * 40); os.close(w)
+assert DV.read_exact(r, 100, "Test") == b"x" * 40          # Ende der Pipe: was da ist
+# FT8-Takt mit einem rtl_sdr, der startet, aber nie Daten liefert
+fake = d / "rtl_sdr"
+fake.write_text("#!/bin/sh\nexec sleep 60\n"); fake.chmod(0o755)
+logs, resets = [], []
+DV._applog = lambda *a, **k: logs.append((a[2], k))
+DV.usb_reset_rtl = lambda index=0, node=None: (resets.append(index) or (True, "/dev/bus/usb/001/004"))
+DV.kill_orphan_rtl = lambda: []
+beats = []
+DV.heartbeat = lambda: beats.append(1)
+_sleep = time.sleep
+DV.time = types.SimpleNamespace(**{k: getattr(time, k) for k in ("time", "ceil") if hasattr(time, k)}, sleep=lambda s: None)
+dev = object.__new__(DV.RtlHfDevice)
+dev.rate, dev.center, dev.conj, dev.cfg = 48000, 3573000, False, {}
+dev.rtl = types.SimpleNamespace(binary=str(fake), index=0, ppm=0, ds_flags=["-D", "2"], bias_t=False, node=None)
+t0 = time.time()
+try:
+    dev.capture_slot(15); raise SystemExit("kein Abbruch")
+except RuntimeError as e:
+    assert "auch nach dem USB-Neustart" in str(e), e
+assert time.time() - t0 < 10, time.time() - t0
+assert resets == [0] and [e for e, _ in logs] == ["rtl_no_data", "rtl_usb_reset"], logs
+assert beats, "kein Lebenszeichen"
+# zweiter Versuch klappt: Erholung wird protokolliert
+calls = []
+def fn():
+    calls.append(1)
+    if len(calls) == 1:
+        raise DV.StickNoData("FT8-Takt: 6 s keine Daten")
+    return "ok"
+logs.clear()
+assert dev._recover("FT8-Takt", fn) == "ok" and [e for e, _ in logs][-1] == "rtl_recovered"
+# keine rohen read()-Aufrufe ohne Zeitlimit mehr in den Takt-Aufnahmen
+src = Path("devices.py").read_text()
+for name in ("def capture_slot", "def _capture_slot"):
+    for part in src.split(name)[1:]:
+        body = part.split("\n    def ")[0]
+        assert "p.stdout.read(" not in body, name
+# Abbild: Scanner schreibt auf SIGUSR1, Scheduler liest die Stelle heraus
+stall = d / "scanner_stall.txt"
+child = subprocess.Popen([sys.executable, "-c", textwrap.dedent(f"""
+    import sys, time; sys.path.insert(0, '.')
+    import scanner as S
+    from pathlib import Path
+    S.STALL_FILE = Path({str(stall)!r})
+    S.stall_dump_on_signal()
+    def warte_auf_stick():
+        time.sleep(60)
+    print('bereit', flush=True)
+    warte_auf_stick()
+""")], stdout=subprocess.PIPE, text=True)
+assert child.stdout.readline().strip() == "bereit"
+import ast, signal
+from datetime import datetime, timezone
+src = Path("scheduler.py").read_text()
+ns = {"os": os, "time": time, "datetime": datetime, "timezone": timezone, "SCANNER_STALL": stall,
+      "_scanner_pids": lambda: [child.pid]}
+for n in ast.parse(src).body:                          # nur die beiden Funktionen (der Scheduler läuft beim Import los)
+    if isinstance(n, ast.FunctionDef) and n.name in ("scanner_stack", "stack_summary"):
+        exec(compile(ast.Module([n], []), "scheduler.py", "exec"), ns)
+st = ns["scanner_stack"]()
+child.kill()
+assert st and st.startswith("warte_auf_stick") and "<module>" in st, st
+assert "Scan hängt" in stall.read_text()
 PY
 
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
