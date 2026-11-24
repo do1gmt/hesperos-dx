@@ -4,6 +4,17 @@
 (() => {
   'use strict';
   const $ = id => document.getElementById(id);
+  // Kurzzustand einer Karte (1.8.38): zugeklappt steht er in der Überschrift; braucht sie Aufmerksamkeit, bekommt sie
+  // einen roten Rand – auch zugeklappt (z. B. SSTV-Termin läuft, Neustart nötig, WLAN weg)
+  const cardStatus = (id, text, attn) => {
+    const p = document.getElementById(id); if (!p) return;
+    const h = p.querySelector(':scope > h2'); if (!h) return;
+    let s = h.querySelector(':scope > .card-status');
+    if (!s) { s = document.createElement('small'); s.className = 'card-status no-i18n'; h.appendChild(s); }
+    s.textContent = text ? '· ' + text : '';
+    p.classList.toggle('attn', !!attn);
+  };
+  const cleanupState = { auto: 0, disk: null };        // Kurzzustand „Aufräumen“ (Einstellung + Speicherkarte)
   const api = async (path, opts) => {
     const r = await fetch(path, Object.assign({ cache: 'no-store' }, opts || {}));
     const data = await r.json().catch(() => ({}));
@@ -265,6 +276,7 @@
       sel.value = (settings.scan_raster || {})[dev] || 'normal';
     }
     $('cleanupAuto').value = String(settings.cleanup_auto_days || 0);
+    cleanupState.auto = settings.cleanup_auto_days || 0; cleanupStatus();
     document.querySelectorAll('[data-follow]').forEach(el => { const v = (settings.follow || {})[el.dataset.follow]; el.value = v == null ? '' : v; });
     // Verstärkung für Satelliten: Stufen des R820T/R860 (rtl_sdr nimmt sonst die nächstgelegene)
     const sg = $('satGain');
@@ -797,6 +809,11 @@
         <td class="${r.status === 'success' ? 'ok' : r.status === 'running' ? '' : r.status === 'cancelled' ? 'muted' : 'bad'}">${st}${why}</td>
         <td>${r.peaks ?? ''}${r.rejected ? ` <small class="muted">/ ${r.rejected}</small>` : ''}</td><td>${r.tunes ?? ''}</td><td>${fmtDur(r.duration_s)}</td></tr>`;
     }).join('') || '<tr><td colspan="6">noch kein Lauf</td></tr>';
+    if (runsPage.offset === 0) {                         // Kurzzustand: der letzte Lauf
+      const r0 = d.runs[0];
+      const st0 = r0 && ({ success: EN ? 'ok' : 'ok', failed: EN ? 'error' : 'Fehler', running: EN ? 'running' : 'läuft', aborted: EN ? 'aborted' : 'abgebrochen', cancelled: EN ? 'cancelled' : 'abgebrochen' }[r0.status] || r0.status);
+      cardStatus('panel-runs', r0 ? (EN ? `last run ${fmtTime(r0.started_at)} · ${st0}` : `letzter Lauf ${fmtTime(r0.started_at)} · ${st0}`) : (EN ? 'no run yet' : 'noch kein Lauf'), !!r0 && r0.status === 'failed');
+    }
     const a = d.total ? runsPage.offset + 1 : 0, b = Math.min(d.total, runsPage.offset + runsPage.per);
     $('runsPos').textContent = `${a}–${b} von ${d.total}`;
     $('runsPrev').disabled = runsPage.offset === 0; $('runsNext').disabled = b >= d.total;
@@ -1640,6 +1657,8 @@
     const items = d.items.filter(r => showOld || (r.active && !r.acked));
     const tm = x => tfmt(x, { date: true });
     $('noticeSummary').textContent = d.open ? `${d.open} offen` : 'alles in Ordnung';
+    $('panel-notices').hidden = !d.open && !showOld;     // nur, wenn eine Meldung da ist (1.8.38)
+    $('panel-notices').classList.toggle('attn', d.worst === 0);
     const ackable = d.items.filter(r => r.active && !r.acked).length;   // nichts offen: Knopf ausgegraut
     $('noticeAckAll').disabled = !ackable;
     $('noticeAckAll').title = ackable ? '' : 'Nichts zu quittieren';
@@ -1748,6 +1767,7 @@
     window.scrollTo({ top: 0 });
     setTimeout(jumpCurrent, 400);
     if (name === 'logs') loadLogs();
+    if (name === 'hits') loadHits();
     if (name === 'system') setTimeout(() => { loadSysLive(); loadHistory(); loadSystem(); loadSticks(); loadBackup(); loadPsk(); loadServices(); loadAntennas(); loadUpdate(); loadWifi(); loadSysupd(); }, 0);
   }
   document.querySelectorAll('.tabs-main button').forEach(b => b.addEventListener('click', e => {
@@ -1880,6 +1900,7 @@
   function renderLiveHist() {
     const ago = t => { if (!t) return ''; const m = Math.round((Date.now() / 1000 - t) / 60);
       return m < 60 ? `vor ${m} min` : m < 1440 ? `vor ${Math.round(m / 60)} h` : `vor ${Math.round(m / 1440)} d`; };
+    cardStatus('panel-live-1', liveHist.length ? (EN ? `last ${(liveHist[0].f / 1e6).toFixed(4)} MHz` : `zuletzt ${(liveHist[0].f / 1e6).toFixed(4).replace('.', ',')} MHz`) : '');
     $('liveHistory').innerHTML = liveHist.map((x, i) => { const fi = freqInfo(x.f);
       const segTxt = fi.seg ? (modes && modes[fi.seg.mode]) || fi.seg.mode : '';
       return `<li class="live-hist-row"><button type="button" class="linklike" data-hi="${i}" title="${esc(fi.seg ? fi.seg.label : '')}">`
@@ -2170,6 +2191,10 @@
     let d; try { d = await api('/api/sstv-events'); } catch (e) { return; }
     const evs = d.events || [], run = evs.filter(e => e.state === 'running');
     $('seSum').textContent = run.length ? (EN ? '· running now' : '· läuft gerade') : evs.some(e => e.state === 'upcoming') ? (EN ? '· announced' : '· angekündigt') : '';
+    const nxt = evs.filter(e => e.state === 'upcoming').sort((a, b) => a.start - b.start)[0];
+    cardStatus('panel-sstvev', run.length ? (EN ? `now: ${run[0].sat} until ${tfmt(run[0].end, { date: true })}` : `jetzt: ${run[0].sat} bis ${tfmt(run[0].end, { date: true })}`)
+      : nxt ? (EN ? `next: ${nxt.sat} ${nxt.dates_only ? seDay(nxt.start) : tfmt(nxt.start, { date: true })}` : `nächster: ${nxt.sat} ${nxt.dates_only ? seDay(nxt.start) : tfmt(nxt.start, { date: true })}`)
+      : (EN ? 'none announced' : 'keiner angekündigt'), run.length > 0);
     const srcName = { libre: 'Libre Space', amsatuk: 'AMSAT-UK', manual: EN ? 'own entry' : 'eigener Eintrag' };
     $('seList').innerHTML = evs.length ? evs.map(e => {
       const st = e.state === 'running' ? `<span class="se-badge running">${EN ? 'running' : 'läuft'}</span>`
@@ -2218,6 +2243,7 @@
     $('suSum').textContent = d.reboot_pending ? (EN ? '· restart needed' : '· Neustart nötig')
       : d.checking ? (EN ? '· checking …' : '· prüfe …') : st.checked ? (pk.length ? (EN ? `· ${pk.length} updates` : `· ${pk.length} Updates`) : (EN ? '· up to date' : '· aktuell')) : '';
     $('suSum').classList.toggle('warn-text', !!d.reboot_pending);
+    cardStatus('panel-sysupd', '', !!d.reboot_pending || (rs.state === 'failed' && !run && !d.requested));
     // steht ein Kernel-/Firmware-Update an: schon vor dem Einspielen deutlich sagen (1.8.37)
     $('suKernel').hidden = !(pk.length && st.reboot_likely) || !!d.reboot_pending;
     $('suKernel').textContent = EN ? 'Includes kernel/firmware – the Pi needs a restart afterwards.' : 'Enthält Kernel/Firmware – danach braucht der Pi einen Neustart.';
@@ -2358,6 +2384,14 @@
     if (!$('scAnt').matches(':focus')) { const v = $('scAnt').value; $('scAnt').innerHTML = schedAntOpts(v); $('scAnt').closest('.field').hidden = !(antData && antData.profiles || []).length; }
     $('schedList').querySelectorAll('[data-sdel]').forEach(b => b.addEventListener('click', () => { const l = [...settings.schedules]; l.splice(Number(b.dataset.sdel), 1); saveSchedules(l); }));
     $('scDays').innerHTML = ''; DAYS.forEach((d, i) => { const c = chip(d, scSel.days.has(i)); c.addEventListener('click', () => { scSel.days.has(i) ? scSel.days.delete(i) : scSel.days.add(i); renderSchedules(); }); $('scDays').appendChild(c); });
+    {                                                   // Kurzzustand: aktiv / nächster / greift nicht
+      const stl = settings.schedule_status || [];
+      const nx = stl.filter(x => x.next).sort((a, b) => a.next - b.next)[0], nxs = nx && list.find(r => r.id === nx.id);
+      const bad = list.some(r => r.enabled && (stl.find(x => x.id === r.id) || {}).supported === false);
+      cardStatus('panel-sched', act ? (EN ? `active: ${act.name}` : `aktiv: ${act.name}`)
+        : nxs ? (EN ? `next: ${nxs.name} ${tfmt(nx.next, { date: true })}` : `nächster: ${nxs.name} ${tfmt(nx.next, { date: true })}`)
+        : list.length ? (EN ? `${list.length} schedules` : `${list.length} Zeitpläne`) : (EN ? 'none' : 'keiner'), bad);
+    }
     $('scBands').innerHTML = '';
     bandplan.filter(b => bandOk(b, settings.active_device) && b.legal !== 'restricted').forEach(b => {
       const c = chip(b.name, scSel.bands.has(b.name)); c.addEventListener('click', () => { scSel.bands.has(b.name) ? scSel.bands.delete(b.name) : scSel.bands.add(b.name); renderSchedules(); }); $('scBands').appendChild(c);
@@ -2654,11 +2688,18 @@
   });
 
   // ---------- System: Zustand (alle 60 s, startet auf dem Pi einige Prozesse) ----------
+  function cleanupStatus() {
+    const a = cleanupState.auto, dk = cleanupState.disk;
+    const t = (a ? (EN ? `automatic: older than ${a} days` : `automatisch: älter als ${a} Tage`) : (EN ? 'automatic off' : 'automatisch aus'))
+      + (dk ? (EN ? ` · ${Math.round(dk.used_pct)} % used` : ` · ${Math.round(dk.used_pct)} % belegt`) : '');
+    cardStatus('panel-cleanup', t, !!dk && dk.used_pct >= 85);
+  }
   async function loadSystem() {
     let s; try { s = await api('/api/system'); } catch (e) { return; }
     const tiles = [], warn = [];
     const tile = (val, label, cls = '') => tiles.push(`<div class="stat ${cls}"><b>${val}</b><span>${label}</span></div>`);
     const d = s.disk; const dcls = d.used_pct >= 95 ? 'bad' : d.used_pct >= 85 ? 'warn' : '';
+    cleanupState.disk = d; cleanupStatus();
     tile(`${d.free_gb} GB`, `frei von ${d.total_gb} GB (${d.used_pct} % belegt)`, dcls);
     if (dcls) warn.push(d.used_pct >= 95 ? 'Speicherkarte fast voll – keine neuen Scans und Überflüge, bis wieder Platz ist.' : 'Speicherkarte wird voll – alte Treffer aufräumen oder automatisch löschen lassen.');
     tile(`${s.recordings.gb} GB`, `Aufnahmen (${s.recordings.files} Dateien)`);
@@ -2703,6 +2744,7 @@
     const bars = v => v == null ? '' : v >= -55 ? '▂▄▆█' : v >= -65 ? '▂▄▆' : v >= -75 ? '▂▄' : '▂';
     $('wifiNow').textContent = d.cable ? (EN ? '· network cable in use' : '· Netzwerkkabel aktiv')
       : d.connected ? `· ${d.ssid || '?'} · ${d.dbm ?? '?'} dBm ${bars(d.dbm)}` : (EN ? '· not connected' : '· nicht verbunden');
+    cardStatus('panel-wifi', '', !d.cable && (!d.connected || (d.dbm != null && d.dbm < -80)));
     const nets = d.networks || [];
     $('wifiNets').innerHTML = nets.map(n => `<tr><td class="no-i18n"><b>${esc(n.ssid || n.name)}</b>${n.active ? ` <span class="ok">${EN ? 'connected' : 'verbunden'}</span>` : ''}</td>`
       + `<td>${n.fallback ? (EN ? 'fallback' : 'Ausweich') : (EN ? 'main Wi-Fi' : 'Haupt-WLAN')}</td>`
@@ -3074,6 +3116,8 @@
       + `<td class="mono-num">${x.snr != null ? (x.snr > 0 ? '+' : '') + Math.round(x.snr) + ' dB' : '–'}</td><td class="no-i18n">${esc(x.grid || '')}</td>`
       + `<td class="mono-num">${utc(x.t)}</td><td>${esc(x.antenna || '')}</td></tr>`).join('')
       : '<tr><td colspan="8" class="muted">Noch nichts gemeldet.</td></tr>';
+    cardStatus('panel-psk', !d.enabled ? (EN ? 'off' : 'aus') : L ? '' : (EN ? 'nothing sent yet' : 'noch nichts gemeldet'),
+      !!d.enabled && (!d.ready || !!d.offline_since));
     const parts = [];
     if (!d.enabled) parts.push('Melden ist aus – Einstellungen → Station → „FT8/FT4-Spots an PSK Reporter melden“.');
     else if (!d.ready) parts.push('Rufzeichen und Locator fehlen (Einstellungen → Station).');
@@ -3112,6 +3156,8 @@
     if ('key_set' in d) bkKey(d.key_set);
     if (c.dir && !(c.target || {}).kind) $('abDir').closest('details').open = true;   // bisher eigener Ordner eingetragen
     $('abDirs').innerHTML = (d.candidates || []).map(x => `<option value="${esc(x.dir)}">${esc(x.dir)} – ${x.free_gb} GB frei</option>`).join('');
+    cardStatus('panel-backup', st.last ? (EN ? `last backup ${fmtRel(new Date(st.last * 1000))}` : `letzte Sicherung ${fmtRel(new Date(st.last * 1000))}`)
+      : c.enabled ? (EN ? 'no backup yet' : 'noch keine Sicherung') : (EN ? 'automatic backup off' : 'automatische Sicherung aus'), !!st.error);
     $('abState').textContent = st.last ? `Letzte Sicherung: ${tfmt(st.last, { date: true, year: true })} · ${esc(String(st.file || '').split('/').pop())} · ${fmtSize(st.size || 0)}`
       + (st.error ? ` · zuletzt fehlgeschlagen: ${st.error}` : '') : (st.error ? 'Fehlgeschlagen: ' + st.error : '');
   }
@@ -3354,6 +3400,13 @@
     const list = d.sticks || [];
     $('sticksNew').hidden = !d.pending;
     $('sticksNew').textContent = d.pending ? 'Neuer Stick erkannt – bitte festlegen, was er sein soll. Bis dahin benutzt Hesperos DX ihn nicht.' : '';
+    {                                                   // Kurzzustand: welcher Stick arbeitet
+      const used = list.find(x => x.in_use);
+      const mainMissing = list.some(x => x.role === 'main') && !d.main_present;
+      cardStatus('panel-sticks', used ? (EN ? `${used.label} in use` : `${used.label} wird benutzt`)
+        : list.some(x => x.kind === 'rtl') ? (EN ? 'no stick in use' : 'kein Stick in Benutzung') : (EN ? 'no SDR stick' : 'kein SDR-Stick'),
+        d.pending > 0 || (mainMissing && !used));
+    }
     if (!list.length) { $('sticksList').innerHTML = '<div class="muted">Kein SDR-Stick angesteckt.</div>'; return; }
     // mehrere RTL-Sticks im Spiel (angesteckt oder eingetragen)? Dann ist die Rolle wichtig, sonst nicht (1.8.36)
     const manySticks = d.rtl_present > 1 || list.filter(x => x.kind === 'rtl' && x.role !== 'ignore').length > 1 && !list.some(x => x.single);
@@ -3689,7 +3742,8 @@
     loadEibiScan();
     loadScanSummary(); setInterval(() => { if (document.visibilityState === 'visible') loadScanSummary(); }, 30000);
     setInterval(renderNextPass, 15000);
-    setInterval(() => { if (document.visibilityState === 'visible') { loadStats(); loadHits(); } }, 20000);
+    // Trefferliste nur bei offenem Reiter nachladen (1.8.38) – der Zähler am Reiter kommt aus loadStats
+    setInterval(() => { if (document.visibilityState === 'visible') { loadStats(); if (!document.querySelector('section.view[data-view="hits"][hidden]')) loadHits(); } }, 20000);
     setInterval(() => { if (document.visibilityState === 'visible') { loadRuns(); loadLog(); } }, 60000);
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { pollStatus(); refreshData(); } });
   })();

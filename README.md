@@ -105,6 +105,13 @@ shortwave.
   keystroke – no need to leave the field. Incomplete numbers (out of range, just a "-") are not saved; if a card
   redraws itself after saving, the cursor stays in the field. The station name (it renames the Pi in the network)
   and the networks without password are saved only when you leave the field.
+- **Rarely used cards folded, with their state in the title:** SSTV events, schedules, EiBi lists, scan history,
+  recently heard, PSK Reporter, Wi-Fi, cleanup, devices, system updates and backup start folded. A folded card shows
+  a short state in its title (e.g. "SSTV events · now: ISS until Thu 18:00", "Scan history · last run 10:51 · ok",
+  "Devices · NESDR SMArt v5 in use") and gets a **red frame** when it needs attention (an SSTV event is running,
+  the last run failed, restart needed, Wi-Fi lost, card almost full, …). *Notices* only appears when there is one.
+  Unfold with ▸ – your choice is kept; *Reset arrangement* brings back this default. The hit list is only
+  reloaded while the Hits tab is open.
 - **View profiles on the Pi (PC and phone):** card layout and folded cards, design, language, hit filters, last
   tab, Live volume and gain, map and history view are stored on the Pi – the same in every browser and in every
   backup, separately for PC and phone. The profile is chosen automatically (phone = touch screen whose shorter

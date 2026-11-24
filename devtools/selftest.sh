@@ -3837,5 +3837,41 @@ js, html = (w / "web" / "app.js").read_text(), (w / "web" / "index.html").read_t
 assert 'id="suKernel"' in html and "rb.reason === 'Kernel'" in js and "gerade fertig: Ergebnis nachladen" in js
 PY
 
+echo "== 97 Karten zugeklappt nach Toms Liste, Kurzzustand in der Überschrift, roter Rand bei Bedarf"
+python3 - "$SRC" <<'PY' && ok "Vorgabe-Karten gibt es alle, jede zugeklappte Karte hat einen Kurzzustand, Hinweise nur bei Meldung, Treffer nur bei offenem Reiter" || bad "Karten zugeklappt"
+import re, sys
+from pathlib import Path
+w = Path(sys.argv[1]) / "web"
+html, js, lay = (w / "index.html").read_text(), (w / "app.js").read_text(), (w / "layout.js").read_text()
+ids = re.findall(r"'(panel-[\w-]+)'", lay.split("DEFAULT_FOLDED = [", 1)[1].split("]", 1)[0])
+assert len(ids) == 12, ids
+for i in ids:
+    assert f'id="{i}"' in html, i
+    own = re.search(rf'id="{i}"[^>]*>\s*<h2[^>]*>(.*?)</h2>', html, re.S).group(1)
+    assert f"cardStatus('{i}'" in js or re.search(r'id="\w+(Sum|When|Now|Count)"', own), f"{i}: kein Kurzzustand"
+assert "$('panel-notices').hidden = !d.open && !showOld" in js
+assert "if (name === 'hits') loadHits();" in js and 'data-view="hits"][hidden]' in js
+PY
+if command -v node >/dev/null && node -e "require('jsdom')" 2>/dev/null; then
+    node - "$SRC/web/layout.js" <<'JS' && ok "Vorgabe greift einmal je Profil, alte eigene Einstellungen bleiben, später Aufgeklapptes bleibt offen und zählt als eigene Anordnung (jsdom)" || bad "Karten-Vorgabe"
+const { JSDOM } = require('jsdom'); const src = require('fs').readFileSync(process.argv[2], 'utf8');
+const html = '<section class="view" data-view="scan"><section class="panel" id="panel-sched"><h2>Zeitpläne</h2><p>x</p></section><section class="panel" id="panel-scan-1"><h2>Scan</h2></section></section>';
+function run(store) {
+  const d = new JSDOM(html, { runScripts: 'outside-only', url: 'http://x/' });
+  if (store) d.window.localStorage.setItem('layout.v1', store);
+  d.window.eval(src);
+  return { d, st: JSON.parse(d.window.localStorage.getItem('layout.v1')) };
+}
+let r = run(null);
+const doc = r.d.window.document;
+if (!doc.getElementById('panel-sched').classList.contains('folded') || doc.getElementById('panel-scan-1').classList.contains('folded') || r.st.dv !== 1) { console.log('Vorgabe', r.st); process.exit(1); }
+r = run(JSON.stringify({ order: {}, folded: ['panel-scan-1'] }));          // altes Profil: eigene bleiben, Vorgabe kommt dazu
+if (!r.st.folded.includes('panel-scan-1') || !r.st.folded.includes('panel-sched')) { console.log('alt', r.st); process.exit(1); }
+r = run(JSON.stringify({ order: {}, folded: [], dv: 1 }));                 // danach aufgeklappt: bleibt offen
+if (r.d.window.document.getElementById('panel-sched').classList.contains('folded')) { console.log('offen'); process.exit(1); }
+if (r.d.window.HSPLayout.customized() !== true) { console.log('customized'); process.exit(1); }
+JS
+fi
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.8.38 – 2026-11-24
+
+- **Tidier pages, following Tom's way of working:** rarely used cards start folded – SSTV events, schedules, both
+  EiBi lists, scan history, recently heard, PSK Reporter, Wi-Fi, cleanup, devices, system updates, backup. Applied
+  once per view profile (cards you folded yourself stay folded); afterwards your own unfolding is kept, and *Reset
+  arrangement* restores this default.
+- **Short state in the title of a folded card** (e.g. "SSTV events · now: ISS until …", "Schedules · next: Night
+  Mon 22:00", "Scan history · last run 10:51 · ok", "Devices · NESDR SMArt v5 in use", "Cleanup · automatic: older
+  than 30 days · 41 % used", "Backup · last backup 3 days ago").
+- **Red frame when a card needs attention** – also folded: SSTV event running, schedule that cannot apply, last scan
+  run failed, PSK Reporter offline, Wi-Fi lost or very weak, card ≥ 85 % full, new stick waiting or main stick
+  missing, restart needed / system update failed, backup failed.
+- *Notices* only appears when there is an open notice.
+- The hit list is only reloaded while the Hits tab is open (the count at the tab stays up to date).
+- Self-test section 97 (with jsdom).
+
 ## 1.8.37 – 2026-11-24
 
 - **Fix: "Restart needed" after a system update only appeared after pressing "Check now".** The card stopped

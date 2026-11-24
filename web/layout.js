@@ -13,6 +13,16 @@
   var state = load();
   state.order = state.order || {};
   state.folded = state.folded || [];
+  // Vorgabe (1.8.38, nach Toms Arbeitsweise): selten gebrauchte Karten zugeklappt – ihr Kurzzustand steht dann in der
+  // Überschrift, ein roter Rand zeigt, wenn sie Aufmerksamkeit brauchen. Einmal je Ansicht-Profil; was danach auf-
+  // oder zugeklappt wird, bleibt. „Anordnung zurücksetzen“ stellt diese Vorgabe wieder her.
+  var DEFAULT_FOLDED = ['panel-sstvev', 'panel-sched', 'panel-eibi', 'panel-eibiscan', 'panel-runs', 'panel-live-1',
+                        'panel-psk', 'panel-wifi', 'panel-cleanup', 'panel-sticks', 'panel-sysupd', 'panel-backup'];
+  if ((state.dv || 0) < 1) {
+    DEFAULT_FOLDED.forEach(function (id) { if (state.folded.indexOf(id) < 0) state.folded.push(id); });
+    state.dv = 1;
+    save(state);
+  }
 
   // Bereiche, in denen Karten liegen: die Spalten eines Reiters, sonst der Reiter selbst
   function containers() {
@@ -186,8 +196,10 @@
     restore();
     document.querySelectorAll('section.view .panel[id]').forEach(tools);
     window.HSPLayout = {
-      reset: function () { state = { order: {}, folded: [] }; save(state); location.reload(); },
-      customized: function () { return Object.keys(state.order).length > 0 || state.folded.length > 0; }
+      reset: function () { state = { order: {}, folded: [] }; save(state); location.reload(); },   // lädt die Vorgabe neu
+      customized: function () {
+        return Object.keys(state.order).length > 0 || state.folded.slice().sort().join() !== DEFAULT_FOLDED.slice().sort().join();
+      }
     };
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
