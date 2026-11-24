@@ -29,6 +29,7 @@
   // Die Uhr oben rechts zeigt immer beides.
   const pad = n => String(n).padStart(2, '0');
   const EN = (window.I18N && I18N.lang === 'en');
+  const DS = EN ? '.' : ',';                               // Dezimalzeichen: Englisch Punkt, Deutsch Komma
   const WD = EN ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] : ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
   const WDM = EN ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];     // Mo = 0
   const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -281,7 +282,7 @@
     // Verstärkung für Satelliten: Stufen des R820T/R860 (rtl_sdr nimmt sonst die nächstgelegene)
     const sg = $('satGain');
     sg.innerHTML = '<option value="">wie Haupt-Stick</option>' +
-      [19.7, 25.4, 29.7, 33.8, 37.2, 40.2, 42.1, 43.9, 49.6].map(g => `<option value="${g}">${String(g).replace('.', ',')} dB</option>`).join('');
+      [19.7, 25.4, 29.7, 33.8, 37.2, 40.2, 42.1, 43.9, 49.6].map(g => `<option value="${g}">${String(g).replace('.', DS)} dB</option>`).join('');
     sg.value = settings.sat_gain == null ? '' : String(settings.sat_gain);
     $('satBeamPrefer').checked = settings.sat_beam_prefer !== false;
     $('satHorizon').value = String(settings.sat_horizon ?? 0); $('satMinEl').value = String(settings.sat_min_el ?? 10);
@@ -373,7 +374,7 @@
     const root = $('deviceSwitch'); root.innerHTML = '';
     const names = settings.devices || { pmsdr: 'PMSDR', rtlsdr: 'RTL-SDR' };
     const rc = settings && settings.rtl_caps;
-    const fmtF = h => h >= 1e9 ? (h / 1e9).toFixed(2).replace(/0$/, '').replace('.', ',') + ' GHz' : h >= 1e6 ? Math.round(h / 1e6) + ' MHz' : Math.round(h / 1e3) + ' kHz';
+    const fmtF = h => h >= 1e9 ? (h / 1e9).toFixed(2).replace(/0$/, '').replace('.', DS) + ' GHz' : h >= 1e6 ? Math.round(h / 1e6) + ' MHz' : Math.round(h / 1e3) + ' kHz';
     const sub = { pmsdr: 'Kurzwelle 160 m – 10 m', rtlsdr: rc ? `${rc.hf_ok ? 'KW/' : ''}VHF/UHF ${fmtF(rc.hf_ok ? rc.min_hz : Math.max(rc.min_hz, 24e6))} – ${fmtF(rc.max_hz)}` : 'VHF/UHF 24 MHz – 1,7 GHz' };
     const hw = settings.hardware || { pmsdr: { present: true }, rtlsdr: { present: true } };
     const short = id => names[id].split(' (')[0];
@@ -577,7 +578,7 @@
     if (p) {
       tile(`${p.el.toFixed(0)}°`, 'Höhe'); tile(`${Math.round(p.az)}° ${compass(p.az)}`, 'Richtung');
       tile(`${Math.round(p.km).toLocaleString(I18N.locale)} km`, 'Entfernung');
-      if (trk.hz) { const df = -trk.hz * p.rr / C_KM_S; tile(`${df >= 0 ? '+' : '−'}${Math.abs(df / 1000).toFixed(1).replace('.', ',')} kHz`, `Doppler · ${((trk.hz + df) / 1e6).toFixed(4)} MHz`); }
+      if (trk.hz) { const df = -trk.hz * p.rr / C_KM_S; tile(`${df >= 0 ? '+' : '−'}${Math.abs(df / 1000).toFixed(1).replace('.', DS)} kHz`, `Doppler · ${((trk.hz + df) / 1e6).toFixed(4)} MHz`); }
     }
     $('trackLive').innerHTML = tiles.join('');
     const dot = $('trackDot');
@@ -1567,6 +1568,8 @@
 
   // ---------- Protokoll ----------
   const EVENT_TEXT = {
+    // 1.8.42: Ereignisse ohne Beschreibung (sonst stand im Protokoll der Rohname)
+    'analysis_skipped': 'Auswertung übersprungen', 'auto_backup': 'Automatische Sicherung', 'backup_now': 'Sicherung von Hand', 'decode_skipped': 'Dekodieren übersprungen', 'stick_main_auto': 'Stick automatisch Haupt-Stick', 'stick_new': 'Neuer Stick erkannt', 'stick_serial_written': 'Seriennummer geschrieben', 'stick_unsupported': 'Gerät nicht unterstützt', 'check_failed': 'Prüfung fehlgeschlagen', 'internet_back': 'Internet wieder da', 'network_changed': 'Netz gewechselt', 'live_gap': 'Live: Lücke im Empfang', 'live_heard_failed': 'Live: Gehörte nicht gespeichert', 'live_recorded': 'Live: Aufnahme gespeichert', 'live.start_failed': 'Live ließ sich nicht starten', 'watch_loop_failed': 'Dauerwache: Fehler', 'watch_off': 'Dauerwache aus', 'watch_on': 'Dauerwache an', 'watch_restarted': 'Dauerwache neu gestartet', 'outbox_sent': 'Nachgeholte Nachrichten verschickt', 'test_mail_sent': 'Test-Mail verschickt', 'test_push_sent': 'Test-Push verschickt', 'sstv_upload_failed': 'SSTV-Bild: Upload fehlgeschlagen', 'sstv_uploaded': 'SSTV-Bild hochgeladen', 'rds_decoded': 'RDS dekodiert', 'rds_failed': 'RDS: Fehler', 'rundir_recreated': 'Arbeitsordner neu angelegt', 'pass_stick_restart': 'Überflug: Stick neu gestartet', 'publish_prepare_failed': 'Überflug: Webseiten-Upload nicht vorbereitet', 'waterfall_failed': 'Wasserfall ließ sich nicht erzeugen', 'band_summary_failed': 'Bandübersicht: Fehler', 'fm_watch_failed': 'UKW-Beobachtung: Fehler', 'pmsdr_fifo_reconnect': 'PMSDR: Datenstrom neu verbunden', 'pmsdr_input_set': 'PMSDR: Eingang umgestellt', 'rtl_orphans_killed': 'Verwaiste RTL-Prozesse beendet', 'run_exception': 'Scan: unerwarteter Fehler', 'scan_yielded': 'Scan gibt den Stick frei', 'health_failed': 'Selbstprüfung: Fehler', 'publish_failed': 'Webseiten-Upload: Fehler', 'restore_done': 'Sicherung eingespielt', 'restore_failed': 'Einspielen fehlgeschlagen', 'restore_stick_adopt_failed': 'Einspielen: Stick nicht übernommen', 'restore_stick_adopted': 'Einspielen: Stick übernommen', 'satellite_arming': 'Satelliten werden scharfgeschaltet', 'satellite_watchdog': 'Überflug hängt – beendet', 'scan_yield_requested': 'Scan soll den Stick freigeben', 'settings_unreadable': 'Einstellungen nicht lesbar', 'sticks_failed': 'Sticks: Fehler', 'sysmon_failed': 'Systemwerte: Fehler', 'reboot_requested': 'Neustart angefordert', 'restart_requested': 'Dienst-Neustart angefordert', 'dir_move_failed': 'Programmordner nicht umgezogen', 'dir_move_skipped': 'Programmordner-Umzug ausgelassen', 'dir_moved': 'Programmordner umgezogen', 'hostname_change_failed': 'Rechnername nicht geändert', 'hostname_changed': 'Rechnername geändert', 'hostname_notice_failed': 'Rechnername: Hinweis fehlgeschlagen', 'services_rename_failed': 'Dienste nicht umbenannt', 'services_renamed': 'Dienste umbenannt', 'backup_dir_move_failed': 'Sicherungsordner nicht umgezogen', 'backup_dir_rename_failed': 'Sicherungsordner nicht umbenannt', 'backup_dir_renamed': 'Sicherungsordner umbenannt', 'update_failed': 'Update fehlgeschlagen', 'auto_backup_set': 'Automatische Sicherung eingestellt', 'backup_downloaded': 'Sicherung heruntergeladen', 'backup_from_target': 'Sicherung vom Ziel eingespielt', 'backup_target_nas': 'Sicherungsziel: Netzwerkfreigabe', 'backup_target_nas_removed': 'Netzwerkfreigabe entfernt', 'backup_target_usb': 'Sicherungsziel: USB-Stick', 'backup_uploaded': 'Sicherung hochgeladen', 'backup_usb_ejected': 'USB-Stick ausgeworfen', 'diagnose_downloaded': 'Diagnose heruntergeladen', 'eibi_refresh_failed': 'EiBi: Herunterladen fehlgeschlagen', 'eibi_uploaded': 'EiBi-Liste hochgeladen', 'follow_updated': 'Satelliten-Nachführung eingestellt', 'hf_device_updated': 'Kurzwellengerät eingestellt', 'interference_changed': 'Störlinie geändert', 'live_favorites_saved': 'Live-Favoriten gespeichert', 'location_confirmed': 'Standort bestätigt', 'publish_set': 'Webseiten-Upload eingestellt', 'restore_requested': 'Einspielen angefordert', 'satellites_armed_now': 'Satelliten sofort scharf', 'satellites_arming': 'Satelliten in 1 Minute scharf', 'scan_stop_requested': 'Scan-Abbruch angefordert', 'scheduler_dead_fallback': 'Zeitplaner antwortet nicht – Scan direkt gestartet', 'sstv_event_added': 'SSTV-Termin eingetragen', 'sstv_event_deleted': 'SSTV-Termin gelöscht', 'sstv_events_failed': 'SSTV-Termine: Abruf fehlgeschlagen', 'sstv_manual_queued': 'SSTV-Bild für die Webseite vorgemerkt', 'stick_updated': 'Stick-Einstellungen gespeichert', 'time_mode_set': 'Zeitangaben umgestellt', 'ui_prefs_failed': 'Ansicht-Profil: Fehler', 'update_started': 'Update gestartet', 'watchdog_ping_failed': 'Watchdog-Meldung fehlgeschlagen', 'webapp_stall': 'Dashboard hing kurz', 'webapp_stall_probe_failed': 'Dashboard-Hänger: Prüfung fehlgeschlagen', 'wifi_fallback_added': 'Ersatz-WLAN eingetragen', 'wifi_fallback_removed': 'Ersatz-WLAN entfernt', 'wsjtx_udp_set': 'Weitergabe im Netz (WSJT-X) eingestellt',
     'notice_raised': 'Hinweis gemeldet', 'notice_resolved': 'Hinweis behoben', 'notice_event': 'Ereignis gemeldet', 'update_done': 'Update fertig', 'rescue.start': 'Notfallseite gestartet', 'sysupdate_checked': 'Systemupdates geprüft', 'sysupgrade_requested': 'Systemupdate angefordert', 'sysupgrade_started': 'Systemupdate gestartet', 'sysupgrade_done': 'Systemupdate fertig', 'sysupgrade_failed': 'Systemupdate fehlgeschlagen', 'sysupgrade_waiting': 'Systemupdate wartet auf eine freie Minute', 'sysupgrade_cancelled': 'Systemupdate nicht mehr angefordert', 'sysupgrade_start_failed': 'Systemupdate ließ sich nicht starten', 'reboot_after_update': 'Neustart nach Systemupdate', 'reboot_postponed': 'Neustart verschoben', 'reboot_done': 'Neustart nach Systemupdate erledigt', 'sysupdate_settings': 'Systemupdates eingestellt', 'sysupdate_failed': 'Systemupdates: Fehler', 'foreign_request_blocked': 'Anfrage einer fremden Webseite abgewiesen', 'backup_key_set': 'Passwort der Zugangsdaten gesetzt', 'backup_key_cleared': 'Passwort der Zugangsdaten gelöscht', 'live_image_keep': 'Bild aus Live behalten (★)', 'live_image_unkeep': 'Bild aus Live nicht mehr behalten', 'live_image_delete': 'Bild aus Live gelöscht', 'live_image_publish': 'Bild aus Live für die Webseite vorgemerkt', 'ui_prefs_replaced': 'Ansicht-Profil übernommen', 'ui_prefs_copied': 'Ansicht-Profil kopiert', 'backup_dir_moved': 'Sicherungsordner umgezogen', 'writewatch_failed': 'Schreib-Zählung: Fehler', 'db_keeper_failed': 'Ruhende Datenbank-Verbindung: Fehler', 'live_yield': 'Live hält kurz an', 'live_resumed': 'Live läuft weiter', 'auth_none': 'Dashboard ohne Passwort', 'live_thumb_failed': 'Vorschaubild ließ sich nicht erzeugen',
     run_start: 'Scan gestartet', run_done: 'Scan fertig', run_failed: 'Scan fehlgeschlagen', run_cancelled: 'Scan abgebrochen',
     run_interrupted: 'Scan unterbrochen', schedule_start: 'Zeitplan beginnt', schedule_end: 'Zeitplan endet', schedule_live_yield: 'Zeitplan: Live hält kurz an', schedule_kick_skipped: 'Zeitplan: Scan zu Beginn ausgelassen',
@@ -1708,7 +1711,7 @@
     const en = I18N.lang === 'en';
     $('noticeList').innerHTML = items.length ? items.map(r => { const T = en && r.en ? r.en : r; return `<div class="notice ${r.level}${r.active ? '' : ' done'}${r.acked ? ' acked' : ''}">
       <div class="notice-head"><span>${NOTICE_ICON[r.level] || ''}</span><b class="${en && r.en ? 'no-i18n' : ''}">${esc(T.title)}</b>
-        <small class="muted">${esc((d.areas || {})[r.area] || r.area)} · ${r.kind === 'event' ? tm(r.first) : 'seit ' + tm(r.first)}${r.count > 1 ? ` · ${r.count}×` : ''}${r.active ? '' : ' · behoben ' + tm(r.resolved || r.last)}</small>
+        <small class="muted">${esc((d.areas || {})[r.area] || r.area)} · ${r.kind === 'event' ? tm(r.first) : (EN ? 'since ' : 'seit ') + tm(r.first)}${r.count > 1 ? ` · ${r.count}×` : ''}${r.active ? '' : (EN ? ' · resolved ' : ' · behoben ') + tm(r.resolved || r.last)}</small>
         ${r.active && !r.acked ? `<button type="button" class="btn btn-small" data-ack="${esc(r.id)}">Quittieren</button>` : ''}</div>
       ${T.detail ? `<div class="notice-detail${en && r.en ? ' no-i18n' : ''}">${esc(T.detail)}</div>` : ''}
       ${T.fix ? `<div class="notice-fix${en && r.en ? ' no-i18n' : ''}">→ ${esc(T.fix)}</div>` : ''}
@@ -1943,7 +1946,7 @@
   function renderLiveHist() {
     const ago = t => { if (!t) return ''; const m = Math.round((Date.now() / 1000 - t) / 60);
       return m < 60 ? `vor ${m} min` : m < 1440 ? `vor ${Math.round(m / 60)} h` : `vor ${Math.round(m / 1440)} d`; };
-    cardStatus('panel-live-1', liveHist.length ? (EN ? `last ${(liveHist[0].f / 1e6).toFixed(4)} MHz` : `zuletzt ${(liveHist[0].f / 1e6).toFixed(4).replace('.', ',')} MHz`) : '');
+    cardStatus('panel-live-1', liveHist.length ? (EN ? `last ${(liveHist[0].f / 1e6).toFixed(4)} MHz` : `zuletzt ${(liveHist[0].f / 1e6).toFixed(4).replace('.', DS)} MHz`) : '');
     $('liveHistory').innerHTML = liveHist.map((x, i) => { const fi = freqInfo(x.f);
       const segTxt = fi.seg ? (modes && modes[fi.seg.mode]) || fi.seg.mode : '';
       return `<li class="live-hist-row"><button type="button" class="linklike" data-hi="${i}" title="${esc(fi.seg ? fi.seg.label : '')}">`
@@ -2120,17 +2123,17 @@
             // Stufen aus der geglätteten Leistungskurve (sat_pass.py lrpt_rating): schwach / gut / stark
             const lv = (f) => (x.probe[f] && x.probe[f].lrpt) || {};
             const fq = Object.entries(x.probe).filter(([, v]) => v && v.max_db != null)
-              .map(([f, v]) => `${f.replace('.', ',')} MHz ${((v.lrpt && v.lrpt.peak_db != null) ? v.lrpt.peak_db : v.max_db).toFixed(0)} dB`).join(' · ');
+              .map(([f, v]) => `${f.replace('.', DS)} MHz ${((v.lrpt && v.lrpt.peak_db != null) ? v.lrpt.peak_db : v.max_db).toFixed(0)} dB`).join(' · ');
             const best = lv(x.freq_mhz), level = best.level || (x.above6_s >= 30 ? 'gut' : null);
             const cls = level === 'stark' || level === 'gut' ? 'ok' : level === 'schwach' ? 'run' : 'muted';
-            const what = level ? `LRPT ${level} empfangen auf ${esc(String(x.freq_mhz).replace('.', ','))} MHz${best.secs ? ` (${Math.round(best.secs / 60)} min über 1,5 dB)` : ''}` : 'kein LRPT';
+            const what = level ? `LRPT ${level} empfangen auf ${esc(String(x.freq_mhz).replace('.', DS))} MHz${best.secs ? ` (${Math.round(best.secs / 60)} min über 1,5 dB)` : ''}` : 'kein LRPT';
             lt = `<small class="${cls}">${pre}${what}${fq ? ' · ' + esc(fq) : ''}</small>`;
           }
           const wf = x && x.waterfall ? ` <a href="/files/${encodeURIComponent(x.waterfall)}" class="lightbox" data-title="${esc(p.name)} · ${t(p.aos)}"><small>📊 Wasserfall${multi ? ' ' + esc(cid) : ''}</small></a>` : '';
           return lt || wf ? `<br>${lt}${wf}` : '';
         }).join('');
         const rig = (r.antenna || r.gain != null) && r.state !== 'running'
-          ? `<br><small class="muted">${[r.antenna ? 'Antenne ' + esc(r.antenna) : '', r.gain != null && r.gain !== '' ? String(r.gain).replace('.', ',') + ' dB' : ''].filter(Boolean).join(' · ')}</small>` : '';
+          ? `<br><small class="muted">${[r.antenna ? 'Antenne ' + esc(r.antenna) : '', r.gain != null && r.gain !== '' ? String(r.gain).replace('.', DS) + ' dB' : ''].filter(Boolean).join(' · ')}</small>` : '';
         plan = `<span class="${cls}"><span>${esc(r.text)}</span>${r.state === 'done' ? ` · <span>${r.hits || 0} Treffer</span>` : ''}</span>${r.error ? `<br><small class="muted">${esc(r.error)}</small>` : ''}${sigTxt}${lineTxt}${rig}`;
       } else if (p.status === 'skipped' && p.below) plan = `<span class="muted">${EN ? 'too low' : 'zu niedrig'}</span><br><small class="muted">${esc(p.reason)}</small>`;
       else if (p.status === 'skipped') plan = `<span class="bad">übersprungen</span><br><small class="muted">${esc(p.reason)}</small>`;
@@ -2192,7 +2195,7 @@
     $('ssHits').textContent = d.hits;
     $('ssRuns').textContent = d.runs;
     $('ssRunsLbl').innerHTML = d.runs_failed ? `Scans 24 h · <span class="bad">${d.runs_failed} Fehler</span>` : 'Scans 24 h';
-    $('ssBusy').textContent = d.scan_minutes >= 90 ? `${(d.scan_minutes / 60).toFixed(1).replace('.', ',')} h` : `${d.scan_minutes} min`;
+    $('ssBusy').textContent = d.scan_minutes >= 90 ? `${(d.scan_minutes / 60).toFixed(1).replace('.', DS)} h` : `${d.scan_minutes} min`;
     $('ssSat').textContent = d.sat_passes;
     $('ssSatLbl').textContent = d.sat_hits ? `Überflüge 24 h · ${d.sat_hits} Treffer` : 'Überflüge 24 h';
     $('ssSstv').textContent = d.sstv;
@@ -2764,7 +2767,7 @@
     // Systemlaufwerk: Schreiblast (verschleißt SD-Karten) und wo der Swap liegt
     const sto = s.storage;
     if (sto && sto.disk) {
-      const gb = mb => mb == null ? '–' : mb >= 1024 ? (mb / 1024).toFixed(1).replace('.', ',') + ' GB' : Math.round(mb) + ' MB';
+      const gb = mb => mb == null ? '–' : mb >= 1024 ? (mb / 1024).toFixed(1).replace('.', DS) + ' GB' : Math.round(mb) + ' MB';
       const days = sto.written_since ? Math.max(1, Math.min(7, (Date.now() / 1000 - sto.written_since) / 86400)) : null;
       const perDay = sto.written_7d_mb != null && days ? sto.written_7d_mb / days : null;
       const sd = sto.kind === 'SD-Karte';
@@ -2893,7 +2896,7 @@
 
   // ---------- Antennen-Profile (bin/antennas.py) ----------
   var antData = { profiles: [], current: {} };   // var: Zeitpläne lesen sie schon beim ersten Zeichnen
-  const antRange = p => (p.fmin != null && p.fmax != null) ? `${String(p.fmin).replace('.', ',')}–${String(p.fmax).replace('.', ',')}` : '';
+  const antRange = p => (p.fmin != null && p.fmax != null) ? `${String(p.fmin).replace('.', DS)}–${String(p.fmax).replace('.', DS)}` : '';
   function renderAntProfiles() {
     $('antCount').textContent = antData.profiles.length ? `· ${antData.profiles.length}` : '';
     $('antRows').innerHTML = antData.profiles.map((p, i) => `<tr data-i="${i}">
@@ -3183,7 +3186,7 @@
   setInterval(() => { if (sysVisible()) loadPsk(); }, 60000);
 
   // ---------- System: Sicherung (bin/backup.py) ----------
-  const fmtSize = b => b >= 1e9 ? (b / 1e9).toFixed(1).replace('.', ',') + ' GB' : b >= 1e6 ? (b / 1e6).toFixed(1).replace('.', ',') + ' MB' : Math.max(1, Math.round(b / 1e3)) + ' KB';
+  const fmtSize = b => b >= 1e9 ? (b / 1e9).toFixed(1).replace('.', DS) + ' GB' : b >= 1e6 ? (b / 1e6).toFixed(1).replace('.', DS) + ' MB' : Math.max(1, Math.round(b / 1e3)) + ' KB';
   function bkLink() {
     const scope = (document.querySelector('input[name=bkScope]:checked') || {}).value || 'data';
     $('bkDownload').href = `/api/backup/download?scope=${scope}&secrets=${$('bkSecrets').value}`;
@@ -3423,7 +3426,7 @@
       ['IP-Adresse', n.ip], ['Router', n.gateway], n.dns && n.dns.length ? ['Namensserver', n.dns.join(', ')] : null];
     for (const f of n.ifaces || []) {
       if (f.wifi) {
-        const det = f.ssid ? [`„${f.ssid}“`, f.band && f.channel ? `${f.band}, Kanal ${f.channel}` : f.band, f.signal_dbm != null ? `${f.signal_dbm} dBm` : null,
+        const det = f.ssid ? [`„${f.ssid}“`, f.band && f.channel ? `${EN ? String(f.band).replace(',', '.') : f.band}, ${EN ? 'channel' : 'Kanal'} ${f.channel}` : f.band, f.signal_dbm != null ? `${f.signal_dbm} dBm` : null,
                               f.tx ? `${f.tx.replace(' MBit/s', '')} MBit/s` : null].filter(Boolean).join(' · ') : 'nicht verbunden';
         kv.push([`WLAN (${f.name})`, det], [`MAC WLAN`, f.mac]);
         if (f.bssid) kv.push(['Router-Zugangspunkt', f.bssid]);
@@ -3465,7 +3468,7 @@
           + (r.in_use && role === 'spare' ? ` <span class="badge b-main">${EN ? 'STEPPING IN' : 'SPRINGT EIN'}</span>` : '')
           + (r.single && role !== 'main' && role !== 'spare' ? ` <span class="badge b-main">${EN ? 'IN USE (ONLY STICK)' : 'WIRD BENUTZT (EINZIGER STICK)'}</span>` : '');
       const where = r.present ? `steckt · Port ${esc(r.port || '?')}` : `zuletzt gesehen ${fmtSeen(r.last_seen)}`;
-      const cp = r.caps, fmtR = h => h >= 1e9 ? (h / 1e9).toFixed(2).replace('.', ',') + ' GHz' : h >= 1e6 ? Math.round(h / 1e6) + ' MHz' : Math.round(h / 1e3) + ' kHz';
+      const cp = r.caps, fmtR = h => h >= 1e9 ? (h / 1e9).toFixed(2).replace('.', DS) + ' GHz' : h >= 1e6 ? Math.round(h / 1e6) + ' MHz' : Math.round(h / 1e3) + ' kHz';
       const capTxt = cp ? `${fmtR(cp.hf_ok ? cp.min_hz : Math.max(cp.min_hz, 24e6))} – ${fmtR(cp.max_hz)}${cp.hf_ok ? ' · Kurzwelle per Direktabtastung' : cp.hf ? ' · Kurzwelle möglich, aber: ' + esc(cp.hf_why) : ''}` : null;
       const info = [`Seriennummer <span class="no-i18n">${esc(r.serial || '–')}</span>`, r.kind === 'rtl' ? `Tuner <span class="no-i18n">${esc(r.tuner || '?')}</span>` : null, capTxt].filter(Boolean).join(' · ');
       const warn = [];

@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.8.42 – 2026-11-24
+
+- **Every log event has a description:** about 100 events only showed their raw name in the log (e.g.
+  `live_gap`, `scan_stop_requested`, `backup_now`, `stick_new`, `webapp_stall`) – now each has a readable text in
+  German and English. The raw data of an entry stays as recorded; only the description follows the language
+  setting.
+- **English numbers with a decimal point:** sizes, durations and frequencies (e.g. "3.0 GB written in 24 h",
+  "1.8 MB", "8.6 h", "1.77 GHz") no longer use the German decimal comma in the English dashboard.
+- Wi-Fi details on the Raspberry Pi card: "channel" and "2.4 GHz" in English; notices: "since …" / "resolved …".
+- **New screenshots** for README: scan, hits, stations, map, live, log, system, settings (version 1.8.39, English
+  UI; IP and MAC addresses, Wi-Fi name and Telegram chat ID blacked out).
+- Self-test section 101.
+
 ## 1.8.41 – 2026-11-24
 
 - **English gaps closed:** a pass over all cards in the English dashboard found texts that were still German –

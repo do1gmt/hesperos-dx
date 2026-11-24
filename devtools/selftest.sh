@@ -4001,5 +4001,27 @@ if (bad.length) { console.log(bad.join('\n')); process.exit(1); }
 JS
 fi
 
+echo "== 101 Protokoll: jedes Ereignis hat eine Beschreibung (DE/EN), Rohdaten bleiben; Dezimalzeichen je Sprache"
+(cd bin && timeout 30 python3 - "$SRC" <<'PY') && ok "alle Ereignisse aus bin/ mit Beschreibung im Protokoll, englische Übersetzung vorhanden, Zahlen auf Englisch mit Punkt" || bad "Ereignis-Beschreibungen/Dezimalzeichen"
+import re, sys, glob
+from pathlib import Path
+src = Path(sys.argv[1])
+js = (src / "web" / "app.js").read_text(); i18 = (src / "web" / "i18n.js").read_text()
+i = js.index("const EVENT_TEXT"); blk = js[i:js.index("\n  };", i)]
+text = dict(re.findall(r"['\"]?([\w.]+)['\"]?\s*:\s*'([^']*)'", blk))
+ev = set()
+for f in glob.glob(str(src / "bin" / "*.py")) + glob.glob(str(src / "bin" / "*.sh")):
+    s = Path(f).read_text()
+    ev |= set(re.findall(r"""\w*log\w*\(\s*["'](?:DEBUG|INFO|WARN|WARNING|ERROR)["']\s*,\s*["']([\w-]+)["']\s*,\s*["'](\w+)["']\s*[,)]""", s))
+    ev |= set(re.findall(r"""\b\w*log\w*\s+["']?(?:DEBUG|INFO|WARN|ERROR)["']?\s+["']?([\w-]+)["']?\s+["']?(\w+)""", s))
+missing = sorted(f"{c}.{e}" for c, e in ev if e not in text and f"{c}.{e}" not in text)
+assert not missing, missing
+untrans = sorted({v for k, v in text.items() if re.search(r"[äöüÄÖÜß]|\b(?:der|die|das|und|nicht|wird)\b", v)
+                  and not re.search(r"['\"]" + re.escape(v) + r"['\"]\s*:", i18)})
+assert not untrans, untrans
+assert "const DS = EN ? '.' : ','" in js and ".replace('.', ',')" not in js
+assert "(EN ? 'since ' : 'seit ')" in js and "${EN ? 'channel' : 'Kanal'}" in js
+PY
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

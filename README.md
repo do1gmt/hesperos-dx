@@ -126,8 +126,8 @@ shortwave.
 
 | | |
 |---|---|
-| ![Hits: filters by band, mode and time, hit cards](docs/screenshots/hits.png) | ![Live listening: weather fax from DWD on shortwave, waterfall, decodes, shortwave schedule](docs/screenshots/live.png) |
-| Hits: filters by band, mode and time; every hit with spectrum, audio and decodes | Live listening with continuous watch: weather fax from DWD Pinneberg on 7.878 MHz, the chart grows line by line in the decodes; waterfall, EiBi entry for the frequency, recently heard frequencies and what is on air on shortwave right now |
+| ![Hits: filters by band, mode and time, hit cards](docs/screenshots/hits.png) | ![Live listening: FT8 on 80 m, waterfall, decodes, images from Live, shortwave schedule](docs/screenshots/live.png) |
+| Hits: filters by band, mode and time; every hit with spectrum, audio and decodes | Live listening: FT8 on 80 m with the HF antenna on the RTL stick (direct sampling), the decodes cycle by cycle; waterfall, EiBi entry for the frequency, weather fax images received in Live, recently heard frequencies and what is on air on shortwave right now |
 | ![Readable event log](docs/screenshots/log.png) | ![Phone: satellite passes and live listening (German UI)](docs/screenshots/mobile.png) |
 | Event log: levels, components, search, repeats grouped | On the phone (here with the German UI) |
 | ![Settings: station, watchlist, notifications](docs/screenshots/settings.png) | ![Satellite priorities](docs/screenshots/satellites.png) |
@@ -145,8 +145,8 @@ same daily for hits older than the chosen age.
 ![Stations: map of heard callsigns and the list with distance and bearing](docs/screenshots/stations.png)
 *Stations: map (one point per callsign or locator squares) and callsigns heard via FT8/FT4, APRS, CW and RTTY with locator, distance and bearing (ADIF export).*
 
-![Map of heard stations: locator squares across Europe and beyond](docs/screenshots/map.png)
-*Map of heard stations over one month (FT8 scans on 80–15 m with an HF-360 vertical from JN59): one point per callsign, colour = SNR, border = FT8 or APRS; switch to locator squares above the map.*
+![Map of heard stations: locator squares across Europe, North America and beyond](docs/screenshots/map.png)
+*Map of heard stations over one month (FT8 scans on 80–15 m with an HF-360 vertical from JN59), here as locator squares: the more stations, the stronger the square; switch to one point per callsign above the map.*
 
 <img src="docs/screenshots/tmc.png" width="560" alt="Live FM reception with RDS and TMC traffic messages">
 
