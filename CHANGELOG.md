@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.8.34 – 2026-11-24
+
+- **Fix: "Scan now" ended as "Scan failed: scan requested, scheduler running, but run_cycle.sh did not start".**
+  When a satellite pass was running or just beginning, the scan run found the stick taken and gave up silently;
+  after 3 minutes the dashboard could only report a generic failure. Now a requested scan **waits for the pass and
+  starts by itself afterwards** (order of precedence: pass before scan); the scan box says why it waits
+  (`scan_waits_for_pass`), after an hour of waiting the request expires.
+- *Stop* on a waiting request drops only the request (`scan_request_cancelled`) – before, the same button would
+  have cancelled the satellite recording.
+- If Live is running, a requested scan reports at once that Live has priority (was: stuck at "requested"); if the
+  scan run itself finds the stick or the run lock taken, the reason appears in the scan box.
+- **New version at a glance:** a highlighted "⬆ 1.8.xx" button in the header of every page (leads to the update
+  card) and a large box "New version … available – installed is …" in the update card (was a small grey note).
+  On phones the small version number next to the logo makes room for it.
+- Device card: the antenna hint now says where antennas are chosen (scan box and Live, since 1.8.33).
+- Log: readable names for the scan request events.
+- Self-test section 93.
+
 ## 1.8.33 – 2026-11-24
 
 - **Antennas belong to what you do, not to the stick** (step 1 of 3). Choose the antenna in the scan box (also used

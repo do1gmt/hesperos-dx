@@ -3165,6 +3165,17 @@ class Handler(BaseHTTPRequestHandler):
                                      stdout=out, stderr=subprocess.STDOUT, start_new_session=True)
                 return self.send_json({"ok": True, "fallback": True})
             if path == "/api/scan-stop":
+                # angeforderter Scan, der noch wartet (z. B. auf einen Überflug): nur die Anforderung verwerfen –
+                # nie den Überflug abbrechen (1.8.34)
+                st0 = read_json(BASE / "data" / "runtime_status.json", {})
+                if st0.get("state") == "queued" and not scan_running():
+                    TRIGGER.unlink(missing_ok=True)
+                    (BASE / "data" / "scan_cancel.trigger").write_text(str(time.time()))
+                    write_json(BASE / "data" / "runtime_status.json",
+                               {"state": "cancelled", "phase": "cancelled", "progress": 0, "message": "Angeforderter Scan verworfen",
+                                "run_id": None, "started_at": None, "updated_at": now_iso()})
+                    APPLOG.log("INFO", "webapp", "scan_request_cancelled", ip=self.client_ip())
+                    return self.send_json({"ok": True, "what": "request"})
                 # Satellitenaufnahme? Dann die abbrechen (sie wertet das bisher Aufgenommene noch aus)
                 import signal
                 rec = BASE / "data" / "sat_rec.pid"

@@ -3653,5 +3653,69 @@ assert "antSelect('scan'" in js and "antSelect('live'" in js and "data-antsel" n
 assert 'data-f="antenna"' not in js and 'data-f="ant_az"' not in js        # Stickkarte ohne Antennenfelder
 PY
 
+echo "== 93 Angeforderter Scan während eines Überflugs: wartet und startet danach, Abbrechen verwirft nur die Anforderung"
+(cd bin && timeout 90 python3 - "$SRC" <<'PY') && ok "Scan wartet auf den Überflug (Anzeige mit Grund), startet danach, Abbrechen lässt den Überflug laufen, Lauf belegt: klarer Grund; neue Version groß im Kopf" || bad "Scan während Überflug"
+import ast, fcntl, json, os, subprocess, sys, threading, time, urllib.request
+from datetime import datetime, timezone
+from pathlib import Path
+BASE = Path("..").resolve()
+ST = BASE / "data" / "runtime_status.json"
+src = Path("scheduler.py").read_text()
+logs, runs = [], []
+state = {"pass": True, "live": False}
+g = {"BASE": BASE, "time": time, "json": json, "datetime": datetime, "timezone": timezone,
+     "applog": lambda lv, comp, ev, **d: logs.append(ev), "sat_pass_active": lambda: state["pass"],
+     "pass_within": lambda sec: {"name": "SakhaCube"} if state["pass"] else None, "live_active_now": lambda: state["live"],
+     "schedule_now": lambda: None, "run_scan": lambda sid=None: runs.append(sid)}
+fns = [n for n in ast.parse(src).body if (isinstance(n, ast.FunctionDef) and n.name in
+       ("manual_blocked", "_status_waiting", "manual_tick", "_status_back")) or
+       (isinstance(n, ast.Assign) and getattr(n.targets[0], "id", "") in ("_manual", "MANUAL_WAIT_MAX_S"))]
+exec(compile(ast.Module(fns, []), "sched", "exec"), g)
+ST.write_text(json.dumps({"state": "queued", "message": "", "updated_at": "2000-01-01T00:00:00+00:00"}))
+g["_manual"]["since"] = time.time()
+g["manual_tick"]()
+st = json.loads(ST.read_text())
+assert not runs and st["state"] == "queued" and "Überflug SakhaCube läuft" in st["message"] and "von selbst" in st["message"], st
+assert st["updated_at"] > "2026" and logs == ["scan_waits_for_pass"], logs
+state["pass"] = False
+g["manual_tick"]()
+assert runs == [None] and logs[-1] == "scan_start" and not g["_manual"]["since"]
+# Abbrechen im Dashboard: Anforderung verworfen
+state["pass"] = True; g["_manual"]["since"] = time.time() - 5; g["_manual"]["why"] = None
+(BASE / "data" / "scan_cancel.trigger").write_text("x")
+g["manual_tick"](); state["pass"] = False; g["manual_tick"]()
+assert runs == [None] and logs[-1] == "scan_request_dropped" and not (BASE / "data" / "scan_cancel.trigger").exists()
+# Live hat Vorrang: klare Meldung statt „angefordert“
+ST.write_text(json.dumps({"state": "queued"})); g["_manual"]["since"] = time.time(); state["live"] = True
+g["manual_tick"]()
+assert runs == [None] and json.loads(ST.read_text())["state"] == "error" and "Live" in json.loads(ST.read_text())["message"]
+# Dashboard: „Scan abbrechen“ bei wartender Anforderung bricht den Überflug NICHT ab
+import webapp as W
+sat = subprocess.Popen(["sleep", "30"])
+(BASE / "data" / "sat_rec.pid").write_text(str(sat.pid))
+ST.write_text(json.dumps({"state": "queued", "message": "Wartet: Überflug läuft"}))
+W.TRIGGER.write_text("x")
+W.APPLOG.log = lambda *a, **k: logs.append(a[2])
+srv = W._Server(("127.0.0.1", 0), W.Handler); threading.Thread(target=srv.serve_forever, daemon=True).start()
+op = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+r = json.loads(op.open(urllib.request.Request(f"http://127.0.0.1:{srv.server_address[1]}/api/scan-stop", data=b"{}",
+               headers={"Content-Type": "application/json"}), timeout=20).read())
+srv.shutdown()
+assert r.get("what") == "request" and sat.poll() is None, r          # Überflug läuft weiter
+assert not W.TRIGGER.exists() and (BASE / "data" / "scan_cancel.trigger").exists() and json.loads(ST.read_text())["state"] == "cancelled"
+sat.kill(); (BASE / "data" / "sat_rec.pid").unlink(); (BASE / "data" / "scan_cancel.trigger").unlink()
+# run_cycle.sh: Lauf belegt -> Grund in der Anzeige statt still aufgeben
+ST.write_text(json.dumps({"state": "queued"}))
+lk = open(BASE / "data" / "cycle.lock", "a"); fcntl.flock(lk, fcntl.LOCK_EX)
+rc = subprocess.run(["bash", "run_cycle.sh"], cwd=".", capture_output=True, timeout=60).returncode
+fcntl.flock(lk, fcntl.LOCK_UN); lk.close()
+st = json.loads(ST.read_text())
+assert rc == 75 and st["state"] == "error" and "läuft schon ein Scanlauf" in st["message"], (rc, st)
+# neue Version: Knopf im Seitenkopf und großer Kasten in der Update-Karte
+web = Path(sys.argv[1]) / "web"
+html, js = (web / "index.html").read_text(), (web / "app.js").read_text()
+assert 'id="updatePill"' in html and 'id="updBanner"' in html and "function showNewVersion" in js and ".update-pill {" in (web / "style.css").read_text()
+PY
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

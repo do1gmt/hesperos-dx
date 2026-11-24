@@ -18,6 +18,7 @@
 <header class="topbar">
   <div class="topbar-inner">
     <a class="brand" id="brandHome" href="/" title="Zur Startseite (Scan)"><img class="brand-icon" src="/static/icon.svg" alt="" width="28" height="28"><span class="brand-name">Hesperos <em>DX</em></span><small class="brand-tag no-i18n">Ham Radio Watch</small><small class="brand-ver no-i18n" id="appVer"></small></a>
+    <button type="button" class="update-pill" id="updatePill" hidden title="Neue Version verfügbar – zum Update (System)">⬆ <span class="no-i18n" id="updatePillVer"></span></button>
     <button type="button" class="notice-pill" id="noticePill" hidden title="Hinweise ansehen (System → Hinweise)">⚠ <span id="noticeCount">0</span></button>
     <div class="status-pill" id="statusPill"><span class="dot"></span><span id="statusPillText">Verbinde …</span></div>
     <div class="clock"><span class="clock-utc" id="clock">--:--:--</span><span class="clock-sep">UTC</span><span class="clock-local" id="clockLocal">--:--:--</span><span class="clock-sep" id="clockZone">Lokal</span></div>
@@ -465,7 +466,7 @@
         <div id="sticksList"><div class="muted">–</div></div>
         <div class="save-note" id="sticksNote" aria-live="polite"></div>
         <p class="hint">Hesperos DX benutzt für VHF/UHF, Satelliten und Live nur den <b>Haupt-Stick</b> und spricht ihn über seine Seriennummer an – egal an welchem USB-Port. Ein neu angesteckter Stick wird nie von selbst benutzt. ppm und Verstärkung leer = Werte aus dem Bandplan. Die PMSDR (Kurzwelle) ist davon unabhängig.</p>
-        <p class="hint"><b>Antennen</b> sind nur eine Beschriftung (mit Frequenzbereich und Richtung für die Überflugplanung): Hesperos DX kann nicht sehen, welche Antenne tatsächlich angeschlossen ist – wer einen Antennenumschalter benutzt, wählt beim Umschalten das passende Profil (oben unter „Antennen“ anlegen, dann im Scan-Kasten oder hier auswählen).</p>
+        <p class="hint"><b>Antennen</b> sind nur eine Beschriftung (mit Frequenzbereich und Richtung für die Überflugplanung): Hesperos DX kann nicht sehen, welche Antenne tatsächlich angeschlossen ist. Profile oben unter „Antennen“ anlegen, gewählt wird im Scan-Kasten (gilt auch für Überflüge) und in Live – beim Umschalten dort das passende Profil wählen.</p>
       </section>
       <section class="panel" id="panel-pi">
         <h2>Raspberry Pi</h2>
@@ -492,6 +493,7 @@
       <section class="panel" id="panel-update" hidden>
         <h2>Version <span class="no-i18n" id="updVer">–</span> · Update <small class="muted" id="updNew"></small></h2>
         <div class="update-box" id="updBox">
+          <div class="upd-banner" id="updBanner" hidden role="status"><b id="updBannerTitle"></b><span id="updBannerSub"></span></div>
           <div class="actions"><button type="button" class="btn btn-primary" id="updRun">Jetzt aktualisieren</button><button type="button" class="btn btn-small" id="updCheck">Auf neue Version prüfen</button></div>
           <div class="upd-check">
             <span class="hint" id="updChecked"></span>

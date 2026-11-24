@@ -98,6 +98,9 @@ shortwave.
   tab) shows only those, "show all hits" goes back. The list is shown page by page (*Per page* 25–200 below the
   list, ◀ ▶ above and below); the page size is kept in the view profile.
 - Antenna profiles, automatic backups, a rescue page and a diagnostics package for when something goes wrong.
+- **New version at a glance:** when an update is available, a highlighted "⬆ 1.8.xx" button appears in the header
+  of every page (it leads to *System → Update*), and the update card shows a large box with the new and the
+  installed version.
 - **Saving while typing:** text and number fields under Scan, System and Settings save 2 seconds after the last
   keystroke – no need to leave the field. Incomplete numbers (out of range, just a "-") are not saved; if a card
   redraws itself after saving, the cursor stays in the field. The station name (it renames the Pi in the network)
@@ -249,6 +252,10 @@ with a "now" button in the pass list), so looking around or choosing satellites 
 scan. **Order of precedence:** satellite pass > start of a schedule > Live > normal scan. Live – in the browser or
 as continuous watch – pauses for a pass and for the first scan of a schedule window and then continues on the
 same frequency (the browser reconnects the audio by itself); further scans in the window wait while Live runs.
+A scan started with *Scan now* while a pass is running or about to begin waits and starts by itself afterwards (the
+scan box says "Waiting: pass SakhaCube running – the scan starts afterwards by itself"; *Stop* drops only the waiting
+request, never the pass; after an hour of waiting it expires). If Live is running, the scan box says that Live has
+priority instead of showing "requested".
 
 **Wi-Fi that repairs itself:** every minute Hesperos DX checks whether the router answers. If not, it helps in
 steps – reconnect after 2 min, Wi-Fi off/on after 5 min, restart the network service after 9 min, reload the Wi-Fi

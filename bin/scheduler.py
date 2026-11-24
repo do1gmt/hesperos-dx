@@ -236,6 +236,80 @@ def _status_back(msg):
         pass
 
 
+_manual = {"since": None, "why": None, "shown": 0.0}     # angeforderter Scan, der auf einen Überflug wartet
+MANUAL_WAIT_MAX_S = 3600
+
+
+def manual_blocked():
+    """Warum ein angeforderter Scan gerade nicht starten kann – ein Überflug hält den Stick oder beginnt gleich
+    (Rangfolge: Überflug vor Scan) – oder None."""
+    if sat_pass_active():
+        p = pass_within(0)
+        return f"Überflug {p['name']} läuft" if p and p.get("name") else "Überflug läuft"
+    p = pass_within(90)
+    if p:
+        return f"Überflug {p.get('name') or ''} beginnt gleich".replace("  ", " ")
+    return None
+
+
+def _status_waiting(msg):
+    """Angeforderten Scan als „angefordert“ mit Grund stehen lassen (Zeitstempel frisch, sonst gälte er nach 3 min
+    als „nicht gestartet“) – höchstens einmal pro Minute geschrieben."""
+    if time.time() - _manual["shown"] < 60:
+        return
+    _manual["shown"] = time.time()
+    try:
+        p = BASE / "data" / "runtime_status.json"
+        st = json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
+        if st.get("state") in ("queued", None, "idle", "done", "error", "cancelled"):
+            p.write_text(json.dumps({"state": "queued", "phase": "waiting", "progress": 0, "message": msg, "run_id": None,
+                                     "started_at": None, "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds")},
+                                    ensure_ascii=False), encoding="utf-8")
+    except Exception:
+        pass
+
+
+def manual_tick():
+    """Angeforderter Scan (1.8.34): läuft gerade ein Überflug oder beginnt er gleich, wartet der Scan und startet danach
+    von selbst – vorher startete run_cycle.sh, fand den Stick belegt und gab still auf; nach 3 min stand dann nur
+    „Angeforderter Scan ist nicht gestartet“. Wartet er länger als eine Stunde, verfällt er."""
+    cancel = BASE / "data" / "scan_cancel.trigger"
+    if cancel.exists():                                  # im Dashboard verworfen (nur eine neuere Anforderung zählt)
+        try:
+            t = cancel.stat().st_mtime
+            cancel.unlink()
+        except OSError:
+            t = 0
+        if _manual["since"] and t >= _manual["since"] - 1:
+            applog("INFO", "scheduler", "scan_request_dropped", reason=_manual["why"] or "")
+            _manual.update(since=None, why=None, shown=0.0)
+            return
+    if not _manual["since"]:
+        return
+    why = manual_blocked()
+    if why and time.time() - _manual["since"] > MANUAL_WAIT_MAX_S:
+        applog("WARN", "scheduler", "trigger_expired", reason=why, age_min=round((time.time() - _manual["since"]) / 60))
+        _manual.update(since=None, why=None, shown=0.0)
+        _status_back(f"Angeforderter Scan verfallen – {why} seit über einer Stunde. Bitte erneut starten.")
+        return
+    if why:
+        if not _manual["why"]:
+            applog("INFO", "scheduler", "scan_waits_for_pass", reason=why)
+            _manual["shown"] = 0.0
+        _manual["why"] = why
+        _status_waiting(f"Wartet: {why} – der Scan startet danach von selbst.")
+        return
+    waited = _manual["why"]
+    _manual.update(since=None, why=None, shown=0.0)
+    if live_active_now():
+        applog("WARN", "scheduler", "trigger_ignored", reason="live")
+        _status_back("Scan nicht gestartet – Live-Empfang läuft (Live hat Vorrang vor einem Scan). Live beenden, dann erneut starten.")
+        return
+    applog("INFO", "scheduler", "scan_start", reason="trigger" if not waited else "trigger_after_pass")
+    _sc = schedule_now()
+    run_scan(_sc.get("id") if _sc else None)
+
+
 def run_scan(schedule=None):
     """Scanlauf starten; schedule = Kennung des gerade gültigen Zeitplans (landet in der Tabelle run)."""
     if cycle_running() or scan_running():
@@ -900,13 +974,13 @@ while True:
         else:
             continue_trigger = False
         if continue_trigger:
-
             if live_active_now():
                 applog("WARN", "scheduler", "trigger_ignored", reason="live")
+                _status_back("Scan nicht gestartet – Live-Empfang läuft (Live hat Vorrang vor einem Scan). "
+                             "Live beenden, dann erneut starten.")
             else:
-                applog("INFO", "scheduler", "scan_start", reason="trigger")
-                _sc = schedule_now()
-                run_scan(_sc.get("id") if _sc else None)
+                _manual["since"] = time.time()
+        manual_tick()
 
         # automatischer Scan: „alle N min“ von Start zu Start; dauert ein Scan länger,
         # folgt der nächste nach MIN_PAUSE_S

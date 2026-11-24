@@ -1516,7 +1516,7 @@
     device_opened: 'Empfänger geöffnet', device_open_failed: 'Empfänger lässt sich nicht öffnen', hit: 'Treffer',
     rtl_no_data: 'RTL-SDR liefert keine Daten', rtl_recovered: 'RTL-SDR läuft wieder', rtl_usb_reset: 'RTL-SDR per USB neu angemeldet',
     scan_hung: 'Scan hängt', ft8_watch_failed: 'FT8/FT4-Wache fehlgeschlagen', sstv_watch_failed: 'SSTV-Wache fehlgeschlagen',
-    satellite_start: 'Überflug: Aufnahme startet', satellite_skipped: 'Überflug übersprungen', satellite_retry: 'Überflug: Start wiederholt', satellite_problem: 'Satelliten: Problem', satellite_paused: 'Satelliten pausiert (PMSDR gewählt)', band_scanned: 'Band abgehört', 'live.start': 'Live-Empfang gestartet', 'live.stop': 'Live-Empfang beendet', 'live.tune': 'Live-Empfang abgestimmt', api_error: 'Fehler bei einer Anfrage', stopped_for_live: 'Für Live-Empfang abgebrochen', pass_cancelled: 'Überflug abgebrochen (Benutzer)', satellite_stop_requested: 'Abbruch der Satellitenaufnahme angefordert', pskreporter_sent: 'An PSK Reporter gemeldet', pskreporter_failed: 'PSK Reporter: Fehler', watch_hit: 'Beobachtung ausgelöst', watch_failed: 'Beobachtungsliste: Fehler', live_alert_failed: 'Rufzeichen-Alarm (Live): Fehler', antenna_changed: 'Antenne gewechselt', antenna_profiles_saved: 'Antennen-Profile gespeichert', auto_cleanup: 'Automatisch aufgeräumt', sat_raw_deleted: 'Rohdaten eines Überflugs gelöscht', disk_full: 'Speicherkarte fast voll', disk_low: 'Speicherkarte wird voll', disk_ok: 'Speicherplatz wieder ok', pass_aborted: 'Überflug abgebrochen', scan_skipped_disk_full: 'Scan ausgelassen (Speicher voll)', housekeeping_failed: 'Haushalt fehlgeschlagen',
+    satellite_start: 'Überflug: Aufnahme startet', satellite_skipped: 'Überflug übersprungen', satellite_retry: 'Überflug: Start wiederholt', satellite_problem: 'Satelliten: Problem', satellite_paused: 'Satelliten pausiert (PMSDR gewählt)', band_scanned: 'Band abgehört', 'live.start': 'Live-Empfang gestartet', 'live.stop': 'Live-Empfang beendet', 'live.tune': 'Live-Empfang abgestimmt', api_error: 'Fehler bei einer Anfrage', stopped_for_live: 'Für Live-Empfang abgebrochen', pass_cancelled: 'Überflug abgebrochen (Benutzer)', satellite_stop_requested: 'Abbruch der Satellitenaufnahme angefordert', pskreporter_sent: 'An PSK Reporter gemeldet', pskreporter_failed: 'PSK Reporter: Fehler', watch_hit: 'Beobachtung ausgelöst', watch_failed: 'Beobachtungsliste: Fehler', live_alert_failed: 'Rufzeichen-Alarm (Live): Fehler', antenna_changed: 'Antenne gewechselt', scan_waits_for_pass: 'Scan wartet auf den Überflug', scan_request_cancelled: 'Angeforderter Scan verworfen', scan_request_dropped: 'Wartender Scan verworfen', trigger_expired: 'Scan-Anforderung verfallen', scan_request_stale: 'Angeforderter Scan nicht gestartet', scan_start_rejected: 'Scan nicht gestartet (belegt)', stick_busy: 'Stick belegt – Scan nicht gestartet', already_running: 'Scanlauf läuft schon', antenna_profiles_saved: 'Antennen-Profile gespeichert', auto_cleanup: 'Automatisch aufgeräumt', sat_raw_deleted: 'Rohdaten eines Überflugs gelöscht', disk_full: 'Speicherkarte fast voll', disk_low: 'Speicherkarte wird voll', disk_ok: 'Speicherplatz wieder ok', pass_aborted: 'Überflug abgebrochen', scan_skipped_disk_full: 'Scan ausgelassen (Speicher voll)', housekeeping_failed: 'Haushalt fehlgeschlagen',
     satellite_failed: 'Satelliten: Fehler', satellite_warning: 'Satelliten: Hinweis', pass_start: 'Überflug: Aufnahme läuft',
     pass_done: 'Überflug fertig', pass_failed: 'Überflug fehlgeschlagen', pass_eval_failed: 'Überflug: Auswertung fehlgeschlagen',
     pass_recording_problem: 'Überflug: Aufnahme gestört', loop_exception: 'Scheduler: Fehler in der Schleife',
@@ -2729,12 +2729,25 @@
 
   // ---------- Update per git (bin/update.sh über den Dienst hesperosdx-update) ----------
   let updTimer = null;
+  // Neue Version auffällig zeigen (1.8.34): Knopf im Seitenkopf auf jeder Seite, großer Kasten in der Update-Karte
+  function showNewVersion(latest, cur) {
+    $('updatePill').hidden = !latest;
+    $('updatePillVer').textContent = latest || '';
+    $('updatePill').title = latest ? (EN ? `New version ${latest} available – go to the update` : `Neue Version ${latest} verfügbar – zum Update`) : '';
+    $('updBanner').hidden = !latest;
+    $('updBannerTitle').textContent = latest ? (EN ? `⬆ New version ${latest} available` : `⬆ Neue Version ${latest} verfügbar`) : '';
+    $('updBannerSub').textContent = latest ? (EN ? `Installed: ${cur} – "Update now" below fetches it.` : `Installiert ist ${cur} – „Jetzt aktualisieren“ darunter holt sie.`) : '';
+  }
+  $('updatePill').addEventListener('click', () => { showView('system'); setTimeout(() => scrollToPanel($('panel-update')), 100); });
+  setTimeout(() => loadUpdate(), 4000);                                 // auch ohne den Reiter System: Knopf im Kopf
+  setInterval(() => { if (document.visibilityState === 'visible') loadUpdate(); }, 30 * 60 * 1000);
   async function loadUpdate(check) {
     let d; try { d = await api('/api/update' + (check ? '?check=1' : '')); } catch (e) { return; }
     $('panel-update').hidden = !d.git;
     const newer = !!d.newer;
     $('updVer').textContent = d.version || '–';
     $('updNew').textContent = newer ? (EN ? `· new: ${d.latest}` : `· neu: ${d.latest}`) : (d.latest ? (EN ? '· up to date' : '· aktuell') : '');
+    showNewVersion(newer && !d.running ? d.latest : null, d.version);
     // neueste Version ist schon da: Knopf sperren – nicht, wenn die Prüfung gerade schiefging (Stand dann unsicher)
     const upToDate = !!d.latest && !newer && !d.check_error;
     $('updRun').disabled = d.running || !d.unit || upToDate;
@@ -2763,7 +2776,7 @@
     const d = await loadUpdate(true);
     if (!d) return note($('updNote'), EN ? 'Check failed' : 'Prüfung fehlgeschlagen', true);
     if (d.check_error) note($('updNote'), (EN ? 'GitHub not reachable: ' : 'GitHub nicht erreichbar: ') + d.check_error, true);
-    else if (d.newer) note($('updNote'), EN ? `New version ${d.latest} available` : `Neue Version ${d.latest} verfügbar`);
+    else if (d.newer) note($('updNote'), '');                         // steht groß im Kasten darüber
     else note($('updNote'), EN ? `No newer version – ${d.version} is up to date` : `Keine neuere Version – ${d.version} ist aktuell`);
   });
   $('updDays').addEventListener('change', async () => {

@@ -11,16 +11,35 @@ mkdir -p "$LOG"
 
 # Zwei Sperren: cycle.lock für den ganzen Lauf (nie zwei Läufe gleichzeitig), scan.lock (= der Stick) nur, solange
 # der Scanner läuft – die Auswertung danach braucht den Stick nicht, ein Überflug kann dann schon aufnehmen
+# Angeforderter Scan, der nicht starten kann: Grund in die Scan-Anzeige statt „angefordert“ stehen zu lassen
+not_started() {
+    python3 - "$BASE/data/runtime_status.json" "$1" <<'PY' 2>/dev/null || true
+import json, sys
+from datetime import datetime, timezone
+p, msg = sys.argv[1], sys.argv[2]
+try:
+    st = json.load(open(p, encoding="utf-8"))
+except Exception:
+    st = {}
+if st.get("state") == "queued":
+    json.dump({"state": "error", "phase": "error", "progress": 0, "message": msg, "run_id": None, "started_at": None,
+               "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}, open(p, "w", encoding="utf-8"),
+              ensure_ascii=False)
+PY
+}
+
 exec 8>>"$BASE/data/cycle.lock"
 if ! flock -n 8; then
     echo "Ein Scanlauf läuft bereits – nicht doppelt starten"
     python3 "$BASE/bin/applog.py" WARN cycle already_running holder="$(python3 "$BASE/bin/lockinfo.py" 2>/dev/null | head -1)"
+    not_started "Scan nicht gestartet – es läuft schon ein Scanlauf (Auswertung)."
     exit 75
 fi
 exec 9>>"$BASE/data/scan.lock"
 if ! flock -w 30 9; then
     echo "Stick belegt (Überflug oder Live) – Scan übersprungen"
     python3 "$BASE/bin/applog.py" WARN cycle stick_busy holder="$(python3 "$BASE/bin/lockinfo.py" 2>/dev/null | tail -1)"
+    not_started "Scan nicht gestartet – der Stick ist belegt (Überflug oder Live). Danach erneut starten."
     exit 75
 fi
 
