@@ -3803,5 +3803,39 @@ js = (web / "app.js").read_text()
 assert 'class="stick-more"' in js and "const manySticks" in js and "EINZIGER STICK" in js
 PY
 
+echo "== 96 Neustart nach Systemupdate: sofort aus dem Ergebnis, neuer Kernel erkannt, Hinweis im Kopf"
+(cd bin && timeout 60 python3 - "$SRC" <<'PY') && ok "Neustart-Bedarf gleich nach dem Update (nicht erst nach „Updates suchen“), neuerer Kernel derselben Bauart erkannt, Hinweis „Neustart nötig“" || bad "Neustart nach Systemupdate"
+import os, sys, tempfile, time
+from pathlib import Path
+import sysupdate as SU, notices as NT
+d = Path(tempfile.mkdtemp())
+mods = d / "modules"
+for v in ("6.6.51+rpt-rpi-v8", "6.6.62+rpt-rpi-v8", "6.12.1+rpt-rpi-2712"):
+    (mods / v).mkdir(parents=True)
+assert SU.kernel_reboot_needed("6.6.51+rpt-rpi-v8", mods) == "6.6.62+rpt-rpi-v8"
+assert SU.kernel_reboot_needed("6.6.62+rpt-rpi-v8", mods) is None          # läuft schon der neueste (6.12 ist andere Bauart)
+assert SU.kernel_reboot_needed("6.1.0+rpt-rpi-2712", mods) == "6.12.1+rpt-rpi-2712"
+SU.REBOOT = d / "reboot_pending.json"
+SU.boot_time = lambda: time.time() - 3600
+SU.run_state = lambda: {"state": "done", "reboot": 1, "finished": time.time() - 5}
+SU.kernel_reboot_needed = lambda *a, **k: None
+assert SU.reboot_pending() is None and SU.reboot_info()["reason"] == "Systemupdate"   # ohne auf den Zeitplaner zu warten
+SU.run_state = lambda: {"state": "done", "reboot": 1, "finished": time.time() - 7200}  # vor dem letzten Start: erledigt
+assert SU.reboot_info() is None
+SU.kernel_reboot_needed = lambda *a, **k: "6.6.62+rpt-rpi-v8"
+assert SU.reboot_info()["reason"] == "Kernel"
+NT.FILE = d / "n.json"; NT.LOCK = d / "n.lock"
+SU.reboot_notice(every=0)
+act = {r["id"]: r for r in NT.listing()["items"] if r["active"]}
+assert "reboot_needed" in act and "6.6.62" in act["reboot_needed"]["detail"], act
+SU.kernel_reboot_needed = lambda *a, **k: None
+SU.reboot_notice(every=0)
+assert "reboot_needed" not in {r["id"] for r in NT.listing()["items"] if r["active"]}
+w = Path(sys.argv[1])
+assert '"reboot_pending": SU.reboot_info()' in (w / "bin" / "webapp.py").read_text()
+js, html = (w / "web" / "app.js").read_text(), (w / "web" / "index.html").read_text()
+assert 'id="suKernel"' in html and "rb.reason === 'Kernel'" in js and "gerade fertig: Ergebnis nachladen" in js
+PY
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

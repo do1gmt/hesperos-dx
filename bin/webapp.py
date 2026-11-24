@@ -2850,7 +2850,7 @@ class Handler(BaseHTTPRequestHandler):
                 import sysupdate as SU
                 rs = SU.run_state()
                 return self.send_json({"helper": SU.helper_ok(), "state": SU.state(), "run": rs, "requested": SU.requested(),
-                                       "reboot_pending": SU.reboot_pending(), "cfg": SU.cfg(read_json(SETTINGS, {})),
+                                       "reboot_pending": SU.reboot_info(), "cfg": SU.cfg(read_json(SETTINGS, {})),
                                        "log": SU.log_tail() if rs else "", "checking": SU._check_lock.locked()})
             if path == "/api/live/images":
                 import liveimages as LIM

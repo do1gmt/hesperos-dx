@@ -410,6 +410,9 @@ the log are shown in the card (`/var/log/hesperosdx-sysupgrade.log`). If kernel,
 updated, the Pi restarts **at night** at the chosen hour (default 04:00 Pi local time) – only when no scan or pass
 is running or due within 20 minutes and nobody listens to Live in the browser (a continuous watch resumes after the
 restart by itself), otherwise the next night. The automatic restart can be switched off; *Restart now* always works.
+"Restart needed" appears right after the update (red frame in the card, notice ⚠ in the header) and already before
+installing when kernel or firmware are among the packages. Hesperos DX also notices a newer kernel installed in
+another way (e.g. `apt` via SSH): then it says so too, but leaves the restart to you (*Restart now*).
 
 *Updating an older installation for the first time this way* (before 1.7.76 `bin/update.sh` did not set up the
 system yet): `cd ~/hamscanpi && git pull && bin/update.sh` (since 1.8.17 the folder is `~/HesperosDX`) – from then on the button works.

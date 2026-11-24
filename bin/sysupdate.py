@@ -189,6 +189,7 @@ def follow(log=None):
         REBOOT.unlink(missing_ok=True)
         if log:
             log("INFO", "sysupdate", "reboot_done", reason=rb.get("reason"))
+    reboot_notice()
     rs = run_state()
     if rs.get("state") not in ("done", "failed"):
         return
@@ -205,6 +206,8 @@ def follow(log=None):
     if rs.get("state") == "done":
         if rs.get("reboot") and fin and fin > boot_time():
             _write(REBOOT, {"since": time.time(), "reason": "Systemupdate"})
+            _notice_cache["t"] = 0.0
+            reboot_notice()
         threading.Thread(target=check, kwargs={"log": log}, daemon=True).start()   # Liste auffrischen
     else:
         try:
@@ -215,8 +218,83 @@ def follow(log=None):
             pass
 
 
+MODULES = Path("/lib/modules")
+
+
+def _kver_key(v):
+    """Kernel-Version vergleichbar machen: „6.6.51+rpt-rpi-v8“ → (6, 6, 51)."""
+    import re as _re
+    return tuple(int(x) for x in _re.findall(r"\d+", v.split("+")[0].split("-")[0])[:4])
+
+
+def kernel_reboot_needed(running=None, modules=None):
+    """Läuft noch ein älterer Kernel, als installiert ist? Dann braucht der Pi einen Neustart – auch nach Updates,
+    die nicht über das Dashboard kamen (apt per SSH). Verglichen wird nur innerhalb derselben Bauart (Teil nach
+    dem „+“, z. B. rpt-rpi-v8 / rpt-rpi-2712). Rückgabe: neuere Version (str) oder None. Nur Anzeige – der
+    nächtliche Neustart richtet sich nach dem Update-Ergebnis (eine falsche Erkennung soll nie jede Nacht neu starten)."""
+    try:
+        running = running or os.uname().release
+        modules = Path(modules or MODULES)
+        flavor = running.split("+", 1)[1] if "+" in running else running.split("-", 1)[-1]
+        inst = [d.name for d in modules.iterdir() if d.is_dir() and (d.name.split("+", 1)[1] if "+" in d.name
+                                                                     else d.name.split("-", 1)[-1]) == flavor]
+        newest = max(inst, key=_kver_key) if inst else None
+        if newest and _kver_key(newest) > _kver_key(running):
+            return newest
+    except Exception:
+        pass
+    return None
+
+
+def reboot_from_run():
+    """Neustart-Bedarf direkt aus dem Ergebnis des letzten Updates (vor diesem Start fertig geworden) – ohne auf
+    den Zeitplaner zu warten, der ihn erst in seiner nächsten Runde vormerkt (1.8.37)."""
+    rs = run_state()
+    fin = rs.get("finished") or rs.get("t") or 0
+    if rs.get("state") == "done" and rs.get("reboot") and fin > boot_time():
+        return {"since": fin, "reason": "Systemupdate"}
+    return None
+
+
 def reboot_pending():
     return _read(REBOOT, None)
+
+
+_notice_cache = {"t": 0.0}
+
+
+def reboot_notice(every=600):
+    """Hinweis „Neustart nötig“ (⚠ im Seitenkopf) solange einer aussteht – nach einem Update über das Dashboard oder
+    weil ein neuerer Kernel installiert ist. Höchstens alle 10 min neu nachgesehen (Zeitplaner ruft jede Runde)."""
+    if time.time() - _notice_cache["t"] < every:
+        return
+    _notice_cache["t"] = time.time()
+    try:
+        import notices as NT
+        rb = reboot_info()
+        if rb:
+            c = cfg()
+            when = (f"Er startet heute Nacht um {c['reboot_hour']:02d}:00 Uhr von selbst neu, wenn nichts läuft."
+                    if c["reboot_auto"] and reboot_pending() else "Ein automatischer Neustart ist dafür nicht vorgesehen.")
+            what = (f"Neuer Kernel {rb['kernel']} ist installiert, es läuft noch {rb.get('running')}."
+                    if rb.get("reason") == "Kernel" else "Das Systemupdate hat Kernel, Firmware oder Systembibliotheken erneuert.")
+            NT.raise_("reboot_needed", "warn", "system", "Neustart nötig", f"{what} {when}",
+                      fix="System → Systemupdates: „Jetzt neu starten“.", notify=False)
+        else:
+            NT.clear("reboot_needed", "neu gestartet")
+    except Exception:
+        pass
+
+
+def reboot_info():
+    """Für die Anzeige: braucht der Pi einen Neustart, und warum? dict(reason, …) oder None."""
+    rb = reboot_pending() or reboot_from_run()
+    if rb:
+        return rb
+    k = kernel_reboot_needed()
+    if k:
+        return {"since": None, "reason": "Kernel", "kernel": k, "running": os.uname().release}
+    return None
 
 
 def reboot_due(now=None, settings=None):

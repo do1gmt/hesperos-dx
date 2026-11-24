@@ -852,3 +852,7 @@ body.dragging-card, body.dragging-card * { user-select: none; -webkit-user-selec
 .stick-more-grid .field { flex: 1 1 150px; margin: 0; }
 .stick-more > summary { cursor: pointer; color: var(--muted); font-size: .9rem; padding: .2rem 0; }
 .stick-more-grid { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .35rem; }
+/* Systemupdates (1.8.37): Neustart-Bedarf deutlich */
+.su-reboot { margin: .5rem 0; padding: .6rem .8rem; border: 2px solid var(--red); border-radius: 10px; }
+.su-reboot .warn-text { font-weight: 600; margin: 0 0 .4rem; }
+.su-kernel { font-weight: 600; }

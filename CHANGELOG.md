@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.8.37 – 2026-11-24
+
+- **Fix: "Restart needed" after a system update only appeared after pressing "Check now".** The card stopped
+  polling the moment the update was done, but the restart wish was noted by the scheduler a few seconds later.
+  Now the dashboard reads it directly from the result of the update, and the card loads once more shortly after.
+- **Restart needed – visible early and everywhere:** red frame in the system updates card, "· restart needed" in its
+  title, and a notice ⚠ "Restart needed" in the header until the Pi has restarted. Before installing, a pending
+  kernel/firmware update is now said clearly ("the Pi needs a restart afterwards") instead of a small addition.
+- **Newer kernel detected:** if a newer kernel of the same type is installed than the one running (also after
+  `apt` via SSH), "restart needed" appears with both versions. Display only – the nightly automatic restart still
+  follows the result of a dashboard update, so a wrong detection can never restart the Pi every night.
+- Self-test section 96.
+
 ## 1.8.36 – 2026-11-24
 
 - **Swapping sticks without settings** (step 3 of 3). If only one RTL stick is plugged in and it is not set to

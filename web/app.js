@@ -2215,10 +2215,14 @@
     let d; try { d = await api('/api/sysupdate'); } catch (e) { return; }
     const st = d.state || {}, rs = d.run || {}, pk = st.packages || [];
     const run = ['queued', 'running'].includes(rs.state);
-    $('suSum').textContent = d.checking ? (EN ? '· checking …' : '· prüfe …') : st.checked ? (pk.length ? (EN ? `· ${pk.length} updates` : `· ${pk.length} Updates`) : (EN ? '· up to date' : '· aktuell')) : '';
+    $('suSum').textContent = d.reboot_pending ? (EN ? '· restart needed' : '· Neustart nötig')
+      : d.checking ? (EN ? '· checking …' : '· prüfe …') : st.checked ? (pk.length ? (EN ? `· ${pk.length} updates` : `· ${pk.length} Updates`) : (EN ? '· up to date' : '· aktuell')) : '';
+    $('suSum').classList.toggle('warn-text', !!d.reboot_pending);
+    // steht ein Kernel-/Firmware-Update an: schon vor dem Einspielen deutlich sagen (1.8.37)
+    $('suKernel').hidden = !(pk.length && st.reboot_likely) || !!d.reboot_pending;
+    $('suKernel').textContent = EN ? 'Includes kernel/firmware – the Pi needs a restart afterwards.' : 'Enthält Kernel/Firmware – danach braucht der Pi einen Neustart.';
     $('suChecked').textContent = !d.helper ? (EN ? 'Needs one Hesperos update (System → Update) – afterwards system updates work here.' : 'Braucht einmal ein Hesperos-Update (System → Update) – danach gehen Systemupdates hier.')
       : st.checked ? (EN ? 'Last checked: ' : 'Zuletzt geprüft: ') + tfmt(st.checked, { date: true }) + (st.error ? (EN ? ` – failed (${st.error})` : ` – fehlgeschlagen (${st.error})`) : '')
-        + (pk.length && st.reboot_likely ? (EN ? ' · includes kernel/firmware – restart needed afterwards' : ' · mit Kernel/Firmware – danach ist ein Neustart nötig') : '')
       : (EN ? 'Not checked yet.' : 'Noch nicht geprüft.');
     $('suListBox').hidden = !pk.length;
     $('suListSum').textContent = (EN ? 'Pending packages' : 'Anstehende Pakete') + ` (${pk.length})`;
@@ -2239,13 +2243,17 @@
     $('suLog').hidden = !d.log || !(run || rs.state === 'failed'); $('suLog').textContent = d.log || ''; $('suLog').scrollTop = $('suLog').scrollHeight;
     const rb = d.reboot_pending, c = d.cfg || {};
     $('suReboot').hidden = !rb;
-    if (rb) $('suRebootText').textContent = c.reboot_auto
+    if (rb && rb.reason === 'Kernel') $('suRebootText').textContent = EN
+      ? `Restart needed: new kernel ${rb.kernel} is installed, still running ${rb.running}. No automatic restart for this – use "Restart now".`
+      : `Neustart nötig: neuer Kernel ${rb.kernel} ist installiert, es läuft noch ${rb.running}. Dafür gibt es keinen automatischen Neustart – „Jetzt neu starten“.`;
+    else if (rb) $('suRebootText').textContent = c.reboot_auto
       ? (EN ? `Restart needed after the update – tonight at ${String(c.reboot_hour).padStart(2, '0')}:00 (Pi local time) when nothing is running.` : `Neustart nach dem Update nötig – heute Nacht um ${String(c.reboot_hour).padStart(2, '0')}:00 Uhr (Ortszeit des Pi), wenn nichts läuft.`)
       : (EN ? 'Restart needed after the update – automatic restart is off.' : 'Neustart nach dem Update nötig – der automatische Neustart ist aus.');
     if (document.activeElement !== $('suAuto')) $('suAuto').checked = c.reboot_auto !== false;
     if (document.activeElement !== $('suHour')) $('suHour').value = String(c.reboot_hour ?? 4);
     clearTimeout(suTimer);
     if (run || d.requested || d.checking) suTimer = setTimeout(loadSysupd, 4000);
+    else if (rs.state === 'done' && !rb && Date.now() / 1000 - (rs.finished || 0) < 120) suTimer = setTimeout(loadSysupd, 10000);   // gerade fertig: Ergebnis nachladen
   }
   async function suPost(body, msg) {
     try { await post('/api/sysupdate', body); if (msg) note($('suNote'), msg); setTimeout(loadSysupd, 800); }

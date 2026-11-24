@@ -509,11 +509,12 @@
       <section class="panel" id="panel-sysupd">
         <h2>Systemupdates <small class="muted">Raspberry Pi OS</small> <small class="muted" id="suSum"></small></h2>
         <p class="hint" id="suChecked"></p>
+        <p class="warn-text su-kernel" id="suKernel" hidden></p>
         <details id="suListBox" hidden><summary id="suListSum">Anstehende Pakete</summary><div class="table-wrap"><table class="table"><tbody id="suList"></tbody></table></div></details>
         <div class="actions"><button type="button" class="btn btn-primary" id="suRun">System aktualisieren</button><button type="button" class="btn btn-small" id="suCheck">Jetzt prüfen</button><button type="button" class="btn btn-small" id="suCancel" hidden>Nicht mehr warten</button></div>
         <p id="suStatus"></p>
         <pre class="update-log" id="suLog" hidden></pre>
-        <div id="suReboot" hidden><p class="warn-text" id="suRebootText"></p><div class="actions"><button type="button" class="btn" id="suRebootNow">Jetzt neu starten</button></div></div>
+        <div id="suReboot" class="su-reboot" hidden><p class="warn-text" id="suRebootText"></p><div class="actions"><button type="button" class="btn" id="suRebootNow">Jetzt neu starten</button></div></div>
         <div class="row">
           <label class="check"><input type="checkbox" id="suAuto"> nach Updates nachts automatisch neu starten</label>
           <label class="field"><span>um (Uhr, Ortszeit des Pi)</span><select id="suHour"></select></label>
