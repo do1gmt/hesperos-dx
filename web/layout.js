@@ -196,7 +196,10 @@
     restore();
     document.querySelectorAll('section.view .panel[id]').forEach(tools);
     window.HSPLayout = {
-      reset: function () { state = { order: {}, folded: [] }; save(state); location.reload(); },   // lädt die Vorgabe neu
+      reset: function () {                                       // lädt die Vorgabe neu – erst nachdem das Profil auf dem Pi steht
+        state = { order: {}, folded: [] }; save(state);
+        (window.HSPPrefs && HSPPrefs.save ? HSPPrefs.save() : Promise.resolve()).then(function () { location.reload(); });
+      },
       customized: function () {
         return Object.keys(state.order).length > 0 || state.folded.slice().sort().join() !== DEFAULT_FOLDED.slice().sort().join();
       }

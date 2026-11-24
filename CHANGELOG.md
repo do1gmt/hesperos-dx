@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.8.46 – 2026-11-24
+
+- **Fix: switching the language back did not work.** The language is part of the view profile (PC/phone) on the
+  Pi. The change was sent only while the page was already reloading – the reloaded page often still got the old
+  profile and stayed in the old language. Now the profile is saved on the Pi first, then the page reloads. The same
+  for "Reset layout" and choosing the view profile.
+- Self-test section 105.
+
 ## 1.8.45 – 2026-11-24
 
 - **Mesh (MeshCore), step 1 – listen only:** a MeshCore node with the "Companion Radio (USB)" firmware (e.g.

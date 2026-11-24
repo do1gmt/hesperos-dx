@@ -4101,5 +4101,18 @@ assert 'if path == "/api/mesh":' in wa and 'if path == "/api/mesh/port":' in wa 
 PY
 pkill -f "mesh_fake.py $MF" 2>/dev/null; rm -rf "$MF"
 
+echo "== 105 Sprache umschalten: das Profil (PC/Handy) steht auf dem Pi, bevor die Seite neu lädt"
+(timeout 30 python3 - "$SRC" <<'PY') && ok "Sprache, Anordnung zurücksetzen und Profilwahl warten auf das Speichern im Profil – kein Rückfall auf den alten Wert nach dem Neuladen" || bad "Sprachumschaltung/Profil"
+import sys
+from pathlib import Path
+w = Path(sys.argv[1]) / "web"
+i18, pr, lay = (w / "i18n.js").read_text(), (w / "prefs.js").read_text(), (w / "layout.js").read_text()
+assert "if (window.HSPPrefs && HSPPrefs.save) await HSPPrefs.save();" in i18
+assert i18.index("await HSPPrefs.save()") < i18.index("location.reload();", i18.index("async set(l)"))
+assert "save: function () { return flush(false)" in pr and "return send({ profile: profile, set: set }, keepalive);" in pr
+assert "flush(false).then(function () { location.reload(); }" in pr
+assert "HSPPrefs.save() : Promise.resolve()).then(function () { location.reload(); });" in lay
+PY
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

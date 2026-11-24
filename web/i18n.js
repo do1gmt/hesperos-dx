@@ -670,6 +670,7 @@
     async set(l) {
       l = l === 'en' ? 'en' : 'de';
       try { localStorage.setItem('lang', l); } catch (e) { /* egal */ }
+      if (window.HSPPrefs && HSPPrefs.save) await HSPPrefs.save();   // Profil (PC/Handy) zuerst – es hat Vorrang
       try {                                                    // auf dem Pi speichern: gilt für alle Browser
         await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' },
                                         credentials: 'same-origin', body: JSON.stringify({ ui_lang: l }) });

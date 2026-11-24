@@ -44,9 +44,9 @@
   }
   function flush(keepalive) {
     if (timer) { clearTimeout(timer); timer = null; }
-    var keys = Object.keys(pending); if (!keys.length) return;
+    var keys = Object.keys(pending); if (!keys.length) return Promise.resolve(null);
     var set = pending; pending = {};
-    send({ profile: profile, set: set }, keepalive);
+    return send({ profile: profile, set: set }, keepalive);
   }
   function queue(k, v) {
     pending[k] = v;
@@ -82,11 +82,13 @@
   window.HSPPrefs = {
     profile: profile, choice: choice, auto: autoProfile(), onPi: !!all,
     has: function (k) { return !!(mine && Object.prototype.hasOwnProperty.call(mine, k)); },
+    // Ausstehendes jetzt auf den Pi schreiben und abwarten – vor einem Neuladen, das die Werte gleich wieder liest
+    // (sonst kam die Seite mit dem alten Profil zurück, z. B. blieb die Sprache nach dem Umschalten die alte)
+    save: function () { return flush(false).then(function () { }, function () { }); },
     // Profil fest wählen ('' = automatisch) – danach neu laden
     choose: function (p) {
-      flush(true);
       try { if (p === 'pc' || p === 'handy') setOrig.call(LS, 'prefs.profile', p); else delOrig.call(LS, 'prefs.profile'); } catch (e) { }
-      location.reload();
+      flush(false).then(function () { location.reload(); }, function () { location.reload(); });
     },
     copyFrom: function (other) {
       flush(true);
