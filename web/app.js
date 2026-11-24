@@ -1031,7 +1031,7 @@
     }
     if (h.decodes.length) html += `<div class="px">${renderDecodes(h)}</div>`;
     if (sat) html += `<div class="sat-info px">${SATINFO.has(h.id) ? satInfoHtml(SATINFO.get(h.id)) : '<p class="hint">Angaben zum Satelliten werden geladen …</p>'}</div>`;
-    else if (['ft8', 'ft4', 'cw', 'rtty', 'digital', 'wspr', 'aprs', 'pocsag'].includes(h.mode)) html += EN ? `<p class="hint px">Nothing decoded yet${h.mode === 'wspr' ? ' – there is no WSPR decoder on the Pi' : ' (runs after the scan, or the signal was too short/too weak)'}.</p>` : `<p class="hint px">Noch nichts dekodiert${h.mode === 'wspr' ? ' – für WSPR gibt es keinen Dekoder auf dem Pi' : ' (läuft nach dem Scan, oder das Signal war zu kurz/zu schwach)'}.</p>`;
+    else if (!h.decodes.length && ['ft8', 'ft4', 'cw', 'rtty', 'digital', 'wspr', 'aprs', 'pocsag'].includes(h.mode)) html += EN ? `<p class="hint px">Nothing decoded yet${h.mode === 'wspr' ? ' – there is no WSPR decoder on the Pi' : ' (runs after the scan, or the signal was too short/too weak)'}.</p>` : `<p class="hint px">Noch nichts dekodiert${h.mode === 'wspr' ? ' – für WSPR gibt es keinen Dekoder auf dem Pi' : ' (läuft nach dem Scan, oder das Signal war zu kurz/zu schwach)'}.</p>`;
     html += `<div class="note-row"><input type="text" class="note" placeholder="Notiz / Rufzeichen" value="${esc(h.note)}" maxlength="200"><button type="button" class="btn btn-small" data-act="note">Speichern</button></div>`;
     html += `<div class="hit-actions">
       <button type="button" class="btn btn-small btn-live" data-act="live">▶ Jetzt live hören</button>
@@ -3049,8 +3049,10 @@
       + `<td>${esc(x.site || x.itu || '')}${x.distance_km != null ? ` <small class="muted">${Math.round(x.distance_km).toLocaleString(I18N.locale)} km</small>` : ''}</td>`
       + `<td class="mono-num">${snr(x.snr_db)}</td><td>${x.heard ? '✓' : ''}</td></tr>`).join('')
       : `<tr><td colspan="5" class="muted">${EN ? 'No scan with EiBi yet.' : 'Noch kein Scan mit EiBi.'}</td></tr>`;
-    $('esHist').textContent = d.last_time ? (EN ? `Last check ${fmtTime(d.last_time)} · ` : `Zuletzt geprüft ${fmtTime(d.last_time)} · `)
-      + (EN ? 'last 24 h: ' : 'letzte 24 h: ') + d.hist.map(h => `${h.band || '?'} ${h.heard}/${h.n}`).join(' · ') : '';
+    // „letzte 24 h:“ nur mit Inhalt – sonst endete die Zeile mit einem leeren Doppelpunkt
+    const hist = (d.hist || []).map(h => `${h.band || '?'} ${h.heard}/${h.n}`).join(' · ');
+    $('esHist').textContent = d.last_time ? (EN ? `Last check ${fmtTime(d.last_time)}` : `Zuletzt geprüft ${fmtTime(d.last_time)}`)
+      + (hist ? (EN ? ' · last 24 h: ' : ' · letzte 24 h: ') + hist : (EN ? ' · nothing in the last 24 h' : ' · in den letzten 24 h nichts')) : '';
   }
   async function saveEibiScan() {
     try { await post('/api/eibi/scan', { max_windows: Number($('esMax').value), heard_db: Number($('esDb').value), europe_only: $('esEu').checked }); loadEibiScan(); loadEstimate && loadEstimate(); }

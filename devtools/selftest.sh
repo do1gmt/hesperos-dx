@@ -4023,5 +4023,14 @@ assert "const DS = EN ? '.' : ','" in js and ".replace('.', ',')" not in js
 assert "(EN ? 'since ' : 'seit ')" in js and "${EN ? 'channel' : 'Kanal'}" in js
 PY
 
+echo "== 102 Treffer-Karte: „Noch nichts dekodiert“ nur ohne Dekodierungen; EiBi-Zeile ohne leeren Doppelpunkt"
+(timeout 30 python3 - "$SRC" <<'PY') && ok "„Noch nichts dekodiert“ nur, wenn wirklich nichts dekodiert ist; EiBi „letzte 24 h“ nur mit Inhalt" || bad "Dekodier-Hinweis/EiBi-Zeile"
+import sys
+from pathlib import Path
+js = (Path(sys.argv[1]) / "web" / "app.js").read_text()
+assert "else if (!h.decodes.length && ['ft8', 'ft4', 'cw', 'rtty', 'digital', 'wspr', 'aprs', 'pocsag'].includes(h.mode))" in js
+assert "(hist ? (EN ? ' · last 24 h: ' : ' · letzte 24 h: ') + hist" in js and "'last 24 h: ') + d.hist" not in js
+PY
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

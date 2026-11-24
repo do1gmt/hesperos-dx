@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.8.43 – 2026-11-24
+
+- **Fix:** a hit card with FT8/FT4 (or CW, RTTY, APRS …) decodes also said "Nothing decoded yet (runs after the
+  scan …)" below the decodes. The hint now only appears when there really is nothing decoded.
+- EiBi in the scan: the line "Last check … · last 24 h:" no longer ends with an empty colon – without checks in the
+  last 24 hours it says so.
+- Self-test section 102.
+
 ## 1.8.42 – 2026-11-24
 
 - **Every log event has a description:** about 100 events only showed their raw name in the log (e.g.
