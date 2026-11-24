@@ -41,6 +41,7 @@ EVENTS = {
     "sstv": "SSTV-Bild (alle)",
     "aprs_iss": "APRS über die ISS",
     "satellite": "Satellit gehört (alle Treffer im Band Satelliten)",
+    "mesh_dm": "Mesh: Direktnachricht an meinen Knoten",
 }
 
 
@@ -504,6 +505,36 @@ def live_call_rules(calls, band, rules, my_locator="", t=None):
     p = {"id": None, "rf_hz": calls[0].get("f") or 0, "band": band, "calls": calls, "decode": {}, "segment_id": "",
          "time": t}
     return [(rule, detail) for rule, _p, detail in check_rules([p], rules, my_locator)]
+
+
+def mesh_rules(kind, data, rules):
+    """Beobachtungsliste für den MeshCore-Knoten (bin/mesh.py, 1.8.47). kind „node“: ein Knoten hat sich gemeldet
+    (data: name, type, km); kind „msg“: Nachricht (data: kind chan|dm, channel_name, sender, text, snr, hops).
+    Regeln: mesh_node (Name, * als Platzhalter, Groß/klein egal – auch der Absender einer Kanalnachricht),
+    mesh_text (Stichwort im Text, Groß/klein egal), event mesh_dm (jede Direktnachricht an den eigenen Knoten).
+    Rückgabe [(rule, detail, subject)] – subject trennt die Ruhezeit je Knoten bzw. Absender."""
+    out = []
+    for rule in rules or []:
+        if not rule.get("enabled", True):
+            continue
+        typ, val = rule.get("type"), str(rule.get("value", "")).strip()
+        if kind == "node" and typ == "mesh_node":
+            name = str(data.get("name") or "")
+            if name and fnmatch.fnmatch(name.lower(), val.lower()):
+                d = " · ".join(x for x in (name, data.get("type") or "", f"{data['km']} km" if data.get("km") is not None else "",
+                                           "hat sich gemeldet") if x)
+                out.append((rule, d, name))
+        elif kind == "msg":
+            sender, text = str(data.get("sender") or "?"), str(data.get("text") or "")
+            where = "direkt" if data.get("kind") == "dm" else (data.get("channel_name") or "Kanal")
+            d = f"{where} · {sender}: {text[:160]}" + (f" · SNR {float(data['snr']):.0f} dB" if data.get("snr") is not None else "")
+            if typ == "mesh_node" and data.get("kind") == "chan" and fnmatch.fnmatch(sender.lower(), val.lower()):
+                out.append((rule, d, sender))
+            elif typ == "mesh_text" and val.lower() in text.lower():
+                out.append((rule, d, sender))
+            elif typ == "event" and val == "mesh_dm" and data.get("kind") == "dm":
+                out.append((rule, d, sender))
+    return out
 
 
 def check_rules(new_peaks, rules, my_locator=""):

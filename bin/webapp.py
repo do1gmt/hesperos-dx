@@ -1150,7 +1150,7 @@ def clean_watchlist(items):
     for it in items if isinstance(items, list) else []:
         typ = str(it.get("type", ""))
         val = str(it.get("value", "")).strip()
-        if typ not in ("freq", "call", "event", "dx", "traffic") or not val:
+        if typ not in ("freq", "call", "event", "dx", "traffic", "mesh_node", "mesh_text") or not val:
             raise ValueError("Beobachtung: Typ und Wert angeben")
         if typ == "freq":
             try:
@@ -1170,6 +1170,10 @@ def clean_watchlist(items):
             raise ValueError(f"Rufzeichen ungültig: {val}")
         if typ == "traffic" and not 1 < len(val) <= 40:
             raise ValueError("Verkehr: Straße (z. B. A9) oder Ort angeben")
+        if typ == "mesh_node" and not 0 < len(val) <= 32:
+            raise ValueError("Mesh-Knoten: Name angeben (* als Platzhalter, höchstens 32 Zeichen)")
+        if typ == "mesh_text" and not 1 < len(val) <= 60:
+            raise ValueError("Mesh-Stichwort: 2 bis 60 Zeichen")
         out.append({"id": str(it.get("id") or secrets.token_hex(4)), "type": typ,
                     "value": val.upper() if typ == "call" else val,
                     "label": str(it.get("label") or "").strip()[:60],
@@ -1294,6 +1298,56 @@ def mesh_notice(kind, port):
             NT.clear("mesh_access")
     except Exception:
         pass
+
+
+_mesh_alert_seen = {}
+
+
+def mesh_alert(kind, data):
+    """Beobachtungsliste für den Mesh-Knoten (Rückruf aus bin/mesh.py, 1.8.47): Knoten gemeldet, Stichwort,
+    Direktnachricht. Wie bei Live: je Regel und Knoten/Absender höchstens einmal in der Ruhezeit im Protokoll; die
+    Meldung selbst begrenzt notify. Eigener Faden – der Lesefaden des Knotens wartet nie auf Netz oder Datenbank."""
+    def run():
+        try:
+            st = load_settings()
+            if kind == "node" and data.get("lat") is not None:
+                try:
+                    import satellites as SAT
+                    loc = st.get("my_locator", "")
+                    if loc:
+                        la, lo = SAT.locator_to_latlon(loc)
+                        import math
+                        r = math.pi / 180
+                        c = (math.sin(la * r) * math.sin(data["lat"] * r)
+                             + math.cos(la * r) * math.cos(data["lat"] * r) * math.cos((data["lon"] - lo) * r))
+                        data["km"] = round(6371 * math.acos(max(-1.0, min(1.0, c))))
+                except Exception:
+                    pass
+            hits = ST.mesh_rules(kind, data, st.get("watchlist"))
+            if not hits:
+                return
+            t = time.time()
+            ts = datetime.fromtimestamp(t, timezone.utc).isoformat(timespec="seconds")
+            db = db_connect()
+            try:
+                for rule, detail, subject in hits:
+                    quiet = int(rule.get("quiet_min", 30))
+                    key = (rule["id"], subject)
+                    if time.time() - _mesh_alert_seen.get(key, 0) < quiet * 60:
+                        continue
+                    _mesh_alert_seen[key] = time.time()
+                    label = rule.get("label") or f"{rule['type']} {rule['value']}"
+                    db.execute("INSERT OR IGNORE INTO watch_hit (peak_id, rule_id, label, time, detail) VALUES (?,?,?,?,?)",
+                               (-int(t * 1000), rule["id"], label, ts, detail))
+                    db.commit()
+                    APPLOG.log("INFO", "watch", "watch_hit", rule=label, detail=detail, source="mesh")
+                    if rule.get("mail", True):
+                        NOTIFY.notify_watch(rule["id"], label, detail, quiet, source="mesh")
+            finally:
+                db.close()
+        except Exception as e:
+            APPLOG.log("WARN", "watch", "mesh_alert_failed", error=f"{type(e).__name__}: {e}")
+    threading.Thread(target=run, daemon=True).start()
 
 
 def mesh_overview(limit=100, before=None):
@@ -3795,6 +3849,7 @@ def main():
             time.sleep(3600)                               # stündlich nachsehen, geholt wird höchstens einmal am Tag
     threading.Thread(target=sstv_events_loop, daemon=True).start()
     try:                                                     # MeshCore-Knoten am USB (nur empfangen)
+        MESH.ON_EVENT[0] = mesh_alert                         # Beobachtungsliste: Knoten, Stichwort, Direktnachricht
         MESH.start(mesh_port, APPLOG.log, mesh_notice)
     except Exception as e:
         APPLOG.log("WARN", "mesh", "mesh_start_failed", error=f"{type(e).__name__}: {e}")

@@ -613,6 +613,9 @@ makers are tried; GPS receivers and other serial devices are left alone) and sho
 - messages in the node's channels (e.g. *Public*) and direct messages to the node, with SNR and hops,
 - the nodes it has heard (name, type, distance, last advert) – nodes with a position also on the map (*Mesh*),
 - the radio settings of the node and how many packets it received in the last hour.
+- alerts by mail/push through the watchlist (*Settings → Watchlist*): *Mesh node (name)* – a node announces
+  itself or writes in a channel (`*` as wildcard, e.g. `DB0FRK*`); *Mesh keyword* – a word in a message;
+  *Event → Mesh: direct message to my node*.
 
 It only listens: nothing is sent and nothing is changed on the node; the node decodes, the Pi just reads a few
 bytes. Messages are kept for 90 days. The card stays hidden on a Pi without a node. If the Pi may not open the

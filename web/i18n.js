@@ -334,6 +334,11 @@
     'Passwort zu kurz (mindestens 8 Zeichen)': 'Password too short (at least 8 characters)',
     'Anmeldung': 'Login', 'Abgemeldet': 'Logged out', 'Anmeldung fehlgeschlagen': 'Login failed', 'Anmeldung gesperrt': 'Login blocked',
     'Passwort gesetzt': 'Password set', 'Zugangsschutz ausgeschaltet': 'Access protection switched off',
+    // 1.8.47: Beobachtungsliste für Mesh
+    'Mesh-Knoten (Name)': 'Mesh node (name)', 'Mesh-Stichwort': 'Mesh keyword', 'Mesh-Knoten': 'Mesh node', 'DB0FRK* oder Tom*': 'DB0FRK* or Tom*', 'z. B. QRV': 'e.g. QRV',
+    'Mesh: Direktnachricht an meinen Knoten': 'Mesh: direct message to my node', 'Mesh-Warnung ließ sich nicht melden': 'Mesh alert could not be sent',
+    'Meldet sich, sobald der Scanner etwas Bestimmtes hört – im Protokoll, mit 🔔 auf der Trefferkarte und, wenn eingerichtet, per Mail oder Push aufs Handy (höchstens eine je Regel in der Ruhezeit). Rufzeichen und Entfernung gelten auch für Live (FT8, FT4, APRS …) und melden sich dort sofort; * steht für beliebige Zeichen (DL1*). Mesh-Regeln (MeshCore-Knoten am USB): ein Knoten meldet sich oder schreibt, ein Stichwort in einer Nachricht, jede Direktnachricht (unter Ereignis).':
+      'Reports as soon as the scanner hears something specific – in the log, with 🔔 on the hit card and, if set up, by mail or push to your phone (at most one per rule in the quiet time). Callsign and distance rules also apply to Live (FT8, FT4, APRS …) and report there at once; * stands for any characters (DL1*). Mesh rules (MeshCore node on USB): a node announces itself or writes, a keyword in a message, every direct message (under Event).',
     // 1.8.45: Mesh (MeshCore)
     'Von': 'From', 'Weiterleitungen über Repeater': 'Forwarded via repeaters', 'Gehörte Knoten': 'Heard nodes', 'Letzte Ankündigung (': 'Last advert (',
     'Zuletzt gehört (': 'Last heard (', 'Knoten am USB': 'Node on USB', 'automatisch erkennen': 'detect automatically', 'MeshCore-Knoten mit Position:': 'MeshCore nodes with a position:',

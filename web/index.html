@@ -697,11 +697,11 @@
       </section>
       <section class="panel" id="panel-watch">
         <h2>Beobachtungsliste</h2>
-        <p class="hint">Meldet sich, sobald der Scanner etwas Bestimmtes hört – im Protokoll, mit 🔔 auf der Trefferkarte und, wenn eingerichtet, per Mail oder Push aufs Handy (höchstens eine je Regel in der Ruhezeit). Rufzeichen und Entfernung gelten auch für Live (FT8, FT4, APRS …) und melden sich dort sofort; * steht für beliebige Zeichen (DL1*).</p>
+        <p class="hint">Meldet sich, sobald der Scanner etwas Bestimmtes hört – im Protokoll, mit 🔔 auf der Trefferkarte und, wenn eingerichtet, per Mail oder Push aufs Handy (höchstens eine je Regel in der Ruhezeit). Rufzeichen und Entfernung gelten auch für Live (FT8, FT4, APRS …) und melden sich dort sofort; * steht für beliebige Zeichen (DL1*). Mesh-Regeln (MeshCore-Knoten am USB): ein Knoten meldet sich oder schreibt, ein Stichwort in einer Nachricht, jede Direktnachricht (unter Ereignis).</p>
         <div id="watchList"></div>
         <div class="filter-grid watch-add">
           <label class="field"><span>Art</span><select id="wType">
-            <option value="freq">Frequenz (MHz)</option><option value="call">Rufzeichen</option><option value="dx">Entfernung ab (km)</option><option value="event">Ereignis</option><option value="traffic">Verkehrsmeldung (Straße/Ort)</option>
+            <option value="freq">Frequenz (MHz)</option><option value="call">Rufzeichen</option><option value="dx">Entfernung ab (km)</option><option value="event">Ereignis</option><option value="traffic">Verkehrsmeldung (Straße/Ort)</option><option value="mesh_node">Mesh-Knoten (Name)</option><option value="mesh_text">Mesh-Stichwort</option>
           </select></label>
           <label class="field" id="wValWrap"><span>Wert</span><input id="wValue" type="text" placeholder="439.400" autocomplete="off"></label>
           <label class="field" id="wEvWrap" hidden><span>Ereignis</span><select id="wEvent"></select></label>

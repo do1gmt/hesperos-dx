@@ -40,6 +40,18 @@ STATUS = {"state": "off", "port": "", "error": "", "since": None, "self": {}, "d
 _RX = deque(maxlen=20000)                        # (Zeit, Pakettyp) der letzten Stunde
 _LOCK = threading.Lock()
 _started = [False]
+# Rückruf fürs Dashboard (Beobachtungsliste): ON_EVENT[0](art, daten) – art „msg“ (neue Nachricht) oder „node“
+# (Knoten hat sich gemeldet). Wird im Lesefaden gerufen und darf nicht blockieren.
+ON_EVENT = [None]
+
+
+def _emit(kind, data):
+    cb = ON_EVENT[0]
+    if cb:
+        try:
+            cb(kind, data)
+        except Exception:
+            pass
 
 
 def _iso(t=None):
@@ -280,6 +292,7 @@ class Session:
             m = parse_msg(f)
             m["channel_name"] = STATUS["channels"].get(m["channel"], "") if m["kind"] == "chan" else ""
             if store_msg(m):
+                _emit("msg", dict(m, sender=_dm_name(m["sender"]) if m["kind"] == "dm" else m["sender"]))
                 self.log("DEBUG", "mesh", "mesh_msg", kind=m["kind"], channel=m["channel_name"] or m["channel"],
                          sender=m["sender"], hops=m["hops"])
         self.waiting = False
@@ -337,7 +350,7 @@ def store_nodes(nodes):
     db = _db()
     try:
         ensure_tables(db)
-        now, changed = _iso(), False
+        now, changed, heard = _iso(), False, []
         for n in nodes:
             r = db.execute("SELECT name, type, lat, lon, last_advert FROM mesh_node WHERE key=?", (n["key"],)).fetchone()
             new = (n["name"], n["type"], n["lat"], n["lon"], n["last_advert"])
@@ -348,18 +361,26 @@ def store_nodes(nodes):
                 db.execute("UPDATE mesh_node SET name=?, type=?, lat=?, lon=?, last_advert=?, last_seen=? WHERE key=?",
                            (*new, now, n["key"]))
                 changed = True
+            else:
+                continue
+            # neu oder neue Ankündigung = „hat sich gemeldet“ – nur frische (sonst meldete der erste Abgleich nach
+            # dem Anstecken alle Knoten, die der Knoten seit Wochen kennt)
+            if (r is None or r[4] != n["last_advert"]) and n["last_advert"] > time.time() - 900:
+                heard.append(n)
         if changed:
             db.commit()
         STATUS["nodes_known"] = db.execute("SELECT COUNT(*) FROM mesh_node").fetchone()[0]
     finally:
         db.close()
+    for n in heard:
+        _emit("node", _node_out(n))
 
 
 _seen = {}
 
 
 def store_seen(key):
-    """„Hat sich gemeldet“ höchstens alle 10 min je Knoten schreiben."""
+    """„Hat sich gemeldet“ höchstens alle 10 min je Knoten schreiben (und melden)."""
     if time.time() - _seen.get(key, 0) < 600:
         return
     _seen[key] = time.time()
@@ -368,8 +389,29 @@ def store_seen(key):
         ensure_tables(db)
         db.execute("UPDATE mesh_node SET last_seen=? WHERE key=?", (_iso(), key))
         db.commit()
+        r = db.execute("SELECT key, name, type, lat, lon, last_advert FROM mesh_node WHERE key=?", (key,)).fetchone()
     finally:
         db.close()
+    if r:
+        _emit("node", _node_out(dict(zip(("key", "name", "type", "lat", "lon", "last_advert"), r))))
+
+
+def _node_out(n):
+    return {"key": n["key"][:12], "name": n.get("name") or "", "type": NODE_TYPES.get(n.get("type"), str(n.get("type"))),
+            "lat": n.get("lat"), "lon": n.get("lon")}
+
+
+def _dm_name(prefix):
+    """Absender einer Direktnachricht: Name aus der Knotenliste statt der ersten 6 Byte des Schlüssels."""
+    if not prefix:
+        return prefix
+    db = _db()
+    try:
+        ensure_tables(db)
+        r = db.execute("SELECT name FROM mesh_node WHERE substr(key,1,12)=?", (prefix,)).fetchone()
+    finally:
+        db.close()
+    return r[0] if r and r[0] else prefix
 
 
 def prune():

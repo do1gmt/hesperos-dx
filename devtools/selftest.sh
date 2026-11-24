@@ -4114,5 +4114,53 @@ assert "flush(false).then(function () { location.reload(); }" in pr
 assert "HSPPrefs.save() : Promise.resolve()).then(function () { location.reload(); });" in lay
 PY
 
+echo "== 106 Mesh-Beobachtung: Knoten meldet sich, Stichwort, Direktnachricht – Regeln, Ruhezeit-Schlüssel, Eingabeprüfung"
+MF=$(mktemp -d); (python3 "$SRC/devtools/mesh_fake.py" "$MF" > "$MF/out" 2>&1 &); sleep 1
+(cd bin && HSP_MESH_DEV_GLOB="$MF/by-id/*" HSP_MESH_SYS_TTY="$MF/sys" timeout 60 python3 - "$SRC" <<'PY') && ok "Knoten-Regel (Name mit *), Stichwort, Direktnachricht melden sich mit lesbarem Text; alte Knoten beim ersten Abgleich still; Regeln geprüft; Mail-Text nennt Stationen → Mesh" || bad "Mesh-Beobachtung"
+import sys, time, threading, tempfile
+from pathlib import Path
+import mesh as M, stations as ST
+M.DB = Path(tempfile.mkdtemp()) / "t.db"
+ev, stop = [], [False]
+M.ON_EVENT[0] = lambda k, d: ev.append((k, d))
+threading.Thread(target=M.run, args=(lambda: "auto", lambda *a, **k: None, None, lambda: stop[0], 2), daemon=True).start()
+for _ in range(40):
+    time.sleep(0.5)
+    if sum(1 for k, _ in ev if k == "msg") >= 3 and any(d.get("name") == "DB0FRK Repeater" for k, d in ev if k == "node"):
+        break
+stop[0] = True
+nodes = [d for k, d in ev if k == "node"]; msgs = [d for k, d in ev if k == "msg"]
+assert {n["name"] for n in nodes} == {"DB0FRK Repeater", "DL1ABC Mobil"}, nodes
+assert any(m["kind"] == "dm" and m["sender"] == "DL1ABC Mobil" for m in msgs), msgs   # Name statt Schlüssel
+rules = [{"id": "a", "type": "mesh_node", "value": "db0frk*", "enabled": True},
+         {"id": "b", "type": "mesh_text", "value": "FRANKEN", "enabled": True},
+         {"id": "c", "type": "event", "value": "mesh_dm", "enabled": True},
+         {"id": "d", "type": "mesh_node", "value": "DL1ABC*", "enabled": False}]
+hit = lambda k, d: [(r["id"], det, s) for r, det, s in ST.mesh_rules(k, d, rules)]
+n = next(d for d in nodes if d["name"] == "DB0FRK Repeater"); n["km"] = 31
+assert hit("node", n) == [("a", "DB0FRK Repeater · Repeater · 31 km · hat sich gemeldet", "DB0FRK Repeater")]
+m1 = next(m for m in msgs if "Franken" in m["text"])
+assert hit("msg", m1) == [("b", "Public · DL1ABC Mobil: Hallo Mesh aus Franken · SNR 10 dB", "DL1ABC Mobil")]
+dm = next(m for m in msgs if m["kind"] == "dm")
+assert [h[0] for h in hit("msg", dm)] == ["c"] and hit("node", {"name": "DL1ABC Mobil"}) == []
+# erster Abgleich: ein Knoten mit alter Ankündigung meldet sich nicht
+ev.clear(); M.store_nodes([{"key": "ee" * 32, "name": "Alt", "type": 1, "lat": None, "lon": None, "last_advert": int(time.time()) - 86400}])
+assert not ev
+src = Path(sys.argv[1]); wa = (src / "bin" / "webapp.py").read_text(); nt = (src / "bin" / "notify.py").read_text()
+assert '"mesh_node", "mesh_text"' in wa and "MESH.ON_EVENT[0] = mesh_alert" in wa and "Stationen → Mesh (MeshCore)" in nt
+assert ST.EVENTS["mesh_dm"] and 'value="mesh_node"' in (src / "web" / "index.html").read_text()
+PY
+pkill -f "mesh_fake.py $MF" 2>/dev/null; rm -rf "$MF"
+(cd bin && timeout 30 python3 - <<'PY') && ok "Mesh-Regeln in der Beobachtungsliste: gültige werden gespeichert, leere/zu lange abgewiesen" || bad "Mesh-Regeln Eingabe"
+import webapp as W
+r = W.clean_watchlist([{"type": "mesh_node", "value": "DB0FRK*"}, {"type": "mesh_text", "value": "QRV"}, {"type": "event", "value": "mesh_dm"}])
+assert [x["type"] for x in r] == ["mesh_node", "mesh_text", "event"] and r[0]["value"] == "DB0FRK*"
+for bad in ({"type": "mesh_node", "value": "x" * 40}, {"type": "mesh_text", "value": "a"}):
+    try:
+        W.clean_watchlist([bad]); raise SystemExit("angenommen: %s" % bad)
+    except ValueError:
+        pass
+PY
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

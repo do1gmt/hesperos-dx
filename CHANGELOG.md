@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.8.47 – 2026-11-24
+
+- **Mesh (MeshCore), step 2 – alerts:** new watchlist rules *Mesh node (name)* (a node announces itself or writes
+  in a channel; `*` as wildcard, case does not matter), *Mesh keyword* (a word in a channel or direct message) and
+  the event *Mesh: direct message to my node*. They report at once – log (`watch_hit`, source `mesh`) and, if
+  allowed for the rule, mail/push ("Via the mesh node – Stations → Mesh (MeshCore)") – at most once per rule and
+  node/sender within the quiet time.
+- Direct messages show the sender's name from the node list instead of the key prefix.
+- When the node is plugged in, the first sync of its contact list does not report nodes it has known for long –
+  only nodes whose announcement is fresh (last 15 minutes).
+- Self-test section 106.
+
 ## 1.8.46 – 2026-11-24
 
 - **Fix: switching the language back did not work.** The language is part of the view profile (PC/phone) on the
