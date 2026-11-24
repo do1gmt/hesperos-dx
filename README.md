@@ -98,6 +98,10 @@ shortwave.
   tab) shows only those, "show all hits" goes back. The list is shown page by page (*Per page* 25–200 below the
   list, ◀ ▶ above and below); the page size is kept in the view profile.
 - Antenna profiles, automatic backups, a rescue page and a diagnostics package for when something goes wrong.
+- **Saving while typing:** text and number fields under Scan, System and Settings save 2 seconds after the last
+  keystroke – no need to leave the field. Incomplete numbers (out of range, just a "-") are not saved; if a card
+  redraws itself after saving, the cursor stays in the field. The station name (it renames the Pi in the network)
+  and the networks without password are saved only when you leave the field.
 - **View profiles on the Pi (PC and phone):** card layout and folded cards, design, language, hit filters, last
   tab, Live volume and gain, map and history view are stored on the Pi – the same in every browser and in every
   backup, separately for PC and phone. The profile is chosen automatically (phone = touch screen whose shorter

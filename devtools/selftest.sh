@@ -3576,5 +3576,44 @@ assert "localStorage.setItem('hits.per'" in js and "if (sig !== hitsPage.sig)" i
 assert 'id="hitsPerPage"' in html and html.count("data-hits-pager") == 2 and "limit: '400'" not in js
 PY
 
+echo "== 91 Speichern beim Tippen: 2 s nach der letzten Eingabe, halbe Eingaben nicht, Fokus bleibt beim Neuzeichnen"
+grep -q 'id="stationName"' "$SRC/web/index.html" && grep -q 'data-autosave="blur" id="stationName"' "$SRC/web/index.html" \
+  && grep -q 'data-autosave="blur" id="authTrusted"' "$SRC/web/index.html" && grep -q 'const TYPE_DELAY_MS = 2000;' "$SRC/web/app.js" \
+  && ok "Stationsname und Netze ohne Passwort erst beim Verlassen, Verzögerung 2 s" || bad "Speichern beim Tippen: Ausnahmen"
+if command -v node >/dev/null && node -e "require('jsdom')" 2>/dev/null; then
+    node - "$SRC/web/app.js" <<'JS' && ok "nach der Pause genau ein Speichern, Zahl außerhalb des Bereichs nicht, Live nicht, neu gezeichnetes Feld behält Fokus und Weitergetipptes (jsdom)" || bad "Speichern beim Tippen"
+const { JSDOM } = require('jsdom'); const src = require('fs').readFileSync(process.argv[2], 'utf8');
+const a = src.indexOf('// ---------- Speichern beim Tippen'), b = src.indexOf('// ---------- Ende Speichern beim Tippen');
+if (a < 0 || b < 0) { console.log('Block fehlt'); process.exit(1); }
+const code = src.slice(a, b).replace('const TYPE_DELAY_MS = 2000;', 'const TYPE_DELAY_MS = 40;');
+const d = new JSDOM(`<body><section data-view="settings"><input id="loc" type="text"><input id="sn" type="text" data-autosave="blur">
+  <input id="num" type="number" min="0" max="10"><table><tbody id="rows"><tr data-i="0"><td><input type="text" data-k="name" value="Sigma"></td></tr></tbody></table></section>
+  <section data-view="live"><input id="freq" type="text"></section></body>`, { runScripts: 'outside-only', url: 'http://x/', pretendToBeVisual: true });
+const w = d.window, doc = w.document; w.CSS = { escape: x => String(x).replace(/"/g, '\\"') };
+w.eval(code);
+const n = {}; ['loc', 'sn', 'num', 'freq'].forEach(id => { n[id] = 0; doc.getElementById(id).addEventListener('change', () => n[id]++); });
+const type = (el, v) => { el.focus(); el.value = v; el.dispatchEvent(new w.Event('input', { bubbles: true })); };
+const wait = ms => new Promise(r => setTimeout(r, ms));
+(async () => {
+  const loc = doc.getElementById('loc');
+  type(loc, 'J'); await wait(20); type(loc, 'JO6'); await wait(20); type(loc, 'JO62'); await wait(80);
+  type(doc.getElementById('sn'), 'Probe'); type(doc.getElementById('num'), '42'); type(doc.getElementById('freq'), '145.5');
+  await wait(100);
+  if (n.loc !== 1 || n.sn !== 0 || n.num !== 0 || n.freq !== 0) { console.log(JSON.stringify(n)); process.exit(1); }
+  type(doc.getElementById('num'), '7'); await wait(80);
+  if (n.num !== 1) { console.log('num', n.num); process.exit(1); }
+  // Karte baut sich nach dem Speichern neu; dazwischen wird weitergetippt
+  const rows = doc.getElementById('rows');
+  rows.addEventListener('change', e => { const v = e.target.value; setTimeout(() => {
+    rows.innerHTML = `<tr data-i="0"><td><input type="text" data-k="name" value="${v}"></td></tr>`; }, 10); });
+  const f = rows.querySelector('input'); type(f, 'Sigma HF'); await wait(45);
+  f.value = 'Sigma HF-360'; f.dispatchEvent(new w.Event('input', { bubbles: true }));
+  await wait(30);
+  const g = rows.querySelector('input');
+  if (g === f || doc.activeElement !== g || g.value !== 'Sigma HF-360') { console.log(g === f, doc.activeElement === g, g.value); process.exit(1); }
+})();
+JS
+fi
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.8.32 – 2026-11-24
+
+- **Saving while typing:** text and number fields under Scan, System and Settings now save 2 seconds after the
+  last keystroke instead of only when you leave the field. One shared mechanism for all cards (the field reports
+  "changed" after the pause, every card saves as before); leaving the field afterwards does not save a second time.
+  - not saved: incomplete or invalid numbers (just "-", out of range), password and search fields, fields under
+    Live, Hits, Stations and Log (their filters already react while typing);
+  - only when leaving the field, as before: the station name (renames the Pi in the network and the backup
+    folder) and the networks without password (a half-typed `192.168.1.0/2` must never be allowed, not even briefly);
+  - if a card redraws itself after saving (stick list, antenna profiles) or during a refresh, the cursor stays in
+    the field and nothing typed meanwhile is lost.
+- Self-test section 91 (jsdom).
+
 ## 1.8.31 – 2026-11-24
 
 - **Hits page by page** instead of one endless list (up to 400 cards at once – heavy on the Pi and the phone):

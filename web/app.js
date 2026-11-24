@@ -157,6 +157,81 @@
     let t; root.addEventListener('change', e => { if (skip && skip(e.target)) return; clearTimeout(t); t = setTimeout(fn, 400); });
   }
 
+  // ---------- Speichern beim Tippen (1.8.32) ----------
+  // Text- und Zahlenfelder unter Scan, System und Einstellungen melden 2 s nach der letzten Eingabe von selbst
+  // „geändert“ – jede Karte speichert dann wie bisher bei „change“. Nicht: Passwörter, Suchfelder, Live/Treffer/
+  // Stationen/Protokoll (Filter wirken dort schon beim Tippen), Felder mit data-autosave="blur" (Stationsname: ändert
+  // den Namen im Netz) und halbe Eingaben (ungültige Zahl, außerhalb des Bereichs). Das „change“ des Browsers beim
+  // Verlassen kommt danach nicht noch einmal. Baut eine Karte sich nach dem Speichern neu, bekommt das neue Feld den
+  // Fokus zurück – mit allem, was inzwischen weitergetippt wurde.
+  const TYPE_DELAY_MS = 2000;
+  const TYPE_KINDS = new Set(['text', 'number', 'email', 'url', 'tel']);
+  function typeSaveField(el) {
+    if (!el || !el.closest) return false;
+    const tag = el.tagName;
+    if (!(tag === 'TEXTAREA' || (tag === 'INPUT' && TYPE_KINDS.has(el.type)))) return false;
+    if (el.readOnly || el.disabled || el.closest('[data-autosave="blur"], [data-antsel]') || el.dataset.autosave === 'blur') return false;
+    return !!el.closest('[data-view="settings"], [data-view="system"], [data-view="scan"]');
+  }
+  function fieldSelector(el) {                       // dasselbe Feld nach dem Neuzeichnen wiederfinden
+    if (el.id) return '#' + CSS.escape(el.id);
+    const attr = ['data-f', 'data-k', 'data-follow', 'name'].find(a => el.hasAttribute(a));
+    if (!attr) return null;
+    const own = `[${attr}="${CSS.escape(el.getAttribute(attr))}"]`;
+    const box = el.closest('[data-key], [data-i]');
+    if (!box) return own;
+    const ba = box.hasAttribute('data-key') ? 'data-key' : 'data-i';
+    return `[${ba}="${CSS.escape(box.getAttribute(ba))}"] ${own}`;
+  }
+  // Wird das Feld, in dem getippt wird, durch Neuzeichnen ersetzt (nach dem Speichern oder bei einer Aktualisierung),
+  // bekommt das neue sofort den Fokus – noch bevor der nächste Tastendruck kommt –, mit dem bisher Getippten
+  let typing = null;                                  // {el, sel}
+  new MutationObserver(() => {
+    if (!typing || document.contains(typing.el)) return;
+    const old = typing.el, neu = typing.sel && document.querySelector(typing.sel);
+    const act = document.activeElement;
+    if (!neu || (act && act !== document.body && act !== old)) { typing = null; return; }
+    if (neu.value !== old.value || old._hspTimer) {    // weitergetippt oder noch nicht gespeichert
+      clearTimeout(old._hspTimer); old._hspTimer = null;
+      neu.value = old.value;
+      neu._hspSaved = old._hspSaved;
+      neu.dispatchEvent(new Event('input', { bubbles: true }));   // Rest wird wie gewohnt nach 2 s gespeichert
+    } else neu._hspSaved = old._hspSaved;
+    typing = { el: neu, sel: typing.sel };
+    neu.focus();
+    try { const l = neu.value.length; neu.setSelectionRange(l, l); } catch (e) { /* Zahlenfelder */ }
+  }).observe(document.documentElement, { childList: true, subtree: true });
+  document.addEventListener('focusin', e => {
+    const el = e.target;
+    if (!typeSaveField(el)) return;
+    if (!typing || typing.el !== el) el._hspSaved = el.value;
+    typing = { el, sel: fieldSelector(el) };
+  });
+  document.addEventListener('focusout', e => {
+    const el = e.target;
+    setTimeout(() => { if (typing && typing.el === el && document.contains(el) && document.activeElement !== el) typing = null; }, 0);
+  });
+  document.addEventListener('input', e => {
+    const el = e.target;
+    if (!typeSaveField(el)) return;
+    clearTimeout(el._hspTimer);
+    el._hspTimer = setTimeout(() => {
+      el._hspTimer = null;
+      if (!document.contains(el) || el.value === el._hspSaved) return;
+      if (el.validity && !el.validity.valid) return;   // halbe Eingabe („-“, „14,“, zu groß): nicht speichern
+      el._hspSaved = el.value;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }, TYPE_DELAY_MS);
+  }, true);
+  window.addEventListener('change', e => {              // vor allen anderen: doppeltes „change“ beim Verlassen schlucken
+    const el = e.target;
+    if (!e.isTrusted || !typeSaveField(el)) return;
+    clearTimeout(el._hspTimer); el._hspTimer = null;
+    if (el.value === el._hspSaved) { e.stopImmediatePropagation(); return; }
+    el._hspSaved = el.value;
+  }, true);
+  // ---------- Ende Speichern beim Tippen ----------
+
   // ---------- Zustand ----------
   let bandplan = [];          // [{name, segments:[...]}]
   let modes = {};
