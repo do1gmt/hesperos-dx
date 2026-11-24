@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""MeshCore-Knoten am USB mithören – nur empfangen (Schritt 1).
+"""MeshCore-Node am USB mithören – nur empfangen (Schritt 1).
 
-Ein LoRa-Knoten mit der Firmware „Companion Radio (USB)“ (z. B. Heltec V3/V4, RAK) steckt am Pi. Hesperos DX
+Ein LoRa-Node mit der Firmware „Companion Radio (USB)“ (z. B. Heltec V3/V4, RAK) steckt am Pi. Hesperos DX
 spricht mit ihm über das Companion-Protokoll (seriell, 115200 Bd) und liest:
-  • Nachrichten aus den Kanälen des Knotens (öffentlicher Kanal u. a.) und Direktnachrichten an den Knoten,
-  • die Knoten, die er gehört hat (Name, Art, Position, letzte Ankündigung),
+  • Nachrichten aus den Kanälen des Nodes (öffentlicher Kanal u. a.) und Direktnachrichten an den Node,
+  • die Nodes, die er gehört hat (Name, Art, Position, letzte Ankündigung),
   • eine Zählung aller empfangenen Pakete (SNR/RSSI des letzten) – nur im Speicher.
-Der Knoten dekodiert selbst; der Pi liest nur ein paar Bytes. Ins Mesh gesendet wird nichts.
+Der Node dekodiert selbst; der Pi liest nur ein paar Bytes. Ins Mesh gesendet wird nichts.
 Einstellen (Schritt 3, 1.8.48): Uhr stellt der Pi selbst (beim Verbinden und täglich, nur bei mehr als 10 s
 Abweichung); Name, Position und #Kanäle nur auf Knopfdruck im Dashboard (command()); Funkdaten bleiben, wie sie sind.
-Statistik (Akku, Laufzeit, Rauschen, Sendezeit) jede Minute aus dem Knoten, nur im Speicher.
+Statistik (Akku, Laufzeit, Rauschen, Sendezeit) jede Minute aus dem Node, nur im Speicher.
 
-Ohne Zusatzpakete (nur Standardbibliothek): Rahmen vom Pi an den Knoten beginnen mit „<“, vom Knoten mit „>“,
+Ohne Zusatzpakete (nur Standardbibliothek): Rahmen vom Pi an den Node beginnen mit „<“, vom Node mit „>“,
 danach 2 Byte Länge (little endian) und die Nutzdaten; Aufbau wie in der MeshCore-Doku (Companion Radio Protocol).
 Gespeichert wird in scanner.db (mesh_node, mesh_msg) – nur bei neuen Nachrichten und geänderten Knoten.
 """
@@ -30,7 +30,7 @@ from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
 DB = BASE / "data" / "scanner.db"
-# USB-Hersteller typischer LoRa-Knoten: Espressif (ESP32-S3 direkt), Silicon Labs CP210x, WCH CH340/CH9102,
+# USB-Hersteller typischer LoRa-Node: Espressif (ESP32-S3 direkt), Silicon Labs CP210x, WCH CH340/CH9102,
 # Adafruit/RAK (nRF52), Seeed, Nordic. Andere serielle Geräte (GPS, Funkgeräte) werden nie angesprochen.
 VENDORS = {"303a", "10c4", "1a86", "239a", "2886", "1915"}
 DEV_GLOB = os.environ.get("HSP_MESH_DEV_GLOB", "/dev/serial/by-id/*")
@@ -44,12 +44,12 @@ STATUS = {"state": "off", "port": "", "error": "", "since": None, "self": {}, "d
           "last_rx": None, "nodes_known": 0, "stats": {}, "clock": {}}
 ROOMS = {}                                       # Schlüssel eines Room-Servers → Anmeldung (name, logged_in, pending …)
 _CMDS = queue.Queue()                            # Aufträge aus dem Dashboard an den Lesefaden (command())
-CLOCK_MAX_DRIFT = 10                             # s – darüber stellt der Pi die Uhr des Knotens
+CLOCK_MAX_DRIFT = 10                             # s – darüber stellt der Pi die Uhr des Nodes
 _RX = deque(maxlen=20000)                        # (Zeit, Pakettyp) der letzten Stunde
 _LOCK = threading.Lock()
 _started = [False]
 # Rückruf fürs Dashboard (Beobachtungsliste): ON_EVENT[0](art, daten) – art „msg“ (neue Nachricht) oder „node“
-# (Knoten hat sich gemeldet). Wird im Lesefaden gerufen und darf nicht blockieren.
+# (Node hat sich gemeldet). Wird im Lesefaden gerufen und darf nicht blockieren.
 ON_EVENT = [None]
 
 
@@ -98,7 +98,7 @@ def _vendor(tty):
 
 
 def candidates():
-    """Serielle USB-Geräte, die ein LoRa-Knoten sein könnten: [(Pfad by-id, /dev/tty…, Hersteller)]."""
+    """Serielle USB-Geräte, die ein LoRa-Node sein könnten: [(Pfad by-id, /dev/tty…, Hersteller)]."""
     out = []
     for p in sorted(glob.glob(DEV_GLOB)):
         real = os.path.realpath(p)
@@ -143,7 +143,7 @@ class Link:
         os.write(self.fd, b"<" + len(payload).to_bytes(2, "little") + payload)
 
     def frame(self, timeout):
-        """Nächster Rahmen vom Knoten oder None nach timeout s. OSError/EOFError = Verbindung weg."""
+        """Nächster Rahmen vom Node oder None nach timeout s. OSError/EOFError = Verbindung weg."""
         end = time.time() + timeout
         while True:
             i = self.buf.find(b">")
@@ -292,7 +292,7 @@ class Session:
         STATUS["free_channel"] = next((i for i in range(1, min(n, 40)) if i not in chans), None)
 
     def clock(self):
-        """Uhr des Knotens mit der des Pi vergleichen und bei mehr als CLOCK_MAX_DRIFT s stellen (der Pi hat NTP)."""
+        """Uhr des Nodes mit der des Pi vergleichen und bei mehr als CLOCK_MAX_DRIFT s stellen (der Pi hat NTP)."""
         f = self.request(b"\x05", (9, 1), timeout=3)
         if not f or f[0] != 9 or len(f) < 5:
             return
@@ -328,7 +328,7 @@ class Session:
         STATUS["stats"] = st
 
     def room_logins(self):
-        """Am eigenen Room-Server (am USB, Text-Konsole) anmelden, damit er seine Beiträge an diesen Knoten schickt –
+        """Am eigenen Room-Server (am USB, Text-Konsole) anmelden, damit er seine Beiträge an diesen Node schickt –
         mit dem Gast-Passwort aus seiner Konsole (wird nie angezeigt). Beim ersten Mal, nach einem Neustart des
         Servers und alle 6 h; kennt der Companion den Server noch nicht, sendet der Server eine Ankündigung."""
         for port, sv in list(SERVERS.items()):
@@ -447,7 +447,7 @@ class Session:
                              room=r.get("name"))
         elif c == 0x8A:                                      # neue Ankündigung (ganzer Kontakt)
             store_nodes([parse_contact(f)])
-        elif c == 0x80:                                      # bekannter Knoten hat sich gemeldet
+        elif c == 0x80:                                      # bekannter Node hat sich gemeldet
             store_seen(f[1:33].hex())
         elif c == 0x88 and len(f) >= 4:                      # jedes empfangene Paket (nur gezählt)
             t = time.time()
@@ -506,7 +506,7 @@ def store_msg(m):
 
 
 def store_nodes(nodes):
-    """Knoten eintragen – geschrieben wird nur, was neu ist oder sich geändert hat (SD-Karte schonen)."""
+    """Nodes eintragen – geschrieben wird nur, was neu ist oder sich geändert hat (SD-Karte schonen)."""
     if not nodes:
         return
     db = _db()
@@ -526,7 +526,7 @@ def store_nodes(nodes):
             else:
                 continue
             # neu oder neue Ankündigung = „hat sich gemeldet“ – nur frische (sonst meldete der erste Abgleich nach
-            # dem Anstecken alle Knoten, die der Knoten seit Wochen kennt)
+            # dem Anstecken alle Nodes, die der Node seit Wochen kennt)
             if (r is None or r[4] != n["last_advert"]) and n["last_advert"] > time.time() - 900:
                 heard.append(n)
         if changed:
@@ -542,7 +542,7 @@ _seen = {}
 
 
 def store_seen(key):
-    """„Hat sich gemeldet“ höchstens alle 10 min je Knoten schreiben (und melden)."""
+    """„Hat sich gemeldet“ höchstens alle 10 min je Node schreiben (und melden)."""
     if time.time() - _seen.get(key, 0) < 600:
         return
     _seen[key] = time.time()
@@ -564,7 +564,7 @@ def _node_out(n):
 
 
 def _node_by_prefix(prefix):
-    """Knoten aus der Liste über die ersten Byte seines Schlüssels (6 bei Direktnachrichten, 4 bei Room-Beiträgen)."""
+    """Node aus der Liste über die ersten Byte seines Schlüssels (6 bei Direktnachrichten, 4 bei Room-Beiträgen)."""
     if not prefix:
         return None
     db = _db()
@@ -577,7 +577,7 @@ def _node_by_prefix(prefix):
 
 
 def _dm_name(prefix):
-    """Absender einer Direktnachricht: Name aus der Knotenliste statt der ersten 6 Byte des Schlüssels."""
+    """Absender einer Direktnachricht: Name aus der Node-Liste statt der ersten 6 Byte des Schlüssels."""
     if not prefix:
         return prefix
     db = _db()
@@ -641,18 +641,21 @@ def messages(limit=100, before=None, kind=None, not_kind=None):
     out = []
     for i, t, kind, ch, chn, sender, text, snr, hops in rows:
         if kind == "dm" and sender:
-            sender = names.get(sender, sender)               # Direktnachricht: Name aus der Knotenliste
+            sender = names.get(sender, sender)               # Direktnachricht: Name aus der Node-Liste
         out.append({"id": i, "time": t, "kind": kind, "channel": ch, "channel_name": chn, "sender": sender,
                     "text": text, "snr": snr, "hops": hops})
     return {"messages": out, "total": total}
 
 
-def nodes():
+def nodes(limit=1000, offset=0, total=None):
+    """Gehörte Nodes, zuletzt gehörte zuerst – seitenweise (limit/offset); total (Liste) bekommt die Gesamtzahl."""
     db = _db()
     try:
         ensure_tables(db)
         rows = db.execute("""SELECT key, name, type, lat, lon, last_advert, first_seen, last_seen FROM mesh_node
-                             ORDER BY last_seen DESC LIMIT 1000""").fetchall()
+                             ORDER BY last_seen DESC LIMIT ? OFFSET ?""", (int(limit), int(offset))).fetchall()
+        if total is not None:
+            total.append(db.execute("SELECT COUNT(*) FROM mesh_node").fetchone()[0])
     finally:
         db.close()
     return [{"key": k[:12], "name": n, "type": NODE_TYPES.get(t, str(t)), "lat": la, "lon": lo,
@@ -944,7 +947,7 @@ def _worker(p, log, notice, stop, failed):
 
 def run(get_port, log, notice=None, stop=lambda: False, rescan=30):
     """Dauerschleife (eigener Faden im Dashboard): Geräte suchen und je Gerät einen Faden starten – ein Companion
-    (Nachrichten, Knoten, Einstellungen) und beliebig viele Repeater/Room-Server (Zustand, Uhr). Ein Gerät, das gar
+    (Nachrichten, Nodes, Einstellungen) und beliebig viele Repeater/Room-Server (Zustand, Uhr). Ein Gerät, das gar
     nicht antwortet, wird erst nach dem Abziehen wieder versucht. get_port() → "auto" | "off" | Pfad."""
     failed, last_prune = {}, 0
     while not stop():
@@ -963,7 +966,7 @@ def run(get_port, log, notice=None, stop=lambda: False, rescan=30):
         cands = [(port, os.path.realpath(port), "")] if port != "auto" else candidates()
         present = {p for p, _, _ in cands}
         for p in list(failed):
-            # abgezogen: beim nächsten Anstecken wieder versuchen; sonst nach 15 min (Knoten war beim ersten Mal noch
+            # abgezogen: beim nächsten Anstecken wieder versuchen; sonst nach 15 min (Node war beim ersten Mal noch
             # nicht bereit, z. B. nach einem Neustart des Pi beide Boards gleichzeitig)
             if p not in present or time.time() - failed[p] > 900:
                 failed.pop(p)
@@ -993,11 +996,11 @@ def server_command(key, cmd, timeout=15, **kw):
 def command(cmd, timeout=15, **kw):
     """Auftrag ans verbundene Gerät (aus dem Dashboard): wartet auf das Ergebnis. dict(ok, error?, …)."""
     if STATUS.get("state") != "connected":
-        return {"ok": False, "error": "Kein Knoten verbunden"}
+        return {"ok": False, "error": "Kein Node verbunden"}
     box, done = {}, threading.Event()
     _CMDS.put((cmd, kw, box, done))
     if not done.wait(timeout):
-        return {"ok": False, "error": "Knoten antwortet nicht"}
+        return {"ok": False, "error": "Node antwortet nicht"}
     return box
 
 

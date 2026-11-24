@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Nachgebildeter MeshCore-Companion-Knoten (USB) für Selbsttest und UI-Probe – ohne Hardware.
+"""Nachgebildeter MeshCore-Companion-Node (USB) für Selbsttest und UI-Probe – ohne Hardware.
 
     python3 devtools/mesh_fake.py <ordner> [room]   (room: Room-Server mit Text-Konsole statt Companion) legt <ordner>/by-id/usb-Espressif_fake-if00 (→ pty) und
                                                 <ordner>/sys/<pts>/device/idVendor = 303a an und antwortet wie
-                                                ein Knoten (Kanäle, Kontakte, Nachrichten, Paket-Log).
+                                                ein Node (Kanäle, Kontakte, Nachrichten, Paket-Log).
 Danach: HSP_MESH_DEV_GLOB=<ordner>/by-id/* HSP_MESH_SYS_TTY=<ordner>/sys
 """
 import os
@@ -111,7 +111,7 @@ def main(d, mode="companion"):
     buf, pushed = b"", False
     me = {"name": "DO1GMT Pi", "lat": 49.8, "lon": 9.9}
     chans = {0: "Public", 1: "#franken"}
-    offset = -300                                            # Uhr des Knotens geht 5 min nach
+    offset = -300                                            # Uhr des Nodes geht 5 min nach
     t0 = time.time()
     while True:
         r, _, _ = select.select([m], [], [], 0.5)

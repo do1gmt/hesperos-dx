@@ -607,7 +607,7 @@ serve`) count as coming from the browser behind it, not from the Pi: they need t
 Plug a MeshCore node into the Pi's USB – for example a Heltec V3/V4 or a RAK board with the firmware
 **"Companion Radio (USB)"** (from the MeshCore web flasher; the Bluetooth companion, repeater and room server
 firmwares do not talk over USB). Hesperos DX finds it by itself (only USB serial devices of the usual LoRa board
-makers are tried; GPS receivers and other serial devices are left alone) and shows a card *Mesh (MeshCore)* under
+makers are tried; GPS receivers and other serial devices are left alone) and shows the card *MeshCore node (companion)* under
 *Stations*:
 
 - messages in the node's channels (e.g. *Public*) and direct messages to the node, with SNR and hops,
@@ -625,12 +625,15 @@ the node are shown in the card's status line. Messages are kept for 90 days. The
 serial port, a notice says which command fixes it (`sudo usermod -aG dialout <user>`, then restart). *Node on USB*
 in the card switches detection off or picks a port.
 
-A MeshCore **repeater or room server** on the Pi's USB (also in addition to the companion) is found as well – its
-firmware speaks a text console instead of the companion protocol. The card shows its role, name, firmware,
+A MeshCore **repeater or room server** on the Pi's USB (a device of its own, also in addition to the companion) is
+found as well – its firmware speaks a text console instead of the companion protocol. It gets a card of its own,
+*MeshCore room server* (or *repeater*), which shows its role, name, firmware,
 board, radio settings, battery, uptime, noise floor, airtime and packet counters (every minute), and the Pi sets
 its clock when it is slow (these devices lose the time on every restart).
 
-**Room server: notice board and administration.** If a companion is on USB too, the Pi logs it in to its own
+**Room server: notice board and administration.** Note the special case: the notice board cannot be read over the
+server's USB console – a room server only pushes its posts to nodes that are logged in to it over the air. So the
+board needs **both devices on the Pi**: the room server and a companion node. If a companion is on USB too, the Pi logs it in to its own
 room server (with the guest password read from the server's console – never shown, never logged; again after a
 restart of the server and every 6 hours; if the companion does not know the server yet, the server sends an
 advert first). The server then pushes every post to the companion – the card shows the **notice board** live

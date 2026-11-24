@@ -41,7 +41,7 @@ EVENTS = {
     "sstv": "SSTV-Bild (alle)",
     "aprs_iss": "APRS über die ISS",
     "satellite": "Satellit gehört (alle Treffer im Band Satelliten)",
-    "mesh_dm": "Mesh: Direktnachricht an meinen Knoten",
+    "mesh_dm": "Mesh: Direktnachricht an meinen Node",
     "mesh_room": "Mesh: neuer Beitrag am schwarzen Brett (Room-Server)",
 }
 
@@ -509,11 +509,11 @@ def live_call_rules(calls, band, rules, my_locator="", t=None):
 
 
 def mesh_rules(kind, data, rules):
-    """Beobachtungsliste für den MeshCore-Knoten (bin/mesh.py, 1.8.47). kind „node“: ein Knoten hat sich gemeldet
+    """Beobachtungsliste für den MeshCore-Node (bin/mesh.py, 1.8.47). kind „node“: ein Node hat sich gemeldet
     (data: name, type, km); kind „msg“: Nachricht (data: kind chan|dm, channel_name, sender, text, snr, hops).
     Regeln: mesh_node (Name, * als Platzhalter, Groß/klein egal – auch der Absender einer Kanalnachricht),
     mesh_text (Stichwort im Text, Groß/klein egal), event mesh_dm (jede Direktnachricht an den eigenen Knoten).
-    Rückgabe [(rule, detail, subject)] – subject trennt die Ruhezeit je Knoten bzw. Absender."""
+    Rückgabe [(rule, detail, subject)] – subject trennt die Ruhezeit je Node bzw. Absender."""
     out = []
     for rule in rules or []:
         if not rule.get("enabled", True):

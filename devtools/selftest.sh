@@ -4060,9 +4060,9 @@ assert "docs/remote-access.md" in (src / "README.md").read_text() and "remote-ac
 assert "AUTH.request_ip(self.client_address[0], self.headers)" in (src / "bin" / "rescue.py").read_text()      # Notfallseite genauso
 PY
 
-echo "== 104 Mesh: MeshCore-Knoten am USB (nachgebildet) – Kanäle, Nachrichten, Direktnachricht, Knoten, Paketzählung"
+echo "== 104 Mesh: MeshCore-Node am USB (nachgebildet) – Kanäle, Nachrichten, Direktnachricht, Knoten, Paketzählung"
 MF=$(mktemp -d); (python3 "$SRC/devtools/mesh_fake.py" "$MF" > "$MF/out" 2>&1 &); sleep 1
-(cd bin && HSP_MESH_DEV_GLOB="$MF/by-id/*" HSP_MESH_SYS_TTY="$MF/sys" timeout 60 python3 - "$SRC" <<'PY') && ok "Knoten gefunden (nur bekannte USB-Hersteller), Name/Modell/Funkdaten gelesen, Kanal- und Direktnachrichten gespeichert (ohne Doppel), Knoten mit Position, Pakete gezählt; Dashboard-Karte, Kartenmodus „Mesh“, Protokoll und Englisch vorhanden" || bad "Mesh (MeshCore)"
+(cd bin && HSP_MESH_DEV_GLOB="$MF/by-id/*" HSP_MESH_SYS_TTY="$MF/sys" timeout 60 python3 - "$SRC" <<'PY') && ok "Knoten gefunden (nur bekannte USB-Hersteller), Name/Modell/Funkdaten gelesen, Kanal- und Direktnachrichten gespeichert (ohne Doppel), Nodes mit Position, Pakete gezählt; Dashboard-Karte, Kartenmodus „Mesh“, Protokoll und Englisch vorhanden" || bad "Mesh (MeshCore)"
 import sys, time, threading, tempfile, os
 from pathlib import Path
 import mesh as M
@@ -4082,7 +4082,7 @@ assert s["packets_hour"] == 1 and s["last_rx"]["snr"] == 7.0 and s["last_rx"]["r
 ms = M.messages()["messages"]
 assert [m["text"] for m in ms] == ["zweite Nachricht", "Direkt an dich", "Hallo Mesh aus Franken"], ms
 assert ms[2]["sender"] == "DL1ABC Mobil" and ms[2]["channel_name"] == "Public" and ms[2]["snr"] == 10.0 and ms[2]["hops"] == 2
-assert ms[1]["kind"] == "dm" and ms[1]["sender"] == "DL1ABC Mobil" and ms[1]["snr"] == -3.0         # Name aus der Knotenliste
+assert ms[1]["kind"] == "dm" and ms[1]["sender"] == "DL1ABC Mobil" and ms[1]["snr"] == -3.0         # Name aus der Node-Liste
 dup = {"kind": "chan", "channel": 0, "sender": "X", "text": "doppelt", "sender_ts": 123, "snr": 1, "hops": 0}
 assert M.store_msg(dup) and not M.store_msg(dup)                         # dieselbe Nachricht nur einmal
 n = {x["name"]: x for x in M.nodes()}
@@ -4095,7 +4095,7 @@ M.DEV_GLOB, M.SYS_TTY = d + "/by-id/*", d + "/sys"
 assert M.candidates() == []
 src = Path(sys.argv[1]); html = (src / "web" / "index.html").read_text(); js = (src / "web" / "app.js").read_text(); i18 = (src / "web" / "i18n.js").read_text()
 assert 'id="panel-mesh" hidden' in html and 'data-mm="mesh"' in html and "loadMesh();" in js and "'/api/mesh/port'" in js
-assert "'mesh_connected': 'Mesh: verbunden'" in js and "'Mesh: verbunden': 'Mesh: connected'" in i18 and "'Gehörte Knoten': 'Heard nodes'" in i18
+assert "'mesh_connected': 'Mesh: verbunden'" in js and "'Mesh: verbunden': 'Mesh: connected'" in i18 and "'Gehörte Nodes': 'Heard nodes'" in i18
 wa = (src / "bin" / "webapp.py").read_text()
 assert 'if path == "/api/mesh":' in wa and 'if path == "/api/mesh/port":' in wa and "MESH.start(mesh_port, APPLOG.log, mesh_notice)" in wa
 PY
@@ -4143,7 +4143,7 @@ m1 = next(m for m in msgs if "Franken" in m["text"])
 assert hit("msg", m1) == [("b", "Public · DL1ABC Mobil: Hallo Mesh aus Franken · SNR 10 dB", "DL1ABC Mobil")]
 dm = next(m for m in msgs if m["kind"] == "dm")
 assert [h[0] for h in hit("msg", dm)] == ["c"] and hit("node", {"name": "DL1ABC Mobil"}) == []
-# erster Abgleich: ein Knoten mit alter Ankündigung meldet sich nicht
+# erster Abgleich: ein Node mit alter Ankündigung meldet sich nicht
 ev.clear(); M.store_nodes([{"key": "ee" * 32, "name": "Alt", "type": 1, "lat": None, "lon": None, "last_advert": int(time.time()) - 86400}])
 assert not ev
 src = Path(sys.argv[1]); wa = (src / "bin" / "webapp.py").read_text(); nt = (src / "bin" / "notify.py").read_text()
@@ -4162,9 +4162,9 @@ for bad in ({"type": "mesh_node", "value": "x" * 40}, {"type": "mesh_text", "val
         pass
 PY
 
-echo "== 107 Mesh-Knoten einstellen: Uhr, Statistik, Name, Position, #Kanäle (nachgebildeter Knoten)"
+echo "== 107 Mesh-Node einstellen: Uhr, Statistik, Name, Position, #Kanäle (nachgebildeter Knoten)"
 MF=$(mktemp -d); (python3 "$SRC/devtools/mesh_fake.py" "$MF" > "$MF/out" 2>&1 &); sleep 1
-(cd bin && HSP_MESH_DEV_GLOB="$MF/by-id/*" HSP_MESH_SYS_TTY="$MF/sys" timeout 60 python3 - "$SRC" <<'PY') && ok "Uhr gestellt (5 min nach), Akku/Laufzeit/Rauschen/Sendezeit gelesen, Name und Position gesetzt und gelöscht, #Kanal mit Schlüssel aus dem Namen angelegt und entfernt, Public bleibt; Dashboard-Weg vorhanden" || bad "Mesh-Knoten einstellen"
+(cd bin && HSP_MESH_DEV_GLOB="$MF/by-id/*" HSP_MESH_SYS_TTY="$MF/sys" timeout 60 python3 - "$SRC" <<'PY') && ok "Uhr gestellt (5 min nach), Akku/Laufzeit/Rauschen/Sendezeit gelesen, Name und Position gesetzt und gelöscht, #Kanal mit Schlüssel aus dem Namen angelegt und entfernt, Public bleibt; Dashboard-Weg vorhanden" || bad "Mesh-Node einstellen"
 import sys, time, threading, tempfile, hashlib
 from pathlib import Path
 import mesh as M
@@ -4191,11 +4191,11 @@ assert M.command("channel_delete", index=2)["ok"] and "2" not in M.status()["cha
 assert not M.command("channel_delete", index=0)["ok"] and M.status()["channels"]["0"] == "Public"
 stop[0] = True
 time.sleep(1.5)
-assert M.command("name", name="x")["error"] in ("Kein Knoten verbunden", "Knoten antwortet nicht")
+assert M.command("name", name="x")["error"] in ("Kein Node verbunden", "Node antwortet nicht")
 assert hashlib.sha256(b"#bayern").digest()[:16] and "hashlib.sha256(n.encode(\"utf-8\")).digest()[:16]" in (Path(sys.argv[1]) / "bin" / "mesh.py").read_text()
 src = Path(sys.argv[1]); wa = (src / "bin" / "webapp.py").read_text(); html = (src / "web" / "index.html").read_text(); js = (src / "web" / "app.js").read_text()
 assert 'if path == "/api/mesh/cmd":' in wa and 'where == "locator"' in wa and "[:6]" in wa
-assert 'id="meshSetup"' in html and 'id="meshChanAdd"' in html and "post('/api/mesh/cmd', body)" in js and "'mesh_clock_set': 'Mesh: Uhr des Knotens gestellt'" in js
+assert 'id="meshSetup"' in html and 'id="meshChanAdd"' in html and "post('/api/mesh/cmd', body)" in js and "'mesh_clock_set': 'Mesh: Uhr des Nodes gestellt'" in js
 PY
 pkill -f "mesh_fake.py $MF" 2>/dev/null; rm -rf "$MF"
 
@@ -4281,7 +4281,7 @@ pkill -f "mesh_fake.py $MF" 2>/dev/null; rm -rf "$MF"
 
 echo "== 111 Mesh: fester Anschluss lässt weitere Geräte erkennbar ungenutzt; abgelehnte Geräte nach 15 min neu versucht"
 MF=$(mktemp -d); (python3 "$SRC/devtools/mesh_fake.py" "$MF" > "$MF/o1" 2>&1 &); (python3 "$SRC/devtools/mesh_fake.py" "$MF" room > "$MF/o2" 2>&1 &); sleep 1
-(cd bin && HSP_MESH_DEV_GLOB="$MF/by-id/*" HSP_MESH_SYS_TTY="$MF/sys" timeout 60 python3 - "$SRC" "$MF" <<'PY') && ok "„Knoten am USB“ fest auf den Room-Server: Companion wird nicht benutzt und als ungenutzt gemeldet (Hinweis im Dashboard); nicht antwortende Geräte nach 15 min erneut versucht" || bad "Mesh fester Anschluss"
+(cd bin && HSP_MESH_DEV_GLOB="$MF/by-id/*" HSP_MESH_SYS_TTY="$MF/sys" timeout 60 python3 - "$SRC" "$MF" <<'PY') && ok "„Node am USB“ fest auf den Room-Server: Companion wird nicht benutzt und als ungenutzt gemeldet (Hinweis im Dashboard); nicht antwortende Geräte nach 15 min erneut versucht" || bad "Mesh fester Anschluss"
 import sys, time, threading, tempfile, glob
 from pathlib import Path
 import mesh as M
@@ -4297,10 +4297,26 @@ s = M.status(); stop[0] = True
 assert s["servers"] and s["state"] != "connected" and len(s["unused"]) == 1 and "heltec" in s["unused"][0], s["unused"]
 src = Path(sys.argv[1]); m = (src / "bin" / "mesh.py").read_text(); js = (src / "web" / "app.js").read_text()
 assert "time.time() - failed[p] > 900" in m and "(st.unused || []).length" in js and "automatisch erkennen (alle Geräte)" in js
-assert "Kann dieser Stick Kurzwelle empfangen (Direktabtastung, bis 28,8 MHz)?" in js and "Kurzwelle bleibt der PMSDR" not in js
+assert "Kann dieser Stick Kurzwelle empfangen (Direktabtastung, bis 28,8 MHz)?" in js and "Kurzwelle bleibt der PMSDR" not in js and "'an (Direktabtastung)'" in js
 assert '<span>Kurzwelle <button type="button" class="info-btn" data-info="Kann dieser Stick' in js
 PY
 pkill -f "mesh_fake.py $MF" 2>/dev/null; rm -rf "$MF"
+
+echo "== 112 MeshCore: Companion-Node und Room-Server als zwei Karten, gehörte Nodes seitenweise"
+(cd bin && timeout 30 python3 - "$SRC" <<'PY') && ok "zwei Karten (Companion-Node, Room-Server/Repeater), Nodes seitenweise (25/50/100/250, Ansicht-Profil, Abfrage mit Seite), Wortwahl „Node“" || bad "MeshCore-Karten/Nodes seitenweise"
+import sys, tempfile, sqlite3
+from pathlib import Path
+import mesh as M
+M.DB = Path(tempfile.mkdtemp()) / "t.db"
+M.store_nodes([{"key": f"{i:02x}" * 32, "name": f"N{i}", "type": 1, "lat": None, "lon": None, "last_advert": 0} for i in range(30)])
+t = []
+assert len(M.nodes(25, 0, t)) == 25 and t == [30] and len(M.nodes(25, 25)) == 5
+src = Path(sys.argv[1]); html = (src / "web" / "index.html").read_text(); js = (src / "web" / "app.js").read_text()
+assert 'id="panel-meshsrv" hidden' in html and '<h2>MeshCore-Node (Companion)</h2>' in html
+assert html.index('id="meshServers"') > html.index('id="panel-meshsrv"')
+assert '<select id="meshNodesPer"><option selected>25</option>' in html and "'meshnodes.per'," in (src / "web" / "prefs.js").read_text()
+assert "&nlimit=${meshNodesPage.per}&noffset=${meshNodesPage.offset}" in js and "Knoten" not in html
+PY
 
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

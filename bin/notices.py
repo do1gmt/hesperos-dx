@@ -169,7 +169,7 @@ import re as _re
 
 EN_EXACT = {
     # 1.8.45
-    "Kein Zugriff auf den Mesh-Knoten": "No access to the mesh node",
+    "Kein Zugriff auf den Mesh-Node": "No access to the mesh node",
     "Benutzer in die Gruppe dialout aufnehmen und den Pi neu starten:": "Add the user to the group dialout and restart the Pi:",
     # 1.8.41
     "System → Systemupdates: „Jetzt neu starten“.": "System → System updates: “Restart now”.",

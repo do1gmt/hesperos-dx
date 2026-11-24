@@ -229,7 +229,7 @@
     <details class="map-box" id="mapBox"><summary>Karte</summary>
       <div class="map-opts"><div class="chips map-mode" role="radiogroup" aria-label="Darstellung"><button type="button" class="chip on" data-mm="calls">Rufzeichen</button><button type="button" class="chip" data-mm="grid">Locator-Felder</button><button type="button" class="chip" data-mm="mesh" id="mapMeshChip" hidden>Mesh</button></div>
         <span class="map-legend" id="mapLegendCalls">Punktfarbe = SNR: <i style="background:#3b82f6"></i>≤ −20 <i style="background:#22c55e"></i>−10 <i style="background:#eab308"></i>0 <i style="background:#ef4444"></i>≥ +10 dB · Rand: FT8 blau, APRS gelb</span>
-        <span class="map-legend" id="mapLegendGrid" hidden>Feld = 4-stelliger Locator (2° × 1°) · je kräftiger, desto mehr Stationen</span><span class="map-legend" id="mapLegendMesh" hidden>MeshCore-Knoten mit Position: <i style="background:#2dd4bf"></i>Companion <i style="background:#f5b942"></i>Repeater <i style="background:#a78bfa"></i>Room <i style="background:#94a3b8"></i>Sensor</span></div>
+        <span class="map-legend" id="mapLegendGrid" hidden>Feld = 4-stelliger Locator (2° × 1°) · je kräftiger, desto mehr Stationen</span><span class="map-legend" id="mapLegendMesh" hidden>MeshCore-Nodes mit Position: <i style="background:#2dd4bf"></i>Companion <i style="background:#f5b942"></i>Repeater <i style="background:#a78bfa"></i>Room <i style="background:#94a3b8"></i>Sensor</span></div>
       <div id="stMap" class="st-map"></div>
       <p class="hint" id="mapNote">Kartenhintergrund: OpenStreetMap (braucht Internet im Browser). Nur Stationen mit Locator.</p>
     </details>
@@ -243,9 +243,8 @@
     <p class="hint">ADIF ist das Austauschformat der Logbuchprogramme. Der Export ist ein SWL-Log (jede gehörte Aussendung ein Eintrag, SWL=Y) – mit deinem Rufzeichen und Locator aus den Einstellungen.</p>
   </section>
   <section class="panel" id="panel-mesh" hidden>
-    <h2>Mesh (MeshCore)</h2>
+    <h2>MeshCore-Node (Companion)</h2>
     <p class="hint" id="meshState">–</p>
-    <div id="meshServers"></div>
     <div class="row filter-row">
       <label class="field"><span>Kanal</span><select id="meshChan"><option value="">alle</option></select></label>
     </div>
@@ -253,14 +252,18 @@
       <thead><tr><th>Zeit (<span class="tzl">UTC</span>)</th><th>Kanal</th><th>Von</th><th>Nachricht</th><th>SNR</th><th title="Weiterleitungen über Repeater">Hops</th></tr></thead>
       <tbody id="meshMsgs"></tbody></table></div>
     <div class="row pager-row"><span class="hint" id="meshPos"></span><button type="button" class="btn btn-small" id="meshMore">älter ▶</button></div>
-    <h3 class="sub">Gehörte Knoten</h3>
+    <h3 class="sub">Gehörte Nodes</h3>
     <div class="table-wrap"><table class="table mesh-nodes">
       <thead><tr><th>Name</th><th>Art</th><th>Entfernung</th><th>Letzte Ankündigung (<span class="tzl">UTC</span>)</th><th>Zuletzt gehört (<span class="tzl">UTC</span>)</th></tr></thead>
       <tbody id="meshNodes"></tbody></table></div>
-    <details class="mesh-setup" id="meshSetup"><summary>Knoten einstellen</summary>
+    <div class="row pager-row">
+      <label class="field"><span>Pro Seite</span><select id="meshNodesPer"><option selected>25</option><option>50</option><option>100</option><option>250</option></select></label>
+      <button type="button" class="btn btn-small" id="meshNodesPrev">◀</button><span class="hint" id="meshNodesPos"></span><button type="button" class="btn btn-small" id="meshNodesNext">▶</button>
+    </div>
+    <details class="mesh-setup" id="meshSetup"><summary>Node einstellen</summary>
       <p class="hint" id="meshRadio">–</p>
       <div class="mesh-set-row">
-        <label class="field"><span>Name des Knotens</span><input id="meshName" type="text" maxlength="31" autocomplete="off"></label>
+        <label class="field"><span>Name des Nodes</span><input id="meshName" type="text" maxlength="31" autocomplete="off"></label>
         <button type="button" class="btn" id="meshNameSave">Name speichern</button>
       </div>
       <div class="mesh-set-row">
@@ -275,12 +278,16 @@
         <button type="button" class="btn" id="meshChanAdd">Hinzufügen</button>
       </div>
       <div class="save-note" id="meshSetNote" aria-live="polite"></div>
-      <p class="hint">Wirkt sofort im Knoten (wie in der MeshCore-App). Die Uhr des Knotens stellt der Pi selbst – beim Verbinden und täglich, wenn sie mehr als 10 s danebenliegt. Position: Andere sehen deinen Knoten damit auf ihrer Karte; „ungefähr“ nimmt die Mitte deines Locator-Felds. Öffentliche #Kanäle haben ihren Schlüssel im Namen – wer den Namen kennt, liest mit. Die Funkdaten (Frequenz, SF, Bandbreite) bleiben, wie sie im Knoten eingestellt sind.</p>
+      <p class="hint">Wirkt sofort im Node (wie in der MeshCore-App). Die Uhr des Nodes stellt der Pi selbst – beim Verbinden und täglich, wenn sie mehr als 10 s danebenliegt. Position: Andere sehen deinen Node damit auf ihrer Karte; „ungefähr“ nimmt die Mitte deines Locator-Felds. Öffentliche #Kanäle haben ihren Schlüssel im Namen – wer den Namen kennt, liest mit. Die Funkdaten (Frequenz, SF, Bandbreite) bleiben, wie sie im Node eingestellt sind.</p>
     </details>
-    <label class="field mesh-port"><span>Knoten am USB</span><select id="meshPort"><option value="auto">automatisch erkennen (alle Geräte)</option><option value="off">aus</option></select></label>
+    <label class="field mesh-port"><span>Node am USB</span><select id="meshPort"><option value="auto">automatisch erkennen (alle Geräte)</option><option value="off">aus</option></select></label>
     <div class="save-note" id="meshNote" aria-live="polite"></div>
-    <p class="hint">Ein MeshCore-Knoten mit der Firmware „Companion Radio (USB)“ (z. B. Heltec V3/V4, RAK) am USB des Pi: Hesperos DX liest mit, was er empfängt – Nachrichten in seinen Kanälen, Direktnachrichten an ihn und die Knoten in Reichweite. Ins Mesh gesendet wird nichts; am Knoten geändert wird nur, was du unter „Knoten einstellen“ wählst, und die Uhr. Nachrichten bleiben 90 Tage, Positionen zeigt die Karte oben unter „Mesh“.</p>
-    <p class="hint">Ein Repeater oder Room-Server mit MeshCore-Firmware am USB (auch zusätzlich zum Companion) erscheint oben mit Firmware, Funkdaten, Akku, Laufzeit, Rauschen, Sendezeit und Paketzählern; seine Uhr stellt der Pi, wenn sie nachgeht.</p>
+    <p class="hint">Ein MeshCore-Node mit der Firmware „Companion Radio (USB)“ (z. B. Heltec V3/V4, RAK) am USB des Pi: Hesperos DX liest mit, was er empfängt – Nachrichten in seinen Kanälen, Direktnachrichten an ihn und die Nodes in Reichweite. Ins Mesh gesendet wird nichts; am Node geändert wird nur, was du unter „Node einstellen“ wählst, und die Uhr. Nachrichten bleiben 90 Tage, Positionen zeigt die Karte oben unter „Mesh“.</p>
+  </section>
+  <section class="panel" id="panel-meshsrv" hidden>
+    <h2 id="meshSrvTitle">MeshCore Room-Server</h2>
+    <div id="meshServers"></div>
+    <p class="hint">Ein Room-Server oder Repeater mit MeshCore-Firmware am USB des Pi (eigenes Gerät, neben dem Companion-Node). Hesperos DX zeigt Firmware, Funkdaten, Akku, Laufzeit, Rauschen, Sendezeit und Paketzähler, stellt die Uhr und verwaltet ihn über seine Konsole. Das schwarze Brett eines Room-Servers kommt nur über einen Companion-Node am Pi, den Hesperos DX dafür am Server anmeldet.</p>
   </section>
   <section class="panel" id="panel-stations-2">
     <h2>Störlinien</h2>
@@ -720,11 +727,11 @@
       </section>
       <section class="panel" id="panel-watch">
         <h2>Beobachtungsliste</h2>
-        <p class="hint">Meldet sich, sobald der Scanner etwas Bestimmtes hört – im Protokoll, mit 🔔 auf der Trefferkarte und, wenn eingerichtet, per Mail oder Push aufs Handy (höchstens eine je Regel in der Ruhezeit). Rufzeichen und Entfernung gelten auch für Live (FT8, FT4, APRS …) und melden sich dort sofort; * steht für beliebige Zeichen (DL1*). Mesh-Regeln (MeshCore-Knoten am USB): ein Knoten meldet sich oder schreibt, ein Stichwort in einer Nachricht, jede Direktnachricht (unter Ereignis).</p>
+        <p class="hint">Meldet sich, sobald der Scanner etwas Bestimmtes hört – im Protokoll, mit 🔔 auf der Trefferkarte und, wenn eingerichtet, per Mail oder Push aufs Handy (höchstens eine je Regel in der Ruhezeit). Rufzeichen und Entfernung gelten auch für Live (FT8, FT4, APRS …) und melden sich dort sofort; * steht für beliebige Zeichen (DL1*). Mesh-Regeln (MeshCore-Node am USB): ein Node meldet sich oder schreibt, ein Stichwort in einer Nachricht, jede Direktnachricht (unter Ereignis).</p>
         <div id="watchList"></div>
         <div class="filter-grid watch-add">
           <label class="field"><span>Art</span><select id="wType">
-            <option value="freq">Frequenz (MHz)</option><option value="call">Rufzeichen</option><option value="dx">Entfernung ab (km)</option><option value="event">Ereignis</option><option value="traffic">Verkehrsmeldung (Straße/Ort)</option><option value="mesh_node">Mesh-Knoten (Name)</option><option value="mesh_text">Mesh-Stichwort</option>
+            <option value="freq">Frequenz (MHz)</option><option value="call">Rufzeichen</option><option value="dx">Entfernung ab (km)</option><option value="event">Ereignis</option><option value="traffic">Verkehrsmeldung (Straße/Ort)</option><option value="mesh_node">Mesh-Node (Name)</option><option value="mesh_text">Mesh-Stichwort</option>
           </select></label>
           <label class="field" id="wValWrap"><span>Wert</span><input id="wValue" type="text" placeholder="439.400" autocomplete="off"></label>
           <label class="field" id="wEvWrap" hidden><span>Ereignis</span><select id="wEvent"></select></label>

@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.8.52 – 2026-11-25
+
+- **German wording for MeshCore:** "Knoten" replaced by **"Node"**, as the German MeshCore community says (Node
+  am USB, Gehörte Nodes, Node einstellen, Mesh-Node in the watchlist, notices and mails). English unchanged.
+- **Shortwave choice of an RTL stick** (System → Devices): the options say what they do – *automatic (by model)*,
+  *on (direct sampling)*, *off (from 24 MHz)* – instead of "yes/no"; the explanation follows.
+- **Two devices, two cards:** the companion node (*MeshCore node (companion)*: messages, heard nodes, node
+  settings) and a room server/repeater on USB (*MeshCore room server* / *repeater*: state, notice board,
+  administration) are separate cards now, each foldable and movable. README explains the special case that the
+  notice board needs both devices on the Pi.
+- **Heard nodes page by page:** 25 (default), 50, 100 or 250 per page, kept in the view profile like the other
+  lists; the API pages too (the card no longer loads all nodes every 15 s).
+- Self-test section 112.
+
 ## 1.8.51 – 2026-11-24
 
 - **Fix: companion not used while the room server works.** With *Node on USB* fixed to one device (chosen earlier

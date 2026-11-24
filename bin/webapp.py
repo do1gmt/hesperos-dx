@@ -163,7 +163,7 @@ def ensure_schema():
         action TEXT NOT NULL, peak_id INTEGER, band TEXT, rf_hz REAL,
         recording_path TEXT, note TEXT)""")
     ST.ensure_tables(db)                       # gehörte Stationen, Beobachtungsliste
-    MESH.ensure_tables(db)                     # MeshCore-Knoten und -Nachrichten
+    MESH.ensure_tables(db)                     # MeshCore-Node und -Nachrichten
     db.commit()
     db.close()
 
@@ -1171,7 +1171,7 @@ def clean_watchlist(items):
         if typ == "traffic" and not 1 < len(val) <= 40:
             raise ValueError("Verkehr: Straße (z. B. A9) oder Ort angeben")
         if typ == "mesh_node" and not 0 < len(val) <= 32:
-            raise ValueError("Mesh-Knoten: Name angeben (* als Platzhalter, höchstens 32 Zeichen)")
+            raise ValueError("Mesh-Node: Name angeben (* als Platzhalter, höchstens 32 Zeichen)")
         if typ == "mesh_text" and not 1 < len(val) <= 60:
             raise ValueError("Mesh-Stichwort: 2 bis 60 Zeichen")
         out.append({"id": str(it.get("id") or secrets.token_hex(4)), "type": typ,
@@ -1279,7 +1279,7 @@ _MESH_PORT = {"t": 0, "v": "auto"}
 
 
 def mesh_port():
-    """Einstellung „Mesh-Knoten“ (auto | off | /dev/…) – höchstens alle 30 s aus der Datei gelesen."""
+    """Einstellung „Mesh-Node“ (auto | off | /dev/…) – höchstens alle 30 s aus der Datei gelesen."""
     if time.time() - _MESH_PORT["t"] > 30:
         _MESH_PORT.update(t=time.time(), v=str(read_json(SETTINGS, {}).get("mesh_port", "auto") or "auto"))
     return _MESH_PORT["v"]
@@ -1290,7 +1290,7 @@ def mesh_notice(kind, port):
         import notices as NT
         if kind == "access":
             user = os.environ.get("USER") or os.environ.get("LOGNAME") or "pi"
-            NT.raise_("mesh_access", "warn", "hardware", "Kein Zugriff auf den Mesh-Knoten",
+            NT.raise_("mesh_access", "warn", "hardware", "Kein Zugriff auf den Mesh-Node",
                       f"{port} – Hesperos DX darf die serielle Schnittstelle nicht öffnen.",
                       fix="Benutzer in die Gruppe dialout aufnehmen und den Pi neu starten:",
                       cmd=f"sudo usermod -aG dialout {user}")
@@ -1304,9 +1304,9 @@ _mesh_alert_seen = {}
 
 
 def mesh_alert(kind, data):
-    """Beobachtungsliste für den Mesh-Knoten (Rückruf aus bin/mesh.py, 1.8.47): Knoten gemeldet, Stichwort,
-    Direktnachricht. Wie bei Live: je Regel und Knoten/Absender höchstens einmal in der Ruhezeit im Protokoll; die
-    Meldung selbst begrenzt notify. Eigener Faden – der Lesefaden des Knotens wartet nie auf Netz oder Datenbank."""
+    """Beobachtungsliste für den Mesh-Node (Rückruf aus bin/mesh.py, 1.8.47): Node gemeldet, Stichwort,
+    Direktnachricht. Wie bei Live: je Regel und Node/Absender höchstens einmal in der Ruhezeit im Protokoll; die
+    Meldung selbst begrenzt notify. Eigener Faden – der Lesefaden des Nodes wartet nie auf Netz oder Datenbank."""
     def run():
         try:
             st = load_settings()
@@ -1350,10 +1350,12 @@ def mesh_alert(kind, data):
     threading.Thread(target=run, daemon=True).start()
 
 
-def mesh_overview(limit=100, before=None):
-    out = {"status": MESH.status(), "port_setting": mesh_port(), "nodes": MESH.nodes(),
+def mesh_overview(limit=100, before=None, nlimit=25, noffset=0):
+    nt = []
+    out = {"status": MESH.status(), "port_setting": mesh_port(), "nodes": MESH.nodes(nlimit, noffset, nt),
            "board": MESH.messages(50, kind="room")["messages"]}          # schwarzes Brett (Room-Server)
     out.update(MESH.messages(limit, before, not_kind="room"))
+    out["nodes_total"], out["nodes_offset"] = nt[0], noffset
     loc = read_json(SETTINGS, {}).get("my_locator", "")          # leicht: wird alle 15 s gefragt
     try:
         import satellites as SAT
@@ -2718,7 +2720,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json(station_detail(qs.get("call", ""), max(1, min(int(qs.get("limit", 200)), 1000)),
                                                      max(0, int(qs.get("offset", 0)))))
             if path == "/api/mesh":
-                return self.send_json(mesh_overview(max(1, min(int(qs.get("limit", 100)), 500)), qs.get("before")))
+                return self.send_json(mesh_overview(max(1, min(int(qs.get("limit", 100)), 500)), qs.get("before"),
+                                                    max(1, min(int(qs.get("nlimit", 25)), 1000)), max(0, int(qs.get("noffset", 0)))))
             if path == "/api/stations/map":
                 return self.send_json(stations_map(_period_days(qs, 0), qs.get("q", ""), qs.get("band", "")))
             if path == "/api/stations":
@@ -3903,8 +3906,8 @@ def main():
                 APPLOG.log("WARN", "webapp", "sstv_events_failed", error=f"{type(e).__name__}: {e}")
             time.sleep(3600)                               # stündlich nachsehen, geholt wird höchstens einmal am Tag
     threading.Thread(target=sstv_events_loop, daemon=True).start()
-    try:                                                     # MeshCore-Knoten am USB (nur empfangen)
-        MESH.ON_EVENT[0] = mesh_alert                         # Beobachtungsliste: Knoten, Stichwort, Direktnachricht
+    try:                                                     # MeshCore-Node am USB (nur empfangen)
+        MESH.ON_EVENT[0] = mesh_alert                         # Beobachtungsliste: Node, Stichwort, Direktnachricht
         MESH.start(mesh_port, APPLOG.log, mesh_notice)
     except Exception as e:
         APPLOG.log("WARN", "mesh", "mesh_start_failed", error=f"{type(e).__name__}: {e}")

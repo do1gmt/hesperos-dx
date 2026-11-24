@@ -420,7 +420,7 @@ def notify_watch(rule_id, label, detail, quiet_min=30, image=None, source="scan"
     if quiet_min and _throttled(f"watch_{rule_id}", float(quiet_min)):
         return
     where = {"live": "Gehört im Live-Empfang – im Dashboard unter Stationen.",
-             "mesh": "Über den Mesh-Knoten – im Dashboard unter Stationen → Mesh (MeshCore)."}.get(source, "Im Dashboard unter Treffer (🔔).")
+             "mesh": "Über den Mesh-Node – im Dashboard unter Stationen → Mesh (MeshCore)."}.get(source, "Im Dashboard unter Treffer (🔔).")
     send_all(f"Beobachtet: {label}", f"{label}\n{detail}\n\n{where}\n", c, image=image, priority="high")
 
 
