@@ -38,6 +38,7 @@ import housekeeping as HK
 import sysmon as SYSMON
 import sticks as STK
 import stations as ST
+import mesh as MESH
 import backup as BK
 import bandplan as BPL
 
@@ -162,6 +163,7 @@ def ensure_schema():
         action TEXT NOT NULL, peak_id INTEGER, band TEXT, rf_hz REAL,
         recording_path TEXT, note TEXT)""")
     ST.ensure_tables(db)                       # gehörte Stationen, Beobachtungsliste
+    MESH.ensure_tables(db)                     # MeshCore-Knoten und -Nachrichten
     db.commit()
     db.close()
 
@@ -1267,6 +1269,43 @@ def _period_days(qs, default_days):
         h = float(qs.get("hours") or 0)
         return h / 24.0 if h > 0 else 0
     return float(qs.get("days", default_days) or 0)
+
+
+_MESH_PORT = {"t": 0, "v": "auto"}
+
+
+def mesh_port():
+    """Einstellung „Mesh-Knoten“ (auto | off | /dev/…) – höchstens alle 30 s aus der Datei gelesen."""
+    if time.time() - _MESH_PORT["t"] > 30:
+        _MESH_PORT.update(t=time.time(), v=str(read_json(SETTINGS, {}).get("mesh_port", "auto") or "auto"))
+    return _MESH_PORT["v"]
+
+
+def mesh_notice(kind, port):
+    try:
+        import notices as NT
+        if kind == "access":
+            user = os.environ.get("USER") or os.environ.get("LOGNAME") or "pi"
+            NT.raise_("mesh_access", "warn", "hardware", "Kein Zugriff auf den Mesh-Knoten",
+                      f"{port} – Hesperos DX darf die serielle Schnittstelle nicht öffnen.",
+                      fix="Benutzer in die Gruppe dialout aufnehmen und den Pi neu starten:",
+                      cmd=f"sudo usermod -aG dialout {user}")
+        else:
+            NT.clear("mesh_access")
+    except Exception:
+        pass
+
+
+def mesh_overview(limit=100, before=None):
+    out = {"status": MESH.status(), "port_setting": mesh_port(), "nodes": MESH.nodes()}
+    out.update(MESH.messages(limit, before))
+    loc = load_settings().get("my_locator", "")
+    try:
+        import satellites as SAT
+        out["home"] = [round(x, 3) for x in SAT.locator_to_latlon(loc)] if loc else None
+    except Exception:
+        out["home"] = None
+    return out
 
 
 def stations_map(days=0, q="", band=""):
@@ -2623,6 +2662,8 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/station":
                 return self.send_json(station_detail(qs.get("call", ""), max(1, min(int(qs.get("limit", 200)), 1000)),
                                                      max(0, int(qs.get("offset", 0)))))
+            if path == "/api/mesh":
+                return self.send_json(mesh_overview(max(1, min(int(qs.get("limit", 100)), 500)), qs.get("before")))
             if path == "/api/stations/map":
                 return self.send_json(stations_map(_period_days(qs, 0), qs.get("q", ""), qs.get("band", "")))
             if path == "/api/stations":
@@ -3150,6 +3191,16 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/auth/trusted":
                 AUTH.set_trusted(AUTH.parse_networks(data.get("networks", "")))
                 return self.send_json({"ok": True, "auth": AUTH.status()})
+            if path == "/api/mesh/port":
+                port = str(data.get("port", "auto")).strip() or "auto"
+                if port not in ("auto", "off") and not port.startswith("/dev/"):
+                    return self.send_json({"ok": False, "error": "Ungültiger Anschluss"}, 400)
+                st = read_json(SETTINGS, {})
+                st["mesh_port"] = port
+                write_json(SETTINGS, st)
+                _MESH_PORT["t"] = 0
+                APPLOG.log("INFO", "webapp", "mesh_port_set", port=port)
+                return self.send_json({"ok": True, "port": port})
             if path == "/api/settings":
                 res = save_settings(data)
                 if "time_mode" in data:
@@ -3743,6 +3794,10 @@ def main():
                 APPLOG.log("WARN", "webapp", "sstv_events_failed", error=f"{type(e).__name__}: {e}")
             time.sleep(3600)                               # stündlich nachsehen, geholt wird höchstens einmal am Tag
     threading.Thread(target=sstv_events_loop, daemon=True).start()
+    try:                                                     # MeshCore-Knoten am USB (nur empfangen)
+        MESH.start(mesh_port, APPLOG.log, mesh_notice)
+    except Exception as e:
+        APPLOG.log("WARN", "mesh", "mesh_start_failed", error=f"{type(e).__name__}: {e}")
     srv = _Server(("0.0.0.0", port), Handler)
     print(f"Hesperos DX Webserver auf Port {port}, Dateien aus {WEB}")
     srv.serve_forever()

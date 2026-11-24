@@ -334,6 +334,14 @@
     'Passwort zu kurz (mindestens 8 Zeichen)': 'Password too short (at least 8 characters)',
     'Anmeldung': 'Login', 'Abgemeldet': 'Logged out', 'Anmeldung fehlgeschlagen': 'Login failed', 'Anmeldung gesperrt': 'Login blocked',
     'Passwort gesetzt': 'Password set', 'Zugangsschutz ausgeschaltet': 'Access protection switched off',
+    // 1.8.45: Mesh (MeshCore)
+    'Von': 'From', 'Weiterleitungen über Repeater': 'Forwarded via repeaters', 'Gehörte Knoten': 'Heard nodes', 'Letzte Ankündigung (': 'Last advert (',
+    'Zuletzt gehört (': 'Last heard (', 'Knoten am USB': 'Node on USB', 'automatisch erkennen': 'detect automatically', 'MeshCore-Knoten mit Position:': 'MeshCore nodes with a position:',
+    'Ein MeshCore-Knoten mit der Firmware „Companion Radio (USB)“ (z. B. Heltec V3/V4, RAK) am USB des Pi: Hesperos DX liest mit, was er empfängt – Nachrichten in seinen Kanälen, Direktnachrichten an ihn und die Knoten in Reichweite. Gesendet und am Knoten verstellt wird nichts. Nachrichten bleiben 90 Tage, Positionen zeigt die Karte oben unter „Mesh“.':
+      'A MeshCore node with the "Companion Radio (USB)" firmware (e.g. Heltec V3/V4, RAK) on the Pi\'s USB: Hesperos DX reads what it receives – messages in its channels, direct messages to it and the nodes in range. Nothing is sent and nothing is changed on the node. Messages are kept for 90 days; positions are on the map above under "Mesh".',
+    'Mesh: verbunden': 'Mesh: connected', 'Mesh: Verbindung weg': 'Mesh: connection lost', 'Mesh: kein Zugriff auf den Knoten': 'Mesh: no access to the node',
+    'Mesh: Gerät antwortet nicht': 'Mesh: device does not answer', 'Mesh: beendet': 'Mesh: stopped', 'Mesh-Nachricht': 'Mesh message',
+    'Mesh: Gerät ließ sich nicht öffnen': 'Mesh: device could not be opened', 'Mesh ließ sich nicht starten': 'Mesh could not be started', 'Mesh-Knoten eingestellt': 'Mesh node set',
     // 1.8.44: Zugriff von unterwegs
     'Von unterwegs: über ein VPN (Tailscale oder WireGuard am Router) statt einer Portfreigabe –': 'Away from home: through a VPN (Tailscale or WireGuard on the router) instead of opening a port –', 'Anleitung': 'guide',
     // 1.8.42: Protokoll-Ereignisse

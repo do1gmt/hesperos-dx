@@ -602,6 +602,23 @@ HTTP; never forward port 8080 to the Pi. Requests through a proxy on the Pi itse
 serve`) count as coming from the browser behind it, not from the Pi: they need the password like any other device
 (the address the proxy reports is used for "networks without login" and the lockout after wrong passwords).
 
+## Mesh (MeshCore)
+
+Plug a MeshCore node into the Pi's USB – for example a Heltec V3/V4 or a RAK board with the firmware
+**"Companion Radio (USB)"** (from the MeshCore web flasher; the Bluetooth companion, repeater and room server
+firmwares do not talk over USB). Hesperos DX finds it by itself (only USB serial devices of the usual LoRa board
+makers are tried; GPS receivers and other serial devices are left alone) and shows a card *Mesh (MeshCore)* under
+*Stations*:
+
+- messages in the node's channels (e.g. *Public*) and direct messages to the node, with SNR and hops,
+- the nodes it has heard (name, type, distance, last advert) – nodes with a position also on the map (*Mesh*),
+- the radio settings of the node and how many packets it received in the last hour.
+
+It only listens: nothing is sent and nothing is changed on the node; the node decodes, the Pi just reads a few
+bytes. Messages are kept for 90 days. The card stays hidden on a Pi without a node. If the Pi may not open the
+serial port, a notice says which command fixes it (`sudo usermod -aG dialout <user>`, then restart). *Node on USB*
+in the card switches detection off or picks a port.
+
 ## Data sources
 
 - Orbital elements: [CelesTrak](https://celestrak.org) (fallback: AMSAT).

@@ -4060,5 +4060,46 @@ assert "docs/remote-access.md" in (src / "README.md").read_text() and "remote-ac
 assert "AUTH.request_ip(self.client_address[0], self.headers)" in (src / "bin" / "rescue.py").read_text()      # Notfallseite genauso
 PY
 
+echo "== 104 Mesh: MeshCore-Knoten am USB (nachgebildet) – Kanäle, Nachrichten, Direktnachricht, Knoten, Paketzählung"
+MF=$(mktemp -d); (python3 "$SRC/devtools/mesh_fake.py" "$MF" > "$MF/out" 2>&1 &); sleep 1
+(cd bin && HSP_MESH_DEV_GLOB="$MF/by-id/*" HSP_MESH_SYS_TTY="$MF/sys" timeout 60 python3 - "$SRC" <<'PY') && ok "Knoten gefunden (nur bekannte USB-Hersteller), Name/Modell/Funkdaten gelesen, Kanal- und Direktnachrichten gespeichert (ohne Doppel), Knoten mit Position, Pakete gezählt; Dashboard-Karte, Kartenmodus „Mesh“, Protokoll und Englisch vorhanden" || bad "Mesh (MeshCore)"
+import sys, time, threading, tempfile, os
+from pathlib import Path
+import mesh as M
+M.DB = Path(tempfile.mkdtemp()) / "t.db"
+logs, stop = [], [False]
+threading.Thread(target=M.run, args=(lambda: "auto", lambda *a, **k: logs.append((a, k)), None, lambda: stop[0], 2), daemon=True).start()
+for _ in range(40):
+    time.sleep(0.5)
+    if M.status()["state"] == "connected" and M.messages()["total"] >= 3 and M.status()["packets_hour"]:
+        break
+time.sleep(1)
+s = M.status(); stop[0] = True
+assert s["state"] == "connected", s
+assert s["self"]["name"] == "DO1GMT Pi" and s["self"]["freq_mhz"] == 869.525 and s["self"]["sf"] == 11 and s["self"]["bw_khz"] == 250
+assert s["device"]["model"] == "Heltec V4" and s["channels"] == {"0": "Public", "1": "#franken"}
+assert s["packets_hour"] == 1 and s["last_rx"]["snr"] == 7.0 and s["last_rx"]["rssi"] == -90 and s["last_rx"]["type"] == "GRP_TXT"
+ms = M.messages()["messages"]
+assert [m["text"] for m in ms] == ["zweite Nachricht", "Direkt an dich", "Hallo Mesh aus Franken"], ms
+assert ms[2]["sender"] == "DL1ABC Mobil" and ms[2]["channel_name"] == "Public" and ms[2]["snr"] == 10.0 and ms[2]["hops"] == 2
+assert ms[1]["kind"] == "dm" and ms[1]["sender"] == "DL1ABC Mobil" and ms[1]["snr"] == -3.0         # Name aus der Knotenliste
+dup = {"kind": "chan", "channel": 0, "sender": "X", "text": "doppelt", "sender_ts": 123, "snr": 1, "hops": 0}
+assert M.store_msg(dup) and not M.store_msg(dup)                         # dieselbe Nachricht nur einmal
+n = {x["name"]: x for x in M.nodes()}
+assert n["DB0FRK Repeater"]["type"] == "Repeater" and n["DB0FRK Repeater"]["lat"] == 49.79 and n["DL1ABC Mobil"]["lon"] == 11.08
+assert any(a[2] == "mesh_connected" for a, k in logs)
+# nur bekannte Hersteller: ein FTDI-Gerät (GPS o. ä.) wird nie angesprochen
+d = tempfile.mkdtemp(); os.makedirs(d + "/by-id"); os.makedirs(d + "/sys/ttyUSB7/device")
+open(d + "/sys/ttyUSB7/device/idVendor", "w").write("0403\n"); os.symlink("/dev/ttyUSB7", d + "/by-id/usb-FTDI_gps-if00")
+M.DEV_GLOB, M.SYS_TTY = d + "/by-id/*", d + "/sys"
+assert M.candidates() == []
+src = Path(sys.argv[1]); html = (src / "web" / "index.html").read_text(); js = (src / "web" / "app.js").read_text(); i18 = (src / "web" / "i18n.js").read_text()
+assert 'id="panel-mesh" hidden' in html and 'data-mm="mesh"' in html and "loadMesh();" in js and "'/api/mesh/port'" in js
+assert "'mesh_connected': 'Mesh: verbunden'" in js and "'Mesh: verbunden': 'Mesh: connected'" in i18 and "'Gehörte Knoten': 'Heard nodes'" in i18
+wa = (src / "bin" / "webapp.py").read_text()
+assert 'if path == "/api/mesh":' in wa and 'if path == "/api/mesh/port":' in wa and "MESH.start(mesh_port, APPLOG.log, mesh_notice)" in wa
+PY
+pkill -f "mesh_fake.py $MF" 2>/dev/null; rm -rf "$MF"
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

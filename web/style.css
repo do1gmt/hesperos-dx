@@ -874,3 +874,10 @@ body.dragging-card, body.dragging-card * { user-select: none; -webkit-user-selec
 .cf-morse { font-family: var(--mono); letter-spacing: .15em; color: var(--muted); min-height: 1.2em; }
 .cf-bar { height: 6px; border-radius: 3px; background: var(--shade); overflow: hidden; }
 .cf-bar span { display: block; height: 100%; width: 0; background: var(--accent); transition: width .5s; }
+/* Mesh (MeshCore) */
+.mesh-table td, .mesh-nodes td { white-space: nowrap; } .mesh-table td.wrap { white-space: normal; min-width: 16em; overflow-wrap: anywhere; }
+.mesh-table tr.mesh-dm td { background: rgba(45, 212, 191, .07); }
+.mesh-port { max-width: 22rem; margin-top: .6rem; }
+@media (max-width: 599px) { .mesh-table th:nth-child(2), .mesh-table td:nth-child(2), .mesh-table th:nth-child(6), .mesh-table td:nth-child(6),
+  .mesh-nodes th:nth-child(4), .mesh-nodes td:nth-child(4) { display: none; } .mesh-table, .mesh-nodes { font-size: .8rem; }
+  .mesh-table td.wrap { min-width: 9em; } .mesh-table td:first-child, .mesh-nodes td:last-child { white-space: normal; } }

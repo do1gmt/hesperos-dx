@@ -1569,6 +1569,7 @@
   // ---------- Protokoll ----------
   const EVENT_TEXT = {
     // 1.8.42: Ereignisse ohne Beschreibung (sonst stand im Protokoll der Rohname)
+    'mesh_connected': 'Mesh: verbunden', 'mesh_lost': 'Mesh: Verbindung weg', 'mesh_no_access': 'Mesh: kein Zugriff auf den Knoten', 'mesh_no_answer': 'Mesh: Gerät antwortet nicht', 'mesh_stopped': 'Mesh: beendet', 'mesh_msg': 'Mesh-Nachricht', 'mesh_open_failed': 'Mesh: Gerät ließ sich nicht öffnen', 'mesh_start_failed': 'Mesh ließ sich nicht starten', 'mesh_port_set': 'Mesh-Knoten eingestellt',
     'analysis_skipped': 'Auswertung übersprungen', 'auto_backup': 'Automatische Sicherung', 'backup_now': 'Sicherung von Hand', 'decode_skipped': 'Dekodieren übersprungen', 'stick_main_auto': 'Stick automatisch Haupt-Stick', 'stick_new': 'Neuer Stick erkannt', 'stick_serial_written': 'Seriennummer geschrieben', 'stick_unsupported': 'Gerät nicht unterstützt', 'check_failed': 'Prüfung fehlgeschlagen', 'internet_back': 'Internet wieder da', 'network_changed': 'Netz gewechselt', 'live_gap': 'Live: Lücke im Empfang', 'live_heard_failed': 'Live: Gehörte nicht gespeichert', 'live_recorded': 'Live: Aufnahme gespeichert', 'live.start_failed': 'Live ließ sich nicht starten', 'watch_loop_failed': 'Dauerwache: Fehler', 'watch_off': 'Dauerwache aus', 'watch_on': 'Dauerwache an', 'watch_restarted': 'Dauerwache neu gestartet', 'outbox_sent': 'Nachgeholte Nachrichten verschickt', 'test_mail_sent': 'Test-Mail verschickt', 'test_push_sent': 'Test-Push verschickt', 'sstv_upload_failed': 'SSTV-Bild: Upload fehlgeschlagen', 'sstv_uploaded': 'SSTV-Bild hochgeladen', 'rds_decoded': 'RDS dekodiert', 'rds_failed': 'RDS: Fehler', 'rundir_recreated': 'Arbeitsordner neu angelegt', 'pass_stick_restart': 'Überflug: Stick neu gestartet', 'publish_prepare_failed': 'Überflug: Webseiten-Upload nicht vorbereitet', 'waterfall_failed': 'Wasserfall ließ sich nicht erzeugen', 'band_summary_failed': 'Bandübersicht: Fehler', 'fm_watch_failed': 'UKW-Beobachtung: Fehler', 'pmsdr_fifo_reconnect': 'PMSDR: Datenstrom neu verbunden', 'pmsdr_input_set': 'PMSDR: Eingang umgestellt', 'rtl_orphans_killed': 'Verwaiste RTL-Prozesse beendet', 'run_exception': 'Scan: unerwarteter Fehler', 'scan_yielded': 'Scan gibt den Stick frei', 'health_failed': 'Selbstprüfung: Fehler', 'publish_failed': 'Webseiten-Upload: Fehler', 'restore_done': 'Sicherung eingespielt', 'restore_failed': 'Einspielen fehlgeschlagen', 'restore_stick_adopt_failed': 'Einspielen: Stick nicht übernommen', 'restore_stick_adopted': 'Einspielen: Stick übernommen', 'satellite_arming': 'Satelliten werden scharfgeschaltet', 'satellite_watchdog': 'Überflug hängt – beendet', 'scan_yield_requested': 'Scan soll den Stick freigeben', 'settings_unreadable': 'Einstellungen nicht lesbar', 'sticks_failed': 'Sticks: Fehler', 'sysmon_failed': 'Systemwerte: Fehler', 'reboot_requested': 'Neustart angefordert', 'restart_requested': 'Dienst-Neustart angefordert', 'dir_move_failed': 'Programmordner nicht umgezogen', 'dir_move_skipped': 'Programmordner-Umzug ausgelassen', 'dir_moved': 'Programmordner umgezogen', 'hostname_change_failed': 'Rechnername nicht geändert', 'hostname_changed': 'Rechnername geändert', 'hostname_notice_failed': 'Rechnername: Hinweis fehlgeschlagen', 'services_rename_failed': 'Dienste nicht umbenannt', 'services_renamed': 'Dienste umbenannt', 'backup_dir_move_failed': 'Sicherungsordner nicht umgezogen', 'backup_dir_rename_failed': 'Sicherungsordner nicht umbenannt', 'backup_dir_renamed': 'Sicherungsordner umbenannt', 'update_failed': 'Update fehlgeschlagen', 'auto_backup_set': 'Automatische Sicherung eingestellt', 'backup_downloaded': 'Sicherung heruntergeladen', 'backup_from_target': 'Sicherung vom Ziel eingespielt', 'backup_target_nas': 'Sicherungsziel: Netzwerkfreigabe', 'backup_target_nas_removed': 'Netzwerkfreigabe entfernt', 'backup_target_usb': 'Sicherungsziel: USB-Stick', 'backup_uploaded': 'Sicherung hochgeladen', 'backup_usb_ejected': 'USB-Stick ausgeworfen', 'diagnose_downloaded': 'Diagnose heruntergeladen', 'eibi_refresh_failed': 'EiBi: Herunterladen fehlgeschlagen', 'eibi_uploaded': 'EiBi-Liste hochgeladen', 'follow_updated': 'Satelliten-Nachführung eingestellt', 'hf_device_updated': 'Kurzwellengerät eingestellt', 'interference_changed': 'Störlinie geändert', 'live_favorites_saved': 'Live-Favoriten gespeichert', 'location_confirmed': 'Standort bestätigt', 'publish_set': 'Webseiten-Upload eingestellt', 'restore_requested': 'Einspielen angefordert', 'satellites_armed_now': 'Satelliten sofort scharf', 'satellites_arming': 'Satelliten in 1 Minute scharf', 'scan_stop_requested': 'Scan-Abbruch angefordert', 'scheduler_dead_fallback': 'Zeitplaner antwortet nicht – Scan direkt gestartet', 'sstv_event_added': 'SSTV-Termin eingetragen', 'sstv_event_deleted': 'SSTV-Termin gelöscht', 'sstv_events_failed': 'SSTV-Termine: Abruf fehlgeschlagen', 'sstv_manual_queued': 'SSTV-Bild für die Webseite vorgemerkt', 'stick_updated': 'Stick-Einstellungen gespeichert', 'time_mode_set': 'Zeitangaben umgestellt', 'ui_prefs_failed': 'Ansicht-Profil: Fehler', 'update_started': 'Update gestartet', 'watchdog_ping_failed': 'Watchdog-Meldung fehlgeschlagen', 'webapp_stall': 'Dashboard hing kurz', 'webapp_stall_probe_failed': 'Dashboard-Hänger: Prüfung fehlgeschlagen', 'wifi_fallback_added': 'Ersatz-WLAN eingetragen', 'wifi_fallback_removed': 'Ersatz-WLAN entfernt', 'wsjtx_udp_set': 'Weitergabe im Netz (WSJT-X) eingestellt',
     'notice_raised': 'Hinweis gemeldet', 'notice_resolved': 'Hinweis behoben', 'notice_event': 'Ereignis gemeldet', 'update_done': 'Update fertig', 'rescue.start': 'Notfallseite gestartet', 'sysupdate_checked': 'Systemupdates geprüft', 'sysupgrade_requested': 'Systemupdate angefordert', 'sysupgrade_started': 'Systemupdate gestartet', 'sysupgrade_done': 'Systemupdate fertig', 'sysupgrade_failed': 'Systemupdate fehlgeschlagen', 'sysupgrade_waiting': 'Systemupdate wartet auf eine freie Minute', 'sysupgrade_cancelled': 'Systemupdate nicht mehr angefordert', 'sysupgrade_start_failed': 'Systemupdate ließ sich nicht starten', 'reboot_after_update': 'Neustart nach Systemupdate', 'reboot_postponed': 'Neustart verschoben', 'reboot_done': 'Neustart nach Systemupdate erledigt', 'sysupdate_settings': 'Systemupdates eingestellt', 'sysupdate_failed': 'Systemupdates: Fehler', 'foreign_request_blocked': 'Anfrage einer fremden Webseite abgewiesen', 'backup_key_set': 'Passwort der Zugangsdaten gesetzt', 'backup_key_cleared': 'Passwort der Zugangsdaten gelöscht', 'live_image_keep': 'Bild aus Live behalten (★)', 'live_image_unkeep': 'Bild aus Live nicht mehr behalten', 'live_image_delete': 'Bild aus Live gelöscht', 'live_image_publish': 'Bild aus Live für die Webseite vorgemerkt', 'ui_prefs_replaced': 'Ansicht-Profil übernommen', 'ui_prefs_copied': 'Ansicht-Profil kopiert', 'backup_dir_moved': 'Sicherungsordner umgezogen', 'writewatch_failed': 'Schreib-Zählung: Fehler', 'db_keeper_failed': 'Ruhende Datenbank-Verbindung: Fehler', 'live_yield': 'Live hält kurz an', 'live_resumed': 'Live läuft weiter', 'auth_none': 'Dashboard ohne Passwort', 'live_thumb_failed': 'Vorschaubild ließ sich nicht erzeugen',
     run_start: 'Scan gestartet', run_done: 'Scan fertig', run_failed: 'Scan fehlgeschlagen', run_cancelled: 'Scan abgebrochen',
@@ -1806,7 +1807,7 @@
 
   function showView(name) {
     if (name === 'live') setTimeout(() => { eibiList(); eibiNow(true); loadLiveImgs(); }, 0);
-    if (name === 'stations') setTimeout(() => { fillStationBands(); loadStations(); loadActivity(); loadFm(); loadInterf(); }, 0);   // nach dem Start des Skripts
+    if (name === 'stations') setTimeout(() => { fillStationBands(); loadStations(); loadActivity(); loadFm(); loadInterf(); loadMesh(); }, 0);   // nach dem Start des Skripts
     document.querySelectorAll('.view').forEach(v => v.hidden = v.dataset.view !== name);
     document.querySelectorAll('.tabs-main button').forEach(b => b.classList.toggle('on', b.dataset.view === name));
     localStorage.setItem('view', name);
@@ -2534,6 +2535,23 @@
     const tip = { direction: 'top', offset: [0, -6], sticky: false, className: 'map-tip no-i18n' };   // Zusatzinfos nur beim Überfahren/Antippen
     const EN = I18N.lang === 'en', W = { st: EN ? 'station' : 'Station', sts: EN ? 'stations' : 'Stationen', best: EN ? 'best SNR' : 'bestes SNR', last: EN ? 'last' : 'zuletzt' };
     if (d.home) { L.circleMarker(d.home, { radius: 7, color: '#ffffff', fillColor: '#ef4444', fillOpacity: 1, weight: 2, renderer: rend }).bindTooltip('QTH', tip).addTo(mapLayer); pts.push(d.home); }
+    if (mode === 'mesh') {
+      // MeshCore-Knoten mit Position (aus der Mesh-Karte): Farbe nach Art, beim Überfahren Name, Art, Entfernung, zuletzt
+      let m; try { m = await api('/api/mesh?limit=1'); } catch (e) { $('mapNote').textContent = 'Karte: ' + e.message; return; }
+      const MC = { Companion: '#2dd4bf', Repeater: '#f5b942', Room: '#a78bfa', Sensor: '#94a3b8' };
+      const withPos = m.nodes.filter(n => n.lat != null && n.lon != null);
+      for (const n of withPos) {
+        const p = [n.lat, n.lon]; pts.push(p);
+        L.circleMarker(p, { radius: 6, color: '#0f172a', fillColor: MC[n.type] || '#94a3b8', fillOpacity: .95, weight: 1.5, renderer: rend })
+          .bindTooltip(`<b>${esc(n.name || n.key)}</b> · ${esc(meshType(n.type))}${d.home ? ` · ${dist(d.home, p)} km` : ''}<br><small>${W.last} ${fmtTime(n.last_seen)}</small>`, tip)
+          .addTo(mapLayer);
+      }
+      $('mapNote').textContent = EN ? `${withPos.length} of ${m.nodes.length} MeshCore nodes on the map – only nodes that announce a position.`
+        : `${withPos.length} von ${m.nodes.length} MeshCore-Knoten auf der Karte – nur Knoten, die eine Position ankündigen.`;
+      setTimeout(() => map.invalidateSize(), 50);
+      if (pts.length > 1) map.fitBounds(pts, { padding: [20, 20], maxZoom: 10 });
+      return;
+    }
     if (mode === 'grid') {
       // Locator-Felder (4-stellig, 2° × 1°): Farbe nach Zahl der Stationen, beim Überfahren Feld, Anzahl, Rufzeichen
       const cells = new Map();
@@ -2580,7 +2598,7 @@
     let m = 'calls'; try { m = localStorage.getItem('mapMode') || 'calls'; } catch (e) { }
     if (set) { m = set; try { localStorage.setItem('mapMode', m); } catch (e) { } }
     document.querySelectorAll('[data-mm]').forEach(b => b.classList.toggle('on', b.dataset.mm === m));
-    $('mapLegendCalls').hidden = m !== 'calls'; $('mapLegendGrid').hidden = m !== 'grid';
+    $('mapLegendCalls').hidden = m !== 'calls'; $('mapLegendGrid').hidden = m !== 'grid'; $('mapLegendMesh').hidden = m !== 'mesh';
     return m;
   }
   document.querySelectorAll('[data-mm]').forEach(b => b.addEventListener('click', () => { mapMode(b.dataset.mm); if ($('mapBox').open) drawMap(true); }));
@@ -2687,6 +2705,82 @@
         <td>${esc(r.pty || '')}</td><td class="wrap">${esc(r.now_playing || r.rt || '')}</td><td>${r.last_snr != null ? Math.round(r.last_snr) + ' dB' : '–'}${r.best_snr != null && r.best_snr > (r.last_snr ?? -99) + 0.5 ? ` <small class="muted">(max ${Math.round(r.best_snr)})</small>` : ''}</td><td>${fmtTime(r.last)}</td><td>${r.n}</td></tr>`).join('')
       || '<tr><td colspan="8" class="muted">Noch keine UKW-Sender – Band „Rundfunk“ unter Scan einschalten.</td></tr>';
   }
+
+  // ---------- Mesh (MeshCore-Knoten am USB, bin/mesh.py) ----------
+  const meshType = t => EN ? t : ({ Companion: 'Companion', Repeater: 'Repeater', Room: 'Raum', Sensor: 'Sensor' }[t] || t);
+  const meshPage = { before: null, rows: [], total: 0, end: true };
+  let meshPortTouched = 0;
+  async function loadMesh(more) {
+    let d; try { d = await api('/api/mesh?limit=100' + (more && meshPage.before ? '&before=' + meshPage.before : '')); } catch (e) { return; }
+    const st = d.status, me = st.self || {}, dev = st.device || {};
+    // ohne Knoten und ohne Daten bleibt die Karte weg (nicht jeder Pi hat einen)
+    const any = st.state === 'connected' || d.total > 0 || d.nodes.length > 0 || d.port_setting !== 'auto' || st.error;
+    $('panel-mesh').hidden = !any; $('mapMeshChip').hidden = !d.nodes.some(n => n.lat != null);
+    if (!any) return;
+    const rx = st.last_rx;
+    const radio = me.freq_mhz ? `${me.freq_mhz.toFixed(3)} MHz · SF${me.sf} · ${me.bw_khz} kHz` : '';
+    const pk = `${st.packets_hour} ${EN ? (st.packets_hour === 1 ? 'packet' : 'packets') : (st.packets_hour === 1 ? 'Paket' : 'Pakete')} ${EN ? 'in the last hour' : 'in der letzten Stunde'}`
+      + (rx ? ` (${EN ? 'last' : 'letztes'} ${fmtRel(rx.time)}: SNR ${rx.snr} dB, RSSI ${rx.rssi} dBm)` : '');
+    const S = {
+      connected: (EN ? 'Connected: ' : 'Verbunden: ') + [me.name, [dev.model, dev.version].filter(Boolean).join(' '), radio].filter(Boolean).join(' · ') + ' · ' + pk,
+      connecting: EN ? 'Connecting …' : 'Verbinde …',
+      searching: st.error ? (EN ? `Connection lost (${st.error}) – searching again …` : `Verbindung weg (${st.error}) – suche erneut …`)
+        : (EN ? 'No MeshCore node found on USB – plug in a node with "Companion Radio (USB)" firmware.' : 'Kein MeshCore-Knoten am USB gefunden – Knoten mit der Firmware „Companion Radio (USB)“ anstecken.'),
+      error: st.error === 'no_access' ? (EN ? `No access to ${st.port} – see notices (group dialout).` : `Kein Zugriff auf ${st.port} – siehe Hinweise (Gruppe dialout).`) : String(st.error || ''),
+      off: EN ? 'Switched off.' : 'Ausgeschaltet.',
+    };
+    $('meshState').textContent = S[st.state] || st.state;
+    $('meshState').classList.toggle('warn-text', st.state === 'error');
+    cardStatus('panel-mesh', st.state === 'connected' ? (EN ? `connected · ${st.packets_hour} packets/h · ${d.total} messages` : `verbunden · ${st.packets_hour} Pakete/h · ${d.total} Nachrichten`)
+      : st.state === 'off' ? (EN ? 'off' : 'aus') : (EN ? 'no node' : 'kein Knoten'), st.state === 'error');
+    // Kanäle zur Auswahl
+    const chSel = $('meshChan'), cur = chSel.value, names = Object.values(st.channels || {});
+    const want = ['', ...names, 'dm'];
+    if ([...chSel.options].map(o => o.value).join('|') !== want.join('|')) {
+      chSel.innerHTML = `<option value="">${EN ? 'all' : 'alle'}</option>` + names.map(n => `<option>${esc(n)}</option>`).join('')
+        + `<option value="dm">${EN ? 'direct messages' : 'Direktnachrichten'}</option>`;
+      chSel.value = want.includes(cur) ? cur : '';
+    }
+    meshPage.rows = more ? meshPage.rows.concat(d.messages) : d.messages;
+    meshPage.before = d.messages.length ? d.messages[d.messages.length - 1].id : meshPage.before;
+    meshPage.total = d.total; meshPage.end = d.messages.length < 100;
+    renderMeshMsgs();
+    // Knoten
+    const rad = Math.PI / 180, home = d.home;
+    const km = n => { if (!home || n.lat == null) return '–'; const p1 = home[0] * rad, p2 = n.lat * rad, dl = (n.lon - home[1]) * rad;
+      return Math.round(6371 * Math.acos(Math.max(-1, Math.min(1, Math.sin(p1) * Math.sin(p2) + Math.cos(p1) * Math.cos(p2) * Math.cos(dl))))) + ' km'; };
+    $('meshNodes').innerHTML = d.nodes.map(n => `<tr><td><b class="no-i18n">${esc(n.name || n.key)}</b></td><td>${esc(meshType(n.type))}</td><td class="mono-num">${km(n)}</td>`
+      + `<td class="mono-num">${n.last_advert ? fmtTime(n.last_advert) : '–'}</td><td class="mono-num">${fmtTime(n.last_seen)}</td></tr>`).join('')
+      || `<tr><td colspan="5" class="muted">${EN ? 'No nodes heard yet.' : 'Noch keine Knoten gehört.'}</td></tr>`;
+    // Anschluss
+    const ps = $('meshPort');
+    if (Date.now() - meshPortTouched > 5000) {
+      const opts = ['auto', 'off', ...new Set([...(st.candidates || []), ...(d.port_setting.startsWith('/dev/') ? [d.port_setting] : [])])];
+      if ([...ps.options].map(o => o.value).join('|') !== opts.join('|'))
+        ps.innerHTML = `<option value="auto">${EN ? 'detect automatically' : 'automatisch erkennen'}</option><option value="off">${EN ? 'off' : 'aus'}</option>`
+          + opts.slice(2).map(p => `<option value="${esc(p)}" class="no-i18n">${esc(p.split('/').pop())}</option>`).join('');
+      ps.value = d.port_setting;
+    }
+  }
+  function renderMeshMsgs() {
+    const total = meshPage.total, end = meshPage.end;
+    const f = $('meshChan').value;
+    const rows = meshPage.rows.filter(m => !f || (f === 'dm' ? m.kind === 'dm' : m.kind === 'chan' && m.channel_name === f));
+    $('meshMsgs').innerHTML = rows.map(m => `<tr${m.kind === 'dm' ? ' class="mesh-dm"' : ''}><td class="mono-num">${fmtTime(m.time)}</td>`
+      + `<td>${m.kind === 'dm' ? (EN ? 'direct' : 'direkt') : esc(m.channel_name || ('#' + m.channel))}</td><td><b class="no-i18n">${esc(m.sender || '?')}</b></td>`
+      + `<td class="wrap no-i18n">${esc(m.text)}</td><td class="mono-num">${m.snr != null ? m.snr + ' dB' : '–'}</td><td class="mono-num">${m.hops ?? '–'}</td></tr>`).join('')
+      || `<tr><td colspan="6" class="muted">${EN ? 'No messages yet.' : 'Noch keine Nachrichten.'}</td></tr>`;
+    $('meshPos').textContent = EN ? `${meshPage.rows.length} of ${total} messages` : `${meshPage.rows.length} von ${total} Nachrichten`;
+    $('meshMore').hidden = end || meshPage.rows.length >= total;
+  }
+  $('meshChan').addEventListener('change', renderMeshMsgs);
+  $('meshMore').addEventListener('click', () => loadMesh(true));
+  $('meshPort').addEventListener('change', async () => {
+    meshPortTouched = Date.now();
+    try { await post('/api/mesh/port', { port: $('meshPort').value }); note($('meshNote'), EN ? '✓ saved – takes effect within 30 s' : '✓ gespeichert – wirkt innerhalb von 30 s'); }
+    catch (e) { note($('meshNote'), (EN ? 'Error: ' : 'Fehler: ') + e.message, true); }
+  });
+  setInterval(() => { const v = document.querySelector('.view[data-view="stations"]'); if (v && !v.hidden && !$('panel-mesh').classList.contains('folded') && meshPage.rows.length <= 100) loadMesh(); }, 30000);   // geblättert: nicht zurückspringen
 
   // ---------- Aktivität ----------
   async function loadActivity() {

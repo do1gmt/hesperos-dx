@@ -168,6 +168,9 @@ def is_active(nid):
 import re as _re
 
 EN_EXACT = {
+    # 1.8.45
+    "Kein Zugriff auf den Mesh-Knoten": "No access to the mesh node",
+    "Benutzer in die Gruppe dialout aufnehmen und den Pi neu starten:": "Add the user to the group dialout and restart the Pi:",
     # 1.8.41
     "System → Systemupdates: „Jetzt neu starten“.": "System → System updates: “Restart now”.",
     "Scan → Bänder & Betriebsarten: „Satelliten“ einschalten.": "Scan → Bands & modes: switch on “Satellites”.",
@@ -243,6 +246,7 @@ EN_EXACT = {
     "Router, WLAN bzw. Netzwerkkabel prüfen.": "Check the router, Wi-Fi or network cable.",
 }
 EN_RX = [
+    (r"^(.+) – Hesperos DX darf die serielle Schnittstelle nicht öffnen\.$", r"\1 – Hesperos DX may not open the serial port."),
     # 1.8.41: Neustart, SSTV-Termine, Stickwechsel, Update-Prüfung, USB-Datenträger, WLAN
     (r"^(Neuer Kernel (\S+) ist installiert, es läuft noch (\S+)\.|Das Systemupdate hat Kernel, Firmware oder Systembibliotheken erneuert\.) "
      r"(Er startet heute Nacht um (\d\d):00 Uhr von selbst neu, wenn nichts läuft\.|Ein automatischer Neustart ist dafür nicht vorgesehen\.)$",

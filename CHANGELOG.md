@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.8.45 – 2026-11-24
+
+- **Mesh (MeshCore), step 1 – listen only:** a MeshCore node with the "Companion Radio (USB)" firmware (e.g.
+  Heltec V3/V4, RAK) on the Pi's USB is found by itself and read over the companion protocol (`bin/mesh.py`,
+  standard library only, a thread in the web server – no extra service, no extra packages). New card
+  *Stations → Mesh (MeshCore)*: state with node name, model, firmware, frequency/SF/bandwidth and packets of the
+  last hour (SNR/RSSI of the last one); messages of the node's channels and direct messages to it (channel filter,
+  SNR, hops, page by page); heard nodes with type, distance, last advert and last heard; choice of the port
+  (automatic, off, or a fixed device). Map on *Stations* with a new mode *Mesh* for nodes with a position.
+- Only USB serial devices of LoRa board makers (Espressif, Silicon Labs, WCH, Adafruit/RAK, Seeed, Nordic) are
+  tried; a device that does not answer is only tried again after it was unplugged. Nothing is sent to the mesh and
+  no setting of the node is changed.
+- Writes only new messages and changed nodes (scanner.db `mesh_msg`, `mesh_node`); packet counting stays in memory;
+  messages older than 90 days are removed daily. The card stays hidden on Pis without a node.
+- Notice "No access to the mesh node" with the fix (`usermod -aG dialout`); log: `mesh_connected`, `mesh_lost`,
+  `mesh_no_access`, `mesh_no_answer`, `mesh_msg` (debug), `mesh_port_set`. English UI.
+- `devtools/mesh_fake.py`: a simulated node (pty) for the self-test and for trying the card without hardware.
+- Self-test section 104.
+
 ## 1.8.44 – 2026-11-24
 
 - **Guide "Access from anywhere"** ([docs/remote-access.md](docs/remote-access.md)): Tailscale on the Pi or

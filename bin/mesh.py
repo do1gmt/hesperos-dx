@@ -1,0 +1,506 @@
+#!/usr/bin/env python3
+"""MeshCore-Knoten am USB mithören – nur empfangen (Schritt 1).
+
+Ein LoRa-Knoten mit der Firmware „Companion Radio (USB)“ (z. B. Heltec V3/V4, RAK) steckt am Pi. Hesperos DX
+spricht mit ihm über das Companion-Protokoll (seriell, 115200 Bd) und liest:
+  • Nachrichten aus den Kanälen des Knotens (öffentlicher Kanal u. a.) und Direktnachrichten an den Knoten,
+  • die Knoten, die er gehört hat (Name, Art, Position, letzte Ankündigung),
+  • eine Zählung aller empfangenen Pakete (SNR/RSSI des letzten) – nur im Speicher.
+Der Knoten dekodiert selbst; der Pi liest nur ein paar Bytes. Am Knoten wird nichts verstellt und nichts gesendet.
+
+Ohne Zusatzpakete (nur Standardbibliothek): Rahmen vom Pi an den Knoten beginnen mit „<“, vom Knoten mit „>“,
+danach 2 Byte Länge (little endian) und die Nutzdaten; Aufbau wie in der MeshCore-Doku (Companion Radio Protocol).
+Gespeichert wird in scanner.db (mesh_node, mesh_msg) – nur bei neuen Nachrichten und geänderten Knoten.
+"""
+import glob
+import os
+import select
+import sqlite3
+import termios
+import threading
+import time
+from collections import deque
+from datetime import datetime, timezone
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+DB = BASE / "data" / "scanner.db"
+# USB-Hersteller typischer LoRa-Knoten: Espressif (ESP32-S3 direkt), Silicon Labs CP210x, WCH CH340/CH9102,
+# Adafruit/RAK (nRF52), Seeed, Nordic. Andere serielle Geräte (GPS, Funkgeräte) werden nie angesprochen.
+VENDORS = {"303a", "10c4", "1a86", "239a", "2886", "1915"}
+DEV_GLOB = os.environ.get("HSP_MESH_DEV_GLOB", "/dev/serial/by-id/*")
+SYS_TTY = os.environ.get("HSP_MESH_SYS_TTY", "/sys/class/tty")
+NODE_TYPES = {1: "Companion", 2: "Repeater", 3: "Room", 4: "Sensor"}
+PAYLOAD_TYPES = ["REQ", "RESPONSE", "TEXT_MSG", "ACK", "ADVERT", "GRP_TXT", "GRP_DATA", "ANON_REQ", "PATH",
+                 "TRACE", "MULTIPART", "CONTROL"]
+KEEP_DAYS = 90                                   # Nachrichten älter als das werden einmal am Tag gelöscht
+
+STATUS = {"state": "off", "port": "", "error": "", "since": None, "self": {}, "device": {}, "channels": {},
+          "last_rx": None, "nodes_known": 0}
+_RX = deque(maxlen=20000)                        # (Zeit, Pakettyp) der letzten Stunde
+_LOCK = threading.Lock()
+_started = [False]
+
+
+def _iso(t=None):
+    return datetime.fromtimestamp(t if t is not None else time.time(), timezone.utc).isoformat(timespec="seconds")
+
+
+def ensure_tables(db):
+    db.execute("""CREATE TABLE IF NOT EXISTS mesh_node (
+        key TEXT PRIMARY KEY, name TEXT, type INTEGER, lat REAL, lon REAL, last_advert INTEGER,
+        first_seen TEXT, last_seen TEXT)""")
+    db.execute("""CREATE TABLE IF NOT EXISTS mesh_msg (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, time TEXT, sender_ts INTEGER, kind TEXT, channel INTEGER,
+        channel_name TEXT, sender TEXT, text TEXT, snr REAL, hops INTEGER, UNIQUE(kind, channel, sender_ts, text))""")
+    db.execute("CREATE INDEX IF NOT EXISTS mesh_msg_time ON mesh_msg(time)")
+
+
+def _db():
+    db = sqlite3.connect(DB, timeout=15)
+    db.execute("PRAGMA busy_timeout=15000")
+    return db
+
+
+# ---------- Geräte finden ----------
+
+def _vendor(tty):
+    d = os.path.realpath(os.path.join(SYS_TTY, tty, "device"))
+    for _ in range(5):                                       # ttyACM: eine Ebene, ttyUSB: zwei Ebenen darüber
+        f = os.path.join(d, "idVendor")
+        if os.path.exists(f):
+            try:
+                return Path(f).read_text().strip().lower()
+            except OSError:
+                return ""
+        d = os.path.dirname(d)
+    return ""
+
+
+def candidates():
+    """Serielle USB-Geräte, die ein LoRa-Knoten sein könnten: [(Pfad by-id, /dev/tty…, Hersteller)]."""
+    out = []
+    for p in sorted(glob.glob(DEV_GLOB)):
+        real = os.path.realpath(p)
+        vid = _vendor(os.path.basename(real))
+        if vid in VENDORS:
+            out.append((p, real, vid))
+    return out
+
+
+# ---------- Verbindung ----------
+
+class NoAccess(Exception):
+    pass
+
+
+class Link:
+    def __init__(self, path):
+        self.path = path
+        try:
+            self.fd = os.open(path, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+        except PermissionError as e:
+            raise NoAccess(str(e))
+        a = termios.tcgetattr(self.fd)
+        a[0] = 0                                             # iflag: roh
+        a[1] = 0                                             # oflag
+        a[2] = termios.CS8 | termios.CREAD | termios.CLOCAL  # cflag
+        a[3] = 0                                             # lflag
+        a[4] = a[5] = termios.B115200
+        a[6][termios.VMIN] = 0
+        a[6][termios.VTIME] = 0
+        termios.tcsetattr(self.fd, termios.TCSANOW, a)
+        termios.tcflush(self.fd, termios.TCIOFLUSH)
+        self.buf = b""
+
+    def close(self):
+        try:
+            os.close(self.fd)
+        except OSError:
+            pass
+
+    def send(self, payload):
+        os.write(self.fd, b"<" + len(payload).to_bytes(2, "little") + payload)
+
+    def frame(self, timeout):
+        """Nächster Rahmen vom Knoten oder None nach timeout s. OSError/EOFError = Verbindung weg."""
+        end = time.time() + timeout
+        while True:
+            i = self.buf.find(b">")
+            if i < 0:
+                self.buf = b""
+            elif len(self.buf) >= i + 3:
+                n = int.from_bytes(self.buf[i + 1:i + 3], "little")
+                if n == 0 or n > 300:                        # kaputter Kopf: ein Byte weiter suchen
+                    self.buf = self.buf[i + 1:]
+                    continue
+                if len(self.buf) >= i + 3 + n:
+                    f = self.buf[i + 3:i + 3 + n]
+                    self.buf = self.buf[i + 3 + n:]
+                    return f
+                self.buf = self.buf[i:]
+            left = end - time.time()
+            if left <= 0:
+                return None
+            r, _, _ = select.select([self.fd], [], [], left)
+            if r:
+                d = os.read(self.fd, 4096)
+                if not d:
+                    raise EOFError("Gerät liefert nichts mehr")
+                self.buf += d
+
+
+# ---------- Rahmen lesen ----------
+
+def _s8(b):
+    return b - 256 if b > 127 else b
+
+
+def _i32(b):
+    return int.from_bytes(b, "little", signed=True)
+
+
+def _u32(b):
+    return int.from_bytes(b, "little")
+
+
+def _str(b):
+    return b.split(b"\0", 1)[0].decode("utf-8", "replace").strip()
+
+
+def parse_self(f):
+    return {"type": f[1], "key": f[4:36].hex(), "lat": _i32(f[36:40]) / 1e6, "lon": _i32(f[40:44]) / 1e6,
+            "freq_mhz": _u32(f[48:52]) / 1000, "bw_khz": _u32(f[52:56]) / 1000, "sf": f[56], "cr": f[57],
+            "name": f[58:].decode("utf-8", "replace").strip("\0 ")}
+
+
+def parse_device(f):
+    d = {"fw": f[1]}
+    if f[1] >= 3 and len(f) >= 80:
+        d.update(build=_str(f[8:20]), model=_str(f[20:60]), version=_str(f[60:80]))
+    return d
+
+
+def parse_contact(f):
+    lat, lon = _i32(f[136:140]) / 1e6, _i32(f[140:144]) / 1e6
+    return {"key": f[1:33].hex(), "type": f[33], "name": _str(f[100:132]), "last_advert": _u32(f[132:136]),
+            "lat": lat if (lat or lon) else None, "lon": lon if (lat or lon) else None}
+
+
+def parse_msg(f):
+    """Kanal- oder Direktnachricht (Antwort auf „nächste Nachricht“), Protokoll ab Version 3 mit SNR."""
+    code, p = f[0], 1
+    snr = None
+    if code in (16, 17):
+        snr, p = _s8(f[1]) / 4, 4
+    if code in (7, 16):
+        kind, chan, sender = "dm", None, f[p:p + 6].hex()
+        p += 6
+    else:
+        kind, chan, sender = "chan", f[p], None
+        p += 1
+    plen = f[p]
+    hops = None if plen == 255 else plen & 0x3F
+    txt_type = f[p + 1]
+    ts = _u32(f[p + 2:p + 6])
+    p += 6
+    if kind == "dm" and txt_type == 2:
+        p += 4                                               # Signatur
+    text = f[p:].rstrip(b"\0").decode("utf-8", "replace")
+    if kind == "chan" and ": " in text[:40]:                 # Kanal: „Name: Text“
+        sender, text = text.split(": ", 1)
+    return {"kind": kind, "channel": chan, "sender": sender, "text": text, "sender_ts": ts, "snr": snr,
+            "hops": hops, "txt_type": txt_type}
+
+
+# ---------- Ablauf ----------
+
+class Session:
+    def __init__(self, link, log):
+        self.l, self.log = link, log
+        self.waiting = True
+        self.contacts_mod = 0
+
+    def request(self, payload, want, timeout=4):
+        self.l.send(payload)
+        end = time.time() + timeout
+        while time.time() < end:
+            f = self.l.frame(end - time.time())
+            if f is None:
+                break
+            if f[0] in want:
+                return f
+            self.handle(f)
+        return None
+
+    def start(self):
+        f = self.request(b"\x01\x03      hesperos", (5,), timeout=5)
+        if not f:
+            return False
+        with _LOCK:
+            STATUS["self"] = parse_self(f)
+        d = self.request(b"\x16\x03", (13, 1))
+        if d and d[0] == 13:
+            STATUS["device"] = parse_device(d)
+        chans = {}
+        for i in range(16):
+            c = self.request(b"\x1f" + bytes([i]), (18, 1), timeout=2)
+            if not c or c[0] != 18:
+                break
+            name = _str(c[2:34])
+            if name:
+                chans[i] = name
+        STATUS["channels"] = chans
+        self.contacts()
+        return True
+
+    def contacts(self):
+        self.l.send(b"\x04" + (self.contacts_mod.to_bytes(4, "little") if self.contacts_mod else b""))
+        got, end = [], time.time() + 15
+        while time.time() < end:
+            f = self.l.frame(end - time.time())
+            if f is None:
+                break
+            if f[0] == 3:
+                got.append(parse_contact(f))
+            elif f[0] == 4:
+                self.contacts_mod = _u32(f[1:5]) or self.contacts_mod
+                break
+            elif f[0] == 1:
+                break
+            elif f[0] != 2:
+                self.handle(f)
+        store_nodes(got)
+
+    def sync(self):
+        for _ in range(200):
+            f = self.request(b"\x0a", (7, 8, 16, 17, 10, 1), timeout=4)
+            if not f or f[0] in (10, 1):
+                break
+            m = parse_msg(f)
+            m["channel_name"] = STATUS["channels"].get(m["channel"], "") if m["kind"] == "chan" else ""
+            if store_msg(m):
+                self.log("DEBUG", "mesh", "mesh_msg", kind=m["kind"], channel=m["channel_name"] or m["channel"],
+                         sender=m["sender"], hops=m["hops"])
+        self.waiting = False
+
+    def handle(self, f):
+        c = f[0]
+        if c == 0x83:                                        # Nachrichten warten
+            self.waiting = True
+        elif c == 0x8A:                                      # neue Ankündigung (ganzer Kontakt)
+            store_nodes([parse_contact(f)])
+        elif c == 0x80:                                      # bekannter Knoten hat sich gemeldet
+            store_seen(f[1:33].hex())
+        elif c == 0x88 and len(f) >= 4:                      # jedes empfangene Paket (nur gezählt)
+            t = time.time()
+            pt = (f[3] & 0x3C) >> 2
+            _RX.append((t, pt))
+            with _LOCK:
+                STATUS["last_rx"] = {"time": _iso(t), "snr": _s8(f[1]) / 4, "rssi": _s8(f[2]),
+                                     "type": PAYLOAD_TYPES[pt] if pt < len(PAYLOAD_TYPES) else str(pt)}
+
+    def loop(self, stop):
+        t_sync, t_contacts = 0, time.time()
+        while not stop():
+            if self.waiting or time.time() - t_sync > 60:
+                self.sync()
+                t_sync = time.time()
+            if time.time() - t_contacts > 600:
+                self.contacts()
+                t_contacts = time.time()
+            f = self.l.frame(1.0)
+            if f is not None:
+                self.handle(f)
+
+
+# ---------- Speichern ----------
+
+def store_msg(m):
+    db = _db()
+    try:
+        ensure_tables(db)
+        cur = db.execute("""INSERT OR IGNORE INTO mesh_msg (time, sender_ts, kind, channel, channel_name, sender, text, snr, hops)
+                            VALUES (?,?,?,?,?,?,?,?,?)""",
+                         (_iso(), m["sender_ts"], m["kind"], m["channel"], m.get("channel_name", ""), m["sender"],
+                          m["text"], m["snr"], m["hops"]))
+        db.commit()
+        return cur.rowcount > 0
+    finally:
+        db.close()
+
+
+def store_nodes(nodes):
+    """Knoten eintragen – geschrieben wird nur, was neu ist oder sich geändert hat (SD-Karte schonen)."""
+    if not nodes:
+        return
+    db = _db()
+    try:
+        ensure_tables(db)
+        now, changed = _iso(), False
+        for n in nodes:
+            r = db.execute("SELECT name, type, lat, lon, last_advert FROM mesh_node WHERE key=?", (n["key"],)).fetchone()
+            new = (n["name"], n["type"], n["lat"], n["lon"], n["last_advert"])
+            if r is None:
+                db.execute("INSERT INTO mesh_node VALUES (?,?,?,?,?,?,?,?)", (n["key"], *new, now, now))
+                changed = True
+            elif tuple(r) != new:
+                db.execute("UPDATE mesh_node SET name=?, type=?, lat=?, lon=?, last_advert=?, last_seen=? WHERE key=?",
+                           (*new, now, n["key"]))
+                changed = True
+        if changed:
+            db.commit()
+        STATUS["nodes_known"] = db.execute("SELECT COUNT(*) FROM mesh_node").fetchone()[0]
+    finally:
+        db.close()
+
+
+_seen = {}
+
+
+def store_seen(key):
+    """„Hat sich gemeldet“ höchstens alle 10 min je Knoten schreiben."""
+    if time.time() - _seen.get(key, 0) < 600:
+        return
+    _seen[key] = time.time()
+    db = _db()
+    try:
+        ensure_tables(db)
+        db.execute("UPDATE mesh_node SET last_seen=? WHERE key=?", (_iso(), key))
+        db.commit()
+    finally:
+        db.close()
+
+
+def prune():
+    db = _db()
+    try:
+        ensure_tables(db)
+        db.execute("DELETE FROM mesh_msg WHERE time < ?", (_iso(time.time() - KEEP_DAYS * 86400),))
+        db.commit()
+    finally:
+        db.close()
+
+
+# ---------- Abfragen fürs Dashboard ----------
+
+def status():
+    t = time.time()
+    with _LOCK:
+        s = {k: (dict(v) if isinstance(v, dict) else v) for k, v in STATUS.items()}
+    recent = [p for x, p in list(_RX) if t - x < 3600]
+    s["packets_hour"] = len(recent)
+    s["packet_types"] = {PAYLOAD_TYPES[p] if p < len(PAYLOAD_TYPES) else str(p): recent.count(p) for p in set(recent)}
+    s["channels"] = {str(k): v for k, v in (s.get("channels") or {}).items()}
+    s["candidates"] = [p for p, _, _ in candidates()]
+    return s
+
+
+def messages(limit=100, before=None):
+    db = _db()
+    try:
+        ensure_tables(db)
+        q, a = "SELECT id, time, kind, channel, channel_name, sender, text, snr, hops FROM mesh_msg", []
+        if before:
+            q += " WHERE id < ?"
+            a.append(int(before))
+        rows = db.execute(q + " ORDER BY id DESC LIMIT ?", a + [int(limit)]).fetchall()
+        total = db.execute("SELECT COUNT(*) FROM mesh_msg").fetchone()[0]
+        names = dict(db.execute("SELECT substr(key,1,12), name FROM mesh_node"))
+    finally:
+        db.close()
+    out = []
+    for i, t, kind, ch, chn, sender, text, snr, hops in rows:
+        if kind == "dm" and sender:
+            sender = names.get(sender, sender)               # Direktnachricht: Name aus der Knotenliste
+        out.append({"id": i, "time": t, "kind": kind, "channel": ch, "channel_name": chn, "sender": sender,
+                    "text": text, "snr": snr, "hops": hops})
+    return {"messages": out, "total": total}
+
+
+def nodes():
+    db = _db()
+    try:
+        ensure_tables(db)
+        rows = db.execute("""SELECT key, name, type, lat, lon, last_advert, first_seen, last_seen FROM mesh_node
+                             ORDER BY last_seen DESC LIMIT 1000""").fetchall()
+    finally:
+        db.close()
+    return [{"key": k[:12], "name": n, "type": NODE_TYPES.get(t, str(t)), "lat": la, "lon": lo,
+             "last_advert": _iso(adv) if adv else None, "first_seen": fs, "last_seen": ls}
+            for k, n, t, la, lo, adv, fs, ls in rows]
+
+
+# ---------- Hintergrund ----------
+
+def run(get_port, log, notice=None, stop=lambda: False, rescan=30):
+    """Dauerschleife (eigener Faden im Dashboard): Knoten suchen, verbinden, mithören, bei Abbruch neu suchen.
+    get_port() → "auto" | "off" | Pfad. Ein Gerät, das nicht antwortet, wird erst nach dem Abziehen wieder versucht."""
+    failed, last_prune = {}, 0
+    while not stop():
+        port = (get_port() or "auto").strip()
+        if port == "off":
+            STATUS.update(state="off", port="", error="")
+            time.sleep(rescan)
+            continue
+        if time.time() - last_prune > 86400:
+            try:
+                prune()
+            except Exception:
+                pass
+            last_prune = time.time()
+        cands = [(port, os.path.realpath(port), "")] if port != "auto" else candidates()
+        present = {p for p, _, _ in cands}
+        for p in list(failed):
+            if p not in present:
+                failed.pop(p)                                # abgezogen: beim nächsten Anstecken wieder versuchen
+        todo = [c for c in cands if c[0] not in failed]
+        if not todo:
+            STATUS.update(state="searching", port="", error=STATUS.get("error", "") if cands else "")
+            time.sleep(rescan)
+            continue
+        for p, real, vid in todo:
+            STATUS.update(state="connecting", port=p, error="")
+            try:
+                link = Link(p)
+            except NoAccess as e:
+                failed[p] = True
+                STATUS.update(state="error", error="no_access")
+                log("WARN", "mesh", "mesh_no_access", port=p, error=str(e))
+                if notice:
+                    notice("access", p)
+                continue
+            except OSError as e:
+                failed[p] = True
+                log("DEBUG", "mesh", "mesh_open_failed", port=p, error=str(e))
+                continue
+            try:
+                time.sleep(1.5)                              # ESP32 startet beim Öffnen manchmal neu
+                s = Session(link, log)
+                if not s.start():
+                    failed[p] = True
+                    log("INFO", "mesh", "mesh_no_answer", port=p, hint="keine MeshCore-Companion-Firmware (USB)?")
+                    continue
+                me, dev = STATUS["self"], STATUS["device"]
+                STATUS.update(state="connected", port=p, error="", since=_iso())
+                log("INFO", "mesh", "mesh_connected", port=p, node=me.get("name"), model=dev.get("model"),
+                    version=dev.get("version"), freq_mhz=me.get("freq_mhz"), sf=me.get("sf"), bw_khz=me.get("bw_khz"))
+                if notice:
+                    notice("ok", p)
+                s.loop(lambda: stop() or (get_port() or "auto").strip() not in ("auto", p))
+                STATUS.update(state="searching", error="")
+                log("INFO", "mesh", "mesh_stopped", port=p)
+            except (OSError, EOFError) as e:
+                STATUS.update(state="searching", error=str(e))
+                log("WARN", "mesh", "mesh_lost", port=p, error=f"{type(e).__name__}: {e}")
+            finally:
+                link.close()
+            break
+        time.sleep(2)
+
+
+def start(get_port, log, notice=None):
+    if _started[0]:
+        return
+    _started[0] = True
+    threading.Thread(target=run, args=(get_port, log, notice), daemon=True, name="mesh").start()
