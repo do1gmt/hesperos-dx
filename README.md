@@ -596,9 +596,11 @@ which could otherwise remote-control the Pi through your browser, without a pass
 even without login – is answered with 403 and logged (`foreign_request_blocked`). Scripts and `curl` send no
 origin and keep working.
 
-> If you make the dashboard reachable from the internet, put it behind HTTPS (e.g. a reverse proxy
-> or a VPN such as WireGuard/Tailscale). The built-in server speaks plain HTTP. Behind a reverse
-> proxy every request comes from the proxy's address, so do not list that address as trusted.
+**Access from anywhere:** use a VPN (Tailscale, or WireGuard on the router such as a FRITZ!Box) instead of
+opening a port – step by step in [docs/remote-access.md](docs/remote-access.md). The built-in server speaks plain
+HTTP; never forward port 8080 to the Pi. Requests through a proxy on the Pi itself (nginx, Caddy, `tailscale
+serve`) count as coming from the browser behind it, not from the Pi: they need the password like any other device
+(the address the proxy reports is used for "networks without login" and the lockout after wrong passwords).
 
 ## Data sources
 

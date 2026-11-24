@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.8.44 – 2026-11-24
+
+- **Guide "Access from anywhere"** ([docs/remote-access.md](docs/remote-access.md)): Tailscale on the Pi or
+  WireGuard on the router (FRITZ!Box), step by step – why not to open a port, key expiry, which address to use
+  through the tunnel, mobile data for Live (~170 MB per hour), a checklist. Linked from the README and from
+  *Settings → Access protection*.
+- **Security: a proxy on the Pi no longer counts as the Pi itself.** Requests through nginx, Caddy or
+  `tailscale serve`/`funnel` on the Pi arrive from 127.0.0.1, and the Pi itself never has to log in – so such a
+  proxy opened the dashboard (and the rescue page) without password. Now requests from localhost that carry proxy
+  headers (`X-Forwarded-For`, `X-Real-IP`, `Forwarded`, `X-Forwarded-Host`, `Tailscale-User-Login`) use the address
+  the proxy reports (the last one in the list) for login, "networks without login" and the lockout; without a
+  usable address they are never trusted. The origin check accepts the proxy's `X-Forwarded-Host`, so the dashboard
+  works under the proxy's HTTPS name. Scripts on the Pi (no proxy headers) still need no login.
+- Self-test section 103.
+
 ## 1.8.43 – 2026-11-24
 
 - **Fix:** a hit card with FT8/FT4 (or CW, RTTY, APRS …) decodes also said "Nothing decoded yet (runs after the

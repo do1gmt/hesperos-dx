@@ -4032,5 +4032,33 @@ assert "else if (!h.decodes.length && ['ft8', 'ft4', 'cw', 'rtty', 'digital', 'w
 assert "(hist ? (EN ? ' · last 24 h: ' : ' · letzte 24 h: ') + hist" in js and "'last 24 h: ') + d.hist" not in js
 PY
 
+echo "== 103 Zugriff von unterwegs: Proxy auf dem Pi zählt nicht als der Pi selbst; Anleitung vorhanden"
+(cd bin && timeout 60 python3 - "$SRC" <<'PY') && ok "über nginx/Caddy/„tailscale serve“ kommt die Adresse des Browsers an (nie 127.0.0.1), ohne Angabe nie vertrauenswürdig; Origin über X-Forwarded-Host erlaubt; Notfallseite genauso; Anleitung und Hinweis im Dashboard" || bad "Proxy-Erkennung/Anleitung"
+import sys
+from pathlib import Path
+from email.message import Message
+import webapp as W, auth as AUTH
+def req(ip, **hdr):
+    h = W.Handler.__new__(W.Handler); h.client_address = (ip, 50000); m = Message()
+    for k, v in hdr.items(): m[k.replace("_", "-")] = v
+    h.headers = m; return h
+assert req("127.0.0.1").client_ip() == "127.0.0.1" and not req("127.0.0.1").proxied()        # Skripte auf dem Pi
+r = req("127.0.0.1", X_Forwarded_For="1.2.3.4, 100.101.102.103", Tailscale_User_Login="tom@example.org")
+assert r.proxied() and r.client_ip() == "100.101.102.103"                                   # letzte Angabe zählt
+assert req("127.0.0.1", Tailscale_User_Login="x").client_ip() == "0.0.0.0"                   # ohne Adresse: fremd
+assert not AUTH.trusted("0.0.0.0") and AUTH.trusted("127.0.0.1")
+assert req("192.168.1.5", X_Forwarded_For="127.0.0.1").client_ip() == "192.168.1.5"          # nur vom Pi selbst
+assert req("127.0.0.1", X_Forwarded_For="127.0.0.1").client_ip() == "0.0.0.0"
+o = req("127.0.0.1", Host="127.0.0.1:8080", Origin="https://pi.tail1234.ts.net", X_Forwarded_Host="pi.tail1234.ts.net", X_Forwarded_For="100.64.0.7")
+assert o.foreign_origin() is None
+assert req("127.0.0.1", Host="127.0.0.1:8080", Origin="https://evil.example", X_Forwarded_Host="pi.tail1234.ts.net", X_Forwarded_For="100.64.0.7").foreign_origin() == "https://evil.example"
+assert req("192.168.1.5", Host="pi:8080", Origin="https://pi.tail1234.ts.net", X_Forwarded_Host="pi.tail1234.ts.net").foreign_origin() == "https://pi.tail1234.ts.net"
+src = Path(sys.argv[1])
+doc = (src / "docs" / "remote-access.md").read_text()
+assert "tailscale up" in doc and "Disable key expiry" in doc and "WireGuard" in doc and "port forwarding" in doc
+assert "docs/remote-access.md" in (src / "README.md").read_text() and "remote-access.md" in (src / "web" / "index.html").read_text()
+assert "AUTH.request_ip(self.client_address[0], self.headers)" in (src / "bin" / "rescue.py").read_text()      # Notfallseite genauso
+PY
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

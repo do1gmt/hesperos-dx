@@ -2461,8 +2461,11 @@ class Handler(BaseHTTPRequestHandler):
     # ---------------- Zugangsschutz (bin/auth.py)
     PUBLIC = ("/login", "/api/login", "/favicon.ico")
 
+    def proxied(self):
+        return AUTH.proxied(self.client_address[0], self.headers)
+
     def client_ip(self):
-        return self.client_address[0]
+        return AUTH.request_ip(self.client_address[0], self.headers)
 
     def foreign_origin(self):
         """Kommt die Anfrage von einer fremden Webseite? Ohne diese Prüfung könnte jede Seite, die man im Browser
@@ -2474,7 +2477,8 @@ class Handler(BaseHTTPRequestHandler):
             if o == "null":
                 return o
             host = (self.headers.get("Host") or "").strip().lower()
-            return None if urlparse(o).netloc.lower() == host else o
+            fwd = (self.headers.get("X-Forwarded-Host") or "").split(",")[-1].strip().lower() if self.proxied() else ""
+            return None if urlparse(o).netloc.lower() in (host, fwd) or (fwd and urlparse(o).hostname == fwd) else o
         sfs = (self.headers.get("Sec-Fetch-Site") or "").lower()
         return sfs if sfs in ("cross-site", "same-site") else None
 

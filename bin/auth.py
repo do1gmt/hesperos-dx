@@ -107,6 +107,36 @@ def set_trusted(networks):
     save(d)
 
 
+PROXY_HEADERS = ("X-Forwarded-For", "X-Real-IP", "Forwarded", "X-Forwarded-Host", "Tailscale-User-Login")
+
+
+def proxied(peer, headers):
+    """Kommt die Anfrage über einen Proxy auf dem Pi selbst (nginx, Caddy, „tailscale serve“/„funnel“)? Dann steht
+    als Absender 127.0.0.1 da – der Pi selbst braucht keine Anmeldung, der Browser dahinter aber schon."""
+    try:
+        loop = ipaddress.ip_address(peer).is_loopback
+    except ValueError:
+        return False
+    return loop and any(headers.get(h) for h in PROXY_HEADERS)
+
+
+def request_ip(peer, headers):
+    """Absender für Anmeldung, „Netze ohne Anmeldung“ und Sperre nach Fehlversuchen (Dashboard und Notfallseite).
+    Über einen Proxy auf dem Pi: die Adresse, die der Proxy zuletzt eingetragen hat (davor kann der Browser selbst
+    etwas hineinschreiben); ohne brauchbare Angabe eine Adresse, die nie als vertrauenswürdig gilt."""
+    if not proxied(peer, headers):
+        return peer
+    for h in ("X-Forwarded-For", "X-Real-IP"):
+        v = (headers.get(h) or "").split(",")[-1].strip()
+        try:
+            a = ipaddress.ip_address(v)
+        except ValueError:
+            continue
+        if not a.is_loopback:
+            return str(a)
+    return "0.0.0.0"
+
+
 def trusted(ip):
     try:
         a = ipaddress.ip_address(ip)

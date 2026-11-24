@@ -131,7 +131,7 @@ class H(BaseHTTPRequestHandler):
         pass
 
     def ip(self):
-        return self.client_address[0]
+        return AUTH.request_ip(self.client_address[0], self.headers)   # Proxy auf dem Pi ≠ der Pi selbst
 
     def send(self, code, body, ctype="text/html; charset=utf-8", extra=None):
         b = body.encode("utf-8") if isinstance(body, str) else body
