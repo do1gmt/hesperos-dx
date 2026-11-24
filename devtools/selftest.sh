@@ -3873,5 +3873,49 @@ if (r.d.window.HSPLayout.customized() !== true) { console.log('customized'); pro
 JS
 fi
 
+echo "== 98 SSTV-Termin: Vorwarnung und Beginn per Messenger, je Termin einmal, sofort statt gesammelt"
+(cd bin && timeout 60 python3 - "$SRC" <<'PY') && ok "30 min vorher und zu Beginn je einmal, ohne Uhrzeit nur zu Beginn, „Satelliten“ aus wird gesagt, kommt sofort mit hoher Priorität" || bad "SSTV-Alarm"
+import sys, tempfile, time
+from pathlib import Path
+import sstv_events as SE, notify as N
+d = Path(tempfile.mkdtemp()); SE.ALERTS = d / "a.json"
+t0 = 1_800_000_000
+ev = {"sat": "ISS", "title": "ARISS SSTV", "start": t0 + 3600, "end": t0 + 3 * 86400, "freq": "145.800", "mode": "PD120"}
+day = {"sat": "UMKA-1", "start": t0 + 3000, "end": t0 + 86400, "dates_only": True}
+def evs(now, settings):
+    out = []
+    for e in (ev, day):
+        e = dict(e); e["state"] = "running" if e["start"] <= now <= e["end"] else ("upcoming" if e["start"] > now else "ended"); out.append(e)
+    return out
+SE.events = evs
+got = []
+cap = lambda key, lvl, area, title, detail="", fix="": got.append((key, title, detail, fix))
+st = {"selected_bands": ["2m", "Satelliten"], "sstv_alert_before_min": 30}
+assert SE.alert_tick(t0, st, cap) == [] and got == []                          # noch über eine Stunde
+SE.alert_tick(t0 + 1900, st, cap)                                              # 28 min vorher
+assert [g[1] for g in got] == ["SSTV in 28 min: ISS"] and "145.800 MHz" in got[0][2] and "UTC" in got[0][2], got
+SE.alert_tick(t0 + 2000, st, cap); assert len(got) == 1                        # nicht doppelt
+SE.alert_tick(t0 + 3660, st, cap)                                              # Beginn ISS, UMKA läuft schon (ohne Uhrzeit)
+titles = [g[1] for g in got]
+assert "SSTV läuft jetzt: ISS" in titles and "SSTV läuft jetzt: UMKA-1" in titles and len(got) == 3, titles
+assert not any(g[2].count("..") for g in got), got                             # Termin ohne Uhrzeit: „bis Sa 16.01.“
+SE.alert_tick(t0 + 7200, st, cap); assert len(got) == 3                        # je Termin einmal
+got.clear(); SE.ALERTS = d / "b.json"
+SE.alert_tick(t0 + 3660, {"selected_bands": ["2m"], "sstv_alert_before_min": 0}, cap)
+assert all("Satelliten" in g[2] and g[3] for g in got) and len(got) == 2, got  # nichts würde aufgenommen
+assert SE.alert_before({"sstv_alert_before_min": 7}) == 30                     # unbekannter Wert: Vorgabe
+# Benachrichtigung: kommt sofort, auch wenn Hinweise gesammelt werden
+sent = []
+N.cfg = lambda: {"push": "ntfy", "notices": {"digest_min": 30}}
+N.push_on = lambda c: True
+N.send_all = lambda subj, body, c, image=None, priority=None: sent.append((subj, priority))
+N._lang_rec = lambda r: r
+N.notify_notice({"key": "sstv", "level": "info", "area": "satellite", "title": "SSTV läuft jetzt: ISS", "detail": "x"})
+assert sent and sent[0][1] == "high" and sent[0][0].startswith("📡"), sent
+w = Path(sys.argv[1])
+assert 'id="seAlert"' in (w / "web" / "index.html").read_text() and 'data-ne="sstv"' in (w / "web" / "index.html").read_text()
+assert "sstv_alert_tick()" in (w / "bin" / "scheduler.py").read_text()
+PY
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

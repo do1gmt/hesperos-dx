@@ -17,6 +17,7 @@ Geschrieben wird data/sstv_events.json höchstens einmal je Abruf (Speicherkarte
 """
 import html
 import json
+import os
 import re
 import time
 import urllib.request
@@ -318,6 +319,102 @@ def received_in(db, ev):
     except Exception:
         return 0
 
+
+
+# ---------------------------------------------------------------- Alarm (1.8.39)
+ALERTS = BASE / "data" / "sstv_alerts.json"
+ALERT_BEFORE_DEFAULT = 30                    # Minuten Vorwarnung (0 = nur zu Beginn)
+ALERT_BEFORE_CHOICES = (0, 15, 30, 60, 120)
+
+
+def alert_before(settings=None):
+    settings = settings if settings is not None else _settings()
+    try:
+        v = int(settings.get("sstv_alert_before_min", ALERT_BEFORE_DEFAULT))
+    except (TypeError, ValueError):
+        v = ALERT_BEFORE_DEFAULT
+    return v if v in ALERT_BEFORE_CHOICES else ALERT_BEFORE_DEFAULT
+
+
+def _settings():
+    try:
+        return json.loads(SETTINGS.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def _ekey(e):
+    return f"{e.get('sat')}|{int(e['start'])}"
+
+
+def _when(t, dates_only=False):
+    """„Do 26.11. 18:00 UTC (19:00 Ortszeit)“ – bei Terminen ohne Uhrzeit nur der Tag."""
+    wd = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+    g = time.gmtime(t)
+    day = f"{wd[g.tm_wday]} {g.tm_mday:02d}.{g.tm_mon:02d}."
+    if dates_only:
+        return day
+    lt = time.localtime(t)
+    loc = f" ({lt.tm_hour:02d}:{lt.tm_min:02d} Ortszeit)" if (lt.tm_hour, lt.tm_min) != (g.tm_hour, g.tm_min) else ""
+    return f"{day} {g.tm_hour:02d}:{g.tm_min:02d} UTC{loc}"
+
+
+def alert_tick(now=None, settings=None, raise_event=None, log=None):
+    """Vom Zeitplaner (jede Minute): SSTV-Termin meldet sich vorher (eingestellte Vorwarnung) und zu Beginn – je
+    Termin einmal, als Hinweis-Ereignis „sstv“ (Einstellungen → Benachrichtigungen → „SSTV-Termin“, kommt immer
+    sofort). Steht „Satelliten“ bei den Bändern nicht an, sagt die Meldung, dass dann nicht aufgenommen wird.
+    Rückgabe: Liste der gemeldeten (art, termin)."""
+    now = now or time.time()
+    settings = settings if settings is not None else _settings()
+    before = alert_before(settings)
+    try:
+        done = json.loads(ALERTS.read_text(encoding="utf-8"))
+    except Exception:
+        done = {}
+    if raise_event is None:
+        import notices as NT
+        raise_event = NT.event
+    sat_on = "Satelliten" in (settings.get("selected_bands") or [])
+    sent, changed = [], False
+    for e in events(now, settings):
+        if e["state"] == "ended":
+            continue
+        k = _ekey(e)
+        d = done.get(k) or {}
+        det = " · ".join(x for x in (e.get("title") if e.get("title") and e.get("title") != e.get("sat") else "",
+                                      f"{e['freq']} MHz" if e.get("freq") else "", e.get("mode") or "") if x)
+        rec = "" if sat_on else (" Achtung: „Satelliten“ ist bei Bänder & Betriebsarten aus – Hesperos DX nimmt so "
+                                 "nichts auf.")
+        if e["state"] == "running" and not d.get("start"):
+            raise_event("sstv", "info", "satellite", f"SSTV läuft jetzt: {e['sat']}",
+                        f"{det + ' · ' if det else ''}bis {_when(e['end'], e.get('dates_only')).rstrip('.')}.{rec}",
+                        fix="" if sat_on else "Scan → Bänder & Betriebsarten: „Satelliten“ einschalten.")
+            d["start"] = int(now); d.setdefault("pre", int(now))
+            sent.append(("start", e)); changed = True
+        elif e["state"] == "upcoming" and before and not d.get("pre") and not e.get("dates_only") \
+                and e["start"] - now <= before * 60:
+            mins = max(1, round((e["start"] - now) / 60))
+            raise_event("sstv", "info", "satellite", f"SSTV in {mins} min: {e['sat']}",
+                        f"Beginn {_when(e['start'])}{' · ' + det if det else ''}.{rec}",
+                        fix="" if sat_on else "Scan → Bänder & Betriebsarten: „Satelliten“ einschalten.")
+            d["pre"] = int(now)
+            sent.append(("pre", e)); changed = True
+        if d:
+            done[k] = dict(d, end=int(e["end"]))
+    for k in [k for k, v in done.items() if v.get("end", 0) < now - KEEP_ENDED_S]:
+        done.pop(k); changed = True
+    if changed:
+        try:
+            ALERTS.parent.mkdir(parents=True, exist_ok=True)
+            tmp = ALERTS.with_suffix(".tmp")
+            tmp.write_text(json.dumps(done), encoding="utf-8")
+            os.replace(tmp, ALERTS)
+        except OSError:
+            pass
+        if log:
+            for kind, e in sent:
+                log("INFO", "sstv_events", "sstv_alert", kind=kind, sat=e.get("sat"))
+    return sent
 
 if __name__ == "__main__":
     import sys

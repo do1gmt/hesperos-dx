@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.8.39 – 2026-11-24
+
+- **SSTV events alert by messenger:** before an event (choose in the SSTV events card: only at the start, 15 min,
+  30 min – default –, 1 h or 2 h before) and when it starts, once per event, as mail/push with high priority
+  ("📡 SSTV in 30 min: ISS – start Thu 26.11. 18:00 UTC · ARISS SSTV · 145.800 MHz · PD120", "📡 SSTV running now:
+  ISS"). Events announced without times only report at the start of the day. If "Satellites" is off in *Bands &
+  modes*, the message says that nothing would be recorded and how to switch it on.
+- New event kind *SSTV event* under *Settings → Notifications → Always report* – always sent at once, never
+  collected into a digest. While an event runs the folded card keeps its red frame (1.8.38).
+- Log: `sstv_alert`, `sstv_alert_setting`, `sstv_alert_failed`.
+- Self-test section 98.
+
 ## 1.8.38 – 2026-11-24
 
 - **Tidier pages, following Tom's way of working:** rarely used cards start folded – SSTV events, schedules, both

@@ -229,6 +229,8 @@ EN_EXACT = {
     "Router, WLAN bzw. Netzwerkkabel prüfen.": "Check the router, Wi-Fi or network cable.",
 }
 EN_RX = [
+    (r"^SSTV läuft jetzt: (.+)$", r"SSTV running now: \1"), (r"^SSTV in (\d+) min: (.+)$", r"SSTV in \1 min: \2"),
+    (r"^Neustart nötig$", "Restart needed"),
     (r"^Stick angesteckt: (.+)$", r"Stick plugged in: \1"), (r"^Stick abgezogen: (.+)$", r"Stick removed: \1"), (r"^Stick wieder angesteckt: (.+)$", r"Stick plugged in again: \1"),
     (r"^Seriennummer (\S+), nach (\d+) min wieder da, an (.+)\.$", r"Serial number \1, back after \2 min, on \3."),
     (r"^Speicher fast voll \((\d+) %\)$", r"Storage almost full (\1 %)"), (r"^Pi heiß \((\d+) °C\)$", r"Pi hot (\1 °C)"),

@@ -2669,7 +2669,7 @@ class Handler(BaseHTTPRequestHandler):
                     rec = SE.received(db)
                 finally:
                     db.close()
-                return self.send_json({"events": evs, "received": rec, "status": SE.status(),
+                return self.send_json({"events": evs, "received": rec, "status": SE.status(), "alert_before": SE.alert_before(st),
                                        "fetch_on": st.get("sstv_events_fetch", True)})
             if path == "/api/eibi/now":
                 import eibi as EI
@@ -3017,6 +3017,12 @@ class Handler(BaseHTTPRequestHandler):
                     SE.refresh(force=True)
                 if "fetch_on" in data:
                     st["sstv_events_fetch"] = bool(data["fetch_on"])
+                if "alert_before" in data:                  # Vorwarnung in Minuten (1.8.39)
+                    v = int(data["alert_before"])
+                    if v not in SE.ALERT_BEFORE_CHOICES:
+                        raise ValueError("Vorwarnung: 0, 15, 30, 60 oder 120 Minuten")
+                    st["sstv_alert_before_min"] = v
+                    APPLOG.log("INFO", "webapp", "sstv_alert_setting", before_min=v)
                 if isinstance(data.get("add"), dict):
                     if len(man) >= 50:
                         raise ValueError("Höchstens 50 eigene Termine")
@@ -3027,7 +3033,7 @@ class Handler(BaseHTTPRequestHandler):
                     if 0 <= i < len(man):
                         APPLOG.log("INFO", "webapp", "sstv_event_deleted", sat=man[i].get("sat"))
                         man.pop(i)
-                if "add" in data or "delete" in data or "fetch_on" in data:
+                if "add" in data or "delete" in data or "fetch_on" in data or "alert_before" in data:
                     st["sstv_events_manual"] = man
                     write_json(SETTINGS, st)
                 return self.send_json({"ok": True})

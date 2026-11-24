@@ -362,6 +362,21 @@ def pass_within(sec):
     return None
 
 
+_sstv = {"t": 0.0}
+
+
+def sstv_alert_tick(every=60):
+    """SSTV-Termine: Vorwarnung und Beginn melden (sstv_events.alert_tick) – einmal pro Minute."""
+    if time.time() - _sstv["t"] < every:
+        return
+    _sstv["t"] = time.time()
+    try:
+        import sstv_events as SE
+        SE.alert_tick(log=applog)
+    except Exception as e:
+        applog("WARN", "scheduler", "sstv_alert_failed", error=f"{type(e).__name__}: {e}")
+
+
 def sysupdate_tick(live):
     """Rückgabe: läuft gerade ein Systemupdate?"""
     try:
@@ -1081,6 +1096,7 @@ while True:
         live = live_lock.exists() and (time.time() - live_lock.stat().st_mtime) < 120
         # Systemupdates (bin/sysupdate.py): wöchentlich prüfen, auf Wunsch einspielen, wenn frei; nachts neu starten
         su_running = sysupdate_tick(live)
+        sstv_alert_tick()
         if su_running:
             due = False                                  # während des Updates keine neuen Scans (Überflüge laufen)
         # Beginn eines Zeitfensters: gleich scannen (nicht erst im normalen Takt), notfalls Live kurz anhalten.

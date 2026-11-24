@@ -84,7 +84,10 @@ shortwave.
 - SSTV decoder: Robot 36/72, Martin 1/2, Scottie 1/2/DX, PD 90–290.
 - SSTV events: when the ISS and other satellites send pictures – read once a day from the Libre Space forum and
   AMSAT-UK (dates, times, frequency, mode, link to the announcement), plus your own entries and what was received
-  here in the last 48 h.
+  here in the last 48 h. **Alert to your phone:** before an event (15 min – 2 h, default 30 min, chosen in the card)
+  and when it starts, once per event, by mail/push – always at once, never collected into a digest; switchable under
+  *Settings → Notifications → "SSTV event"*. If "Satellites" is off in *Bands & modes*, the message says that
+  nothing would be recorded.
 - **Scheduling:** when passes overlap, a score decides (priority × 10, elevation, time since the
   satellite was last recorded, and a penalty for satellites that stayed silent for many passes).
   If the frequencies of simultaneous passes fit into one receive window, up to three satellites are

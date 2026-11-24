@@ -235,7 +235,8 @@ def flush_outbox():
 EVENT_KEYS = {"stick": "Stick angesteckt, abgezogen oder gewechselt", "reboot": "System neu gestartet",
               "storage": "Probleme mit Speicherkarte / Dateisystem", "power": "Unterspannung, Drosselung, Hitze",
               "update": "Update eingespielt", "update_available": "Neue Version verfügbar",
-              "network": "Neues Netzwerk / neue IP-Adresse"}
+              "network": "Neues Netzwerk / neue IP-Adresse", "sstv": "SSTV-Termin (Vorwarnung und Beginn)"}
+INSTANT_KEYS = {"sstv"}                       # zeitkritisch: nie im Sammel-Bericht, sondern sofort
 LEVEL_ICON = {"error": "⛔", "warn": "⚠", "info": "ℹ"}
 
 
@@ -291,14 +292,14 @@ def notify_notice(rec):
             return
     elif rec.get("level") not in r["levels"] or rec.get("area") not in r["areas"]:
         return
-    if float(r.get("digest_min") or 0) > 0 and rec.get("level") != "error":
+    if float(r.get("digest_min") or 0) > 0 and rec.get("level") != "error" and key not in INSTANT_KEYS:
         st = _state()
         st.setdefault("digest", []).append({"t": time.time(), "level": rec["level"], "title": rec["title"],
                                             "text": _notice_text(rec)})
         _save_state(st)
         return
-    send_all(f"{LEVEL_ICON.get(rec.get('level'), '')} {rec['title']}", _notice_text(rec) + "\n", c,
-             priority="high" if rec.get("level") == "error" else "default")
+    send_all(f"{'📡' if key == 'sstv' else LEVEL_ICON.get(rec.get('level'), '')} {rec['title']}", _notice_text(rec) + "\n", c,
+             priority="high" if rec.get("level") == "error" or key in INSTANT_KEYS else "default")
 
 
 def flush_digest(force=False):
