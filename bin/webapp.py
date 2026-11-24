@@ -180,13 +180,10 @@ FOLLOW_KEYS = {"qso_hang_seconds": (1, 30), "qso_max_seconds": (0, 600), "data_f
 
 
 def antennas_effective():
-    """Antennen für die Anzeige: Kurzwelle aus config/scanner.json (System → Geräte → Kurzwellen-Empfänger),
-    VHF/UHF aus dem Eintrag des Haupt-Sticks (System → Geräte), sonst aus config/scanner.json."""
-    ant = dict(scanner_config().get("antennas") or {})
-    main = _main_stick()
-    if main and (main.get("antenna") or "").strip():
-        ant["rtlsdr"] = main["antenna"].strip()
-    return {k: ant.get(k, "") for k in ("pmsdr", "rtlsdr")}
+    """Antenne des Scans je Empfänger für die Anzeige (Kurzwelle bei 7 MHz, Stick bei 145 MHz) – aus der
+    Antennen-Wahl (1.8.33; vorher Eintrag am Haupt-Stick bzw. an der PMSDR)."""
+    import antennas as AN
+    return {"pmsdr": AN.label("scan", 7e6) or "", "rtlsdr": AN.label("scan", 145e6) or ""}
 
 
 def _main_stick():
@@ -2300,10 +2297,6 @@ def live_start(data):
         g0 = (live_state().get("agc") or {}).get(_agc_key(freq))
         if g0:
             _live._agc_gain = float(g0)                      # dort anfangen, wo die Regelung zuletzt stand
-        try:
-            _live.dec.antenna = (antennas_effective() or {}).get("rtlsdr" if device == "rtlsdr" else "pmsdr") or None
-        except Exception:
-            pass
         if data.get("gain") not in (None, ""):
             _live.gain = _gain_value(data.get("gain"))
         _live.start()
@@ -2610,7 +2603,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json({"ok": True, "t": time.time()})
             if path == "/api/antennas":
                 import antennas as AN
-                return self.send_json(dict(AN.load(), current=AN.current()))
+                return self.send_json(dict(AN.load(), current=AN.current()))       # current = use (scan, live)
             if path == "/api/services":
                 import services as SV
                 import mdns_alias as MD
@@ -3242,10 +3235,6 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/antennas":
                 import antennas as AN
                 d = AN.set_profiles(data.get("profiles"))
-                ids = {p["id"] for p in d["profiles"]}
-                for target, pid in AN.current().items():          # geänderte Profile gleich übernehmen
-                    if pid in ids:
-                        AN.select(target, pid)
                 APPLOG.log("INFO", "webapp", "antenna_profiles_saved", n=len(d["profiles"]))
                 return self.send_json(dict(d, current=AN.current()))
             if path == "/api/antennas/select":
@@ -3419,7 +3408,8 @@ class Handler(BaseHTTPRequestHandler):
                 lab = str(data.get("label") or "").strip()[:40]
                 ant = str(data.get("antenna") or "").strip()[:60]
                 cfg.setdefault("device_labels", {})["pmsdr"] = lab or "PMSDR"
-                cfg.setdefault("antennas", {})["pmsdr"] = ant
+                if "antenna" in data:                            # bis 1.8.32; ab 1.8.33 über die Antennen-Wahl
+                    cfg.setdefault("antennas", {})["pmsdr"] = ant
                 write_json(SCANNER_CONFIG, cfg)
                 DEV._HW_CACHE["v"] = None
                 APPLOG.log("INFO", "webapp", "hf_device_updated", label=lab or "PMSDR", antenna=ant)

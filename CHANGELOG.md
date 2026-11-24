@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.8.33 – 2026-11-24
+
+- **Antennas belong to what you do, not to the stick** (step 1 of 3). Choose the antenna in the scan box (also used
+  for satellite passes) and – new – separately in Live: a fixed profile or **"automatic by band"** (the profile whose
+  frequency range fits, the narrowest first; if none fits, the profile without a range; with a single antenna that
+  one). Stored in `data/antennas.json` (`use`), saved immediately, logged as `antenna_changed`.
+- **The frequency range is only a hint, never a block:** scanning and listening outside of it go on; the scan box
+  names the selected bands the antenna is not made for, Live says so for the tuned frequency.
+- Scan windows (per window, so "automatic" follows the frequency), satellite passes and their beam planning, Live
+  stations, PSK Reporter spots and pictures from Live now all take the antenna from this choice.
+- The antenna fields (antenna, direction, beamwidth, elevation, range, profile) are gone from the stick card; the
+  previous choice at the main stick or HF receiver is taken over once. The stick entries themselves stay untouched.
+- Profiles may carry an antenna-switch output (`switch_port`) – no effect yet, prepared for a switch controlled by the Pi.
+- Self-test: sections 16 and 32 for the new model, new section 92.
+
 ## 1.8.32 – 2026-11-24
 
 - **Saving while typing:** text and number fields under Scan, System and Settings now save 2 seconds after the

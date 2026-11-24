@@ -260,9 +260,12 @@ class Source:
         sp = STK.rtl_params(rtl)                    # Haupt-Stick (Seriennummer), eigener ppm/Verstärkung
         self.dev, self.node = sp["d"], sp.get("node")
         self.stick, self.ppm = sp.get("label"), sp.get("ppm")
-        # Antenne laut System → Geräte (sonst config antennas.rtlsdr) – Hesperos DX kann die Stellung eines
-        # Antennenumschalters nicht selbst sehen, steht aber so bei jeder Aufnahme dabei
-        self.antenna = sp.get("antenna") or (cfg.get("antennas") or {}).get("rtlsdr") or None
+        # Antenne laut Antennen-Wahl des Scans (1.8.33) für diese Frequenz – steht bei jeder Aufnahme dabei
+        try:
+            import antennas as AN
+            self.antenna = AN.label("scan", tune_hz)
+        except Exception:
+            self.antenna = None
         self.gain = sat_gain(sp["gain"])
         self.cmd = [rtl.get("binary", "rtl_sdr"), "-d", sp["d"], "-f", str(int(tune_hz)),
                     "-s", str(self.rate), "-p", str(int(sp["ppm"]))]

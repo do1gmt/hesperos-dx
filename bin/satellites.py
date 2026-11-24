@@ -671,15 +671,16 @@ def record_stats(norad, t, hits, seconds):
 BEAM_DEFAULT_BW = 70.0        # Öffnungswinkel, wenn bei der Richtantenne keiner eingetragen ist
 
 
-def antenna_beam():
-    """Richtantenne des Haupt-Sticks (System → Geräte): dict(az, bw, fmin, fmax, prefer) oder None
-    (keine Richtung eingetragen = Rundstrahler). prefer aus den Einstellungen (sat_beam_prefer)."""
+def antenna_beam(freq_hz=None):
+    """Richtantenne des Scans (Antennen-Wahl, 1.8.33 – vorher Eintrag am Haupt-Stick): dict(az, bw, el, fmin, fmax,
+    prefer, name) oder None (keine Richtung eingetragen = Rundstrahler). prefer aus den Einstellungen
+    (sat_beam_prefer)."""
     try:
-        import sticks as STK
-        main = STK.effective_main()
+        import antennas as AN
+        b = AN.beam("scan", freq_hz)
     except Exception:
         return None
-    if not main or main.get("ant_az") is None:
+    if not b:
         return None
     prefer = True
     try:
@@ -687,10 +688,8 @@ def antenna_beam():
                       .get("sat_beam_prefer", True))
     except Exception:
         pass
-    return {"az": float(main["ant_az"]) % 360, "bw": float(main.get("ant_bw") or BEAM_DEFAULT_BW),
-            "el": float(main.get("ant_el") or 0.0),
-            "fmin": main.get("ant_fmin"), "fmax": main.get("ant_fmax"), "prefer": prefer,
-            "name": main.get("antenna") or ""}
+    return {"az": b["az"], "bw": float(b.get("bw") or BEAM_DEFAULT_BW), "el": b["el"],
+            "fmin": b.get("fmin"), "fmax": b.get("fmax"), "prefer": prefer, "name": b["name"]}
 
 
 def beam_window(tr, p, beam, center_hz, step=10.0):

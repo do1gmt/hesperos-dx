@@ -1422,16 +1422,12 @@ CUR_ANTENNA = [None]          # Antenne des gerade benutzten Empfängers (System
 CUR_DEVICE = [None]           # tatsächlich benutzter Empfänger: pmsdr, rtlsdr oder rtlhf (Stick auf Kurzwelle)
 
 
-def antenna_label(device):
-    """Beschriftung der Antenne: RTL = Eintrag des Haupt-Sticks, sonst config antennas.<gerät>."""
+def antenna_label(device=None, freq_hz=None):
+    """Antenne des Scans auf freq_hz (Antennen-Wahl unter System → Geräte → Antennen bzw. im Scan-Kasten, ab
+    1.8.33 – vorher Eintrag am Haupt-Stick / an der PMSDR). device bleibt für ältere Aufrufe."""
     try:
-        if device == "rtlsdr":
-            import sticks as STK
-            main = STK.effective_main()
-            if main and (main.get("antenna") or "").strip():
-                return main["antenna"].strip()
-        cfgf = Path(__file__).resolve().parent.parent / "config" / "scanner.json"
-        return (json.loads(cfgf.read_text(encoding="utf-8")).get("antennas") or {}).get(device) or None
+        import antennas as AN
+        return AN.label("scan", freq_hz)
     except Exception:
         return None
 
@@ -1457,7 +1453,7 @@ def save_scan(db, band, center, result, peaks):
         result["noise_db"],
         result["rms_i"],
         result["rms_q"],
-        CUR_ANTENNA[0],
+        antenna_label(CUR_DEVICE[0], center) if center else CUR_ANTENNA[0],   # je Fenster (bei „auto“ nach Frequenz)
         CUR_DEVICE[0]
     ))
 
@@ -1531,7 +1527,7 @@ def eibi_scan(dev, cfg, plan_entry, db):
     import devices as _DV
     EI.ensure_log(db)
     c = EI.scan_cfg()
-    CUR_ANTENNA[0] = antenna_label("rtlsdr" if cfg["device"] == "rtlhf" else cfg["device"])
+    CUR_ANTENNA[0] = antenna_label(cfg["device"], 9e6)          # Kurzwellen-Rundfunk
     CUR_DEVICE[0] = cfg["device"]
     print()
     print(f"Band       : EiBi {len(plan_entry['centers_hz'])} Fenster (Kurzwellen-Rundfunk laut Sendeplan)")
@@ -1670,7 +1666,7 @@ def main():
                 continue
             scanned_bands += 1
             dev_obj = get_device(cfg["device"], cfg)
-            CUR_ANTENNA[0] = antenna_label("rtlsdr" if cfg["device"] == "rtlhf" else cfg["device"])
+            CUR_ANTENNA[0] = antenna_label(cfg["device"], (band["start_hz"] + band["stop_hz"]) / 2)
             CUR_DEVICE[0] = cfg["device"]
             applog("DEBUG", "scanner", "band_start", band=name, device=cfg["device"], tunes=len(plan_by_band[name]))
             _band_t0, _band_p0, _band_r0 = time.time(), total_peaks, total_rejected

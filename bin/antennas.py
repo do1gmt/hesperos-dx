@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
-"""Antennen-Profile: jede Antenne einmal mit Name, Frequenzbereich und (Richtantenne) Richtung, Öffnungswinkel,
-Erhebung anlegen – beim Umschalten nur noch die Antenne wählen (System → Geräte oder im Scan-Kasten), wird sofort
-gespeichert. Gespeichert in data/antennas.json; die Werte des gewählten Profils werden in das Geräteregister
-(Haupt-Stick) bzw. die Beschriftung der PMSDR übernommen – dort lesen sie Scan, Überflugplanung und Treffer.
+"""Antennen: jede Antenne einmal mit Name, Frequenzbereich und (Richtantenne) Richtung, Öffnungswinkel, Erhebung
+anlegen (System → Geräte → Antennen). Gespeichert in data/antennas.json.
 
-Beim ersten Aufruf werden die Profile aus den bisherigen Einträgen angelegt (Antennen der Sticks, PMSDR).
+Ab 1.8.33 gehört die Antenne nicht mehr zum Stick, sondern zum Vorgang: „use“ sagt, welche Antenne der Scan
+(mit Überflügen) und welche Live benutzt – ein festes Profil oder „auto“ (nach Band: das Profil, dessen
+Frequenzbereich passt, das engste zuerst). Der Frequenzbereich ist nur ein Hinweis, keine Sperre: auch außerhalb
+wird gescannt, die Antenne steht dann mit „außerhalb“ dabei. resolve(use, freq) liefert, welche Antenne für eine
+Frequenz gilt; Scanner, Überflüge, Live, PSK Reporter und die Richtantennen-Planung lesen nur noch hier.
+Später kann ein Profil einen Ausgang eines Antennenumschalters bekommen („switch_port“, noch ohne Wirkung).
+
+Beim ersten Aufruf werden die Profile aus den bisherigen Einträgen angelegt (Antennen der Sticks, PMSDR), die
+Wahl für Scan und Live aus der bisherigen Wahl am Haupt-Stick bzw. an der PMSDR.
 """
 import json
 import re
@@ -20,14 +26,33 @@ def _slug(name):
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:30] or f"ant-{int(time.time())}"
 
 
+USES = ("scan", "live")
+
+
 def load():
     try:
         d = json.loads(FILE.read_text(encoding="utf-8"))
         if isinstance(d.get("profiles"), list):
+            if not isinstance(d.get("use"), dict):            # bis 1.8.32: Wahl hing am Stick / an der PMSDR
+                d["use"] = _legacy_use(d["profiles"])
+                save(d)
             return d
     except Exception:
         pass
     return _initial()
+
+
+def _legacy_use(profiles):
+    """Bisherige Wahl übernehmen: Profil des Haupt-Sticks, sonst der PMSDR, sonst das einzige Profil, sonst auto."""
+    ids = [p["id"] for p in profiles]
+    cur = _legacy_current()
+    pid = next((cur[k] for k in ("rtlsdr", "pmsdr") if cur.get(k) in ids), None)
+    if pid is None:
+        names = _legacy_names()
+        pid = next((p["id"] for p in profiles if p["name"].strip().lower() in names), None)
+    if pid is None:
+        pid = ids[0] if len(ids) == 1 else "auto"
+    return {u: pid for u in USES}
 
 
 def save(d):
@@ -60,6 +85,7 @@ def _initial():
     except Exception:
         pass
     d = {"profiles": profs}
+    d["use"] = _legacy_use(profs)
     save(d)
     return d
 
@@ -83,19 +109,23 @@ def set_profiles(items):
         while pid in ids:
             pid += "-2"
         ids.add(pid)
-        p = {"id": pid, "name": name, "az": _num(it.get("az"), 0, 360, "Richtung (°)"),
+        port = str(it.get("switch_port") or "").strip()[:20] or None
+        p = {"id": pid, "name": name, "switch_port": port, "az": _num(it.get("az"), 0, 360, "Richtung (°)"),
              "bw": _num(it.get("bw"), 10, 360, "Öffnungswinkel (°)"), "el": _num(it.get("el"), 0, 90, "Erhebung (°)"),
              "fmin": _num(it.get("fmin"), 0.01, 6000, "Frequenz von (MHz)"), "fmax": _num(it.get("fmax"), 0.01, 6000, "Frequenz bis (MHz)")}
         if p["fmin"] is not None and p["fmax"] is not None and p["fmin"] >= p["fmax"]:
             raise ValueError(f"{name}: Frequenzbereich „von“ muss unter „bis“ liegen")
         out.append(p)
-    d = {"profiles": out}
+    old = load()
+    use = {u: (v if v == "auto" or v in ids else ("auto" if not out else
+               (out[0]["id"] if len(out) == 1 else "auto"))) for u, v in (old.get("use") or {}).items()}
+    d = {"profiles": out, "use": {u: use.get(u, "auto") for u in USES}}
     save(d)
     return d
 
 
-def current():
-    """Welches Profil ist gerade gewählt (Haupt-Stick, PMSDR)?"""
+def _legacy_current():
+    """Bis 1.8.32: gewähltes Profil am Haupt-Stick und an der PMSDR (nur noch zum Übernehmen)."""
     cur = {"rtlsdr": None, "pmsdr": None}
     try:
         import sticks as STK
@@ -112,34 +142,97 @@ def current():
     return cur
 
 
-def select(target, pid, log=None):
-    """Profil für den Haupt-Stick (rtlsdr) oder die PMSDR wählen – sofort wirksam."""
-    prof = next((p for p in load()["profiles"] if p["id"] == pid), None)
-    if prof is None:
-        raise ValueError("Antennen-Profil nicht gefunden")
-    old = None
-    if target == "rtlsdr":
+def _legacy_names():
+    names = set()
+    try:
         import sticks as STK
-        reg = STK.load()
-        _m = STK.effective_main(reg)                     # auch eine einspringende Reserve
-        key = _m["key"] if _m else None
-        if not key:
-            raise ValueError("Kein Haupt-Stick festgelegt (System → Geräte)")
-        old = reg["sticks"][key].get("antenna")
-        rng = f"{prof['fmin']:g}–{prof['fmax']:g}" if prof.get("fmin") is not None and prof.get("fmax") is not None else ""
-        STK.update(key, antenna=prof["name"], ant_az=prof.get("az"), ant_bw=prof.get("bw"), ant_el=prof.get("el"),
-                   ant_range=rng, ant_profile=prof["id"])
-    elif target == "pmsdr":
-        p = BASE / "config" / "scanner.json"
-        cfg = json.loads(p.read_text(encoding="utf-8"))
-        old = (cfg.get("antennas") or {}).get("pmsdr")
-        cfg.setdefault("antennas", {})["pmsdr"] = prof["name"]
-        cfg.setdefault("antenna_profiles", {})["pmsdr"] = prof["id"]
-        tmp = p.with_suffix(".tmp")
-        tmp.write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
-        tmp.replace(p)
+        main = STK.effective_main()
+        if main and (main.get("antenna") or "").strip():
+            names.add(main["antenna"].strip().lower())
+    except Exception:
+        pass
+    try:
+        cfg = json.loads((BASE / "config" / "scanner.json").read_text(encoding="utf-8"))
+        n = ((cfg.get("antennas") or {}).get("pmsdr") or "").strip()
+        if n:
+            names.add(n.lower())
+    except Exception:
+        pass
+    return names
+
+
+def current():
+    """Gewählte Antenne je Vorgang: {"scan": id|"auto"|None, "live": …}."""
+    return dict(load().get("use") or {})
+
+
+def covers(p, freq_hz):
+    """Liegt freq_hz im Frequenzbereich des Profils? None = Profil ohne Bereich (gilt überall)."""
+    if p.get("fmin") is None or p.get("fmax") is None or freq_hz is None:
+        return None
+    return float(p["fmin"]) * 1e6 <= float(freq_hz) <= float(p["fmax"]) * 1e6
+
+
+def resolve(use, freq_hz=None, d=None):
+    """Welche Antenne gilt für use ("scan"/"live") auf freq_hz? Rückgabe dict(profile, auto, outside) –
+    profile None, wenn keine angelegt ist oder bei „auto“ kein Bereich passt (und es mehrere gibt)."""
+    d = d or load()
+    profs = d.get("profiles") or []
+    sel = (d.get("use") or {}).get(use, "auto")
+    if sel != "auto":
+        p = next((x for x in profs if x["id"] == sel), None)
+        if p is not None:
+            return {"profile": p, "auto": False, "outside": covers(p, freq_hz) is False}
+    fit = [x for x in profs if covers(x, freq_hz)]
+    if fit:
+        fit.sort(key=lambda x: float(x["fmax"]) - float(x["fmin"]))
+        return {"profile": fit[0], "auto": True, "outside": False}
+    open_ = [x for x in profs if x.get("fmin") is None or x.get("fmax") is None]
+    if len(open_) == 1:                                  # eine Antenne ohne Bereich: gilt für alles
+        return {"profile": open_[0], "auto": True, "outside": False}
+    if len(profs) == 1:                                  # nur eine Antenne: die hängt dran, auch außerhalb
+        return {"profile": profs[0], "auto": True, "outside": freq_hz is not None}
+    return {"profile": None, "auto": True, "outside": False}
+
+
+def label(use, freq_hz=None):
+    """Name der Antenne für use auf freq_hz (für Treffer, Überflüge, PSK Reporter) oder None."""
+    try:
+        p = resolve(use, freq_hz)["profile"]
+        return p["name"] if p else None
+    except Exception:
+        return None
+
+
+def beam(use, freq_hz=None):
+    """Richtantenne für use auf freq_hz: dict(az, bw, el, fmin, fmax, name) oder None (Rundstrahler/unbekannt)."""
+    try:
+        p = resolve(use, freq_hz)["profile"]
+    except Exception:
+        return None
+    if not p or p.get("az") is None:
+        return None
+    return {"az": float(p["az"]) % 360, "bw": p.get("bw"), "el": float(p.get("el") or 0.0),
+            "fmin": p.get("fmin"), "fmax": p.get("fmax"), "name": p["name"]}
+
+
+def select(use, pid, log=None):
+    """Antenne für den Scan oder für Live wählen ("auto" = nach Band) – sofort wirksam. Die alten Ziele
+    rtlsdr/pmsdr (bis 1.8.32) zählen als Scan."""
+    use = {"rtlsdr": "scan", "pmsdr": "scan"}.get(use, use)
+    if use not in USES:
+        raise ValueError("Ziel: scan oder live")
+    d = load()
+    if pid != "auto":
+        prof = next((p for p in d["profiles"] if p["id"] == pid), None)
+        if prof is None:
+            raise ValueError("Antennen-Profil nicht gefunden")
     else:
-        raise ValueError("Ziel: rtlsdr oder pmsdr")
-    if log:
-        log("INFO", "antennas", "antenna_changed", target=target, old=old, new=prof["name"])
+        prof = {"id": "auto", "name": "automatisch nach Band"}
+    old = (d.get("use") or {}).get(use)
+    old_name = next((p["name"] for p in d["profiles"] if p["id"] == old), old)
+    d.setdefault("use", {})[use] = pid
+    save(d)
+    if log and old != pid:
+        log("INFO", "antennas", "antenna_changed", target=use, old=old_name, new=prof["name"])
     return prof

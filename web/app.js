@@ -170,7 +170,7 @@
     if (!el || !el.closest) return false;
     const tag = el.tagName;
     if (!(tag === 'TEXTAREA' || (tag === 'INPUT' && TYPE_KINDS.has(el.type)))) return false;
-    if (el.readOnly || el.disabled || el.closest('[data-autosave="blur"], [data-antsel]') || el.dataset.autosave === 'blur') return false;
+    if (el.readOnly || el.disabled || el.closest('[data-autosave="blur"]') || el.dataset.autosave === 'blur') return false;
     return !!el.closest('[data-view="settings"], [data-view="system"], [data-view="scan"]');
   }
   function fieldSelector(el) {                       // dasselbe Feld nach dem Neuzeichnen wiederfinden
@@ -436,6 +436,7 @@
   const bandOk = (b, active) => (b.device || 'pmsdr') === active
     || (active === 'rtlsdr' && settings.rtl_caps && settings.rtl_caps.hf_ok && (b.device || 'pmsdr') === 'pmsdr' && b.start_hz < 28.8e6);
   function renderBands() {
+    try { antHints(); } catch (e) { /* Antennen noch nicht geladen */ }
     const root = $('bandChips'); root.innerHTML = '';
     const moreRoot = $('moreBandChips'); moreRoot.innerHTML = '';
     const active = settings.active_device || 'pmsdr';
@@ -1515,7 +1516,7 @@
     device_opened: 'Empfänger geöffnet', device_open_failed: 'Empfänger lässt sich nicht öffnen', hit: 'Treffer',
     rtl_no_data: 'RTL-SDR liefert keine Daten', rtl_recovered: 'RTL-SDR läuft wieder', rtl_usb_reset: 'RTL-SDR per USB neu angemeldet',
     scan_hung: 'Scan hängt', ft8_watch_failed: 'FT8/FT4-Wache fehlgeschlagen', sstv_watch_failed: 'SSTV-Wache fehlgeschlagen',
-    satellite_start: 'Überflug: Aufnahme startet', satellite_skipped: 'Überflug übersprungen', satellite_retry: 'Überflug: Start wiederholt', satellite_problem: 'Satelliten: Problem', satellite_paused: 'Satelliten pausiert (PMSDR gewählt)', band_scanned: 'Band abgehört', 'live.start': 'Live-Empfang gestartet', 'live.stop': 'Live-Empfang beendet', 'live.tune': 'Live-Empfang abgestimmt', api_error: 'Fehler bei einer Anfrage', stopped_for_live: 'Für Live-Empfang abgebrochen', pass_cancelled: 'Überflug abgebrochen (Benutzer)', satellite_stop_requested: 'Abbruch der Satellitenaufnahme angefordert', pskreporter_sent: 'An PSK Reporter gemeldet', pskreporter_failed: 'PSK Reporter: Fehler', watch_hit: 'Beobachtung ausgelöst', watch_failed: 'Beobachtungsliste: Fehler', live_alert_failed: 'Rufzeichen-Alarm (Live): Fehler', auto_cleanup: 'Automatisch aufgeräumt', sat_raw_deleted: 'Rohdaten eines Überflugs gelöscht', disk_full: 'Speicherkarte fast voll', disk_low: 'Speicherkarte wird voll', disk_ok: 'Speicherplatz wieder ok', pass_aborted: 'Überflug abgebrochen', scan_skipped_disk_full: 'Scan ausgelassen (Speicher voll)', housekeeping_failed: 'Haushalt fehlgeschlagen',
+    satellite_start: 'Überflug: Aufnahme startet', satellite_skipped: 'Überflug übersprungen', satellite_retry: 'Überflug: Start wiederholt', satellite_problem: 'Satelliten: Problem', satellite_paused: 'Satelliten pausiert (PMSDR gewählt)', band_scanned: 'Band abgehört', 'live.start': 'Live-Empfang gestartet', 'live.stop': 'Live-Empfang beendet', 'live.tune': 'Live-Empfang abgestimmt', api_error: 'Fehler bei einer Anfrage', stopped_for_live: 'Für Live-Empfang abgebrochen', pass_cancelled: 'Überflug abgebrochen (Benutzer)', satellite_stop_requested: 'Abbruch der Satellitenaufnahme angefordert', pskreporter_sent: 'An PSK Reporter gemeldet', pskreporter_failed: 'PSK Reporter: Fehler', watch_hit: 'Beobachtung ausgelöst', watch_failed: 'Beobachtungsliste: Fehler', live_alert_failed: 'Rufzeichen-Alarm (Live): Fehler', antenna_changed: 'Antenne gewechselt', antenna_profiles_saved: 'Antennen-Profile gespeichert', auto_cleanup: 'Automatisch aufgeräumt', sat_raw_deleted: 'Rohdaten eines Überflugs gelöscht', disk_full: 'Speicherkarte fast voll', disk_low: 'Speicherkarte wird voll', disk_ok: 'Speicherplatz wieder ok', pass_aborted: 'Überflug abgebrochen', scan_skipped_disk_full: 'Scan ausgelassen (Speicher voll)', housekeeping_failed: 'Haushalt fehlgeschlagen',
     satellite_failed: 'Satelliten: Fehler', satellite_warning: 'Satelliten: Hinweis', pass_start: 'Überflug: Aufnahme läuft',
     pass_done: 'Überflug fertig', pass_failed: 'Überflug fehlgeschlagen', pass_eval_failed: 'Überflug: Auswertung fehlgeschlagen',
     pass_recording_problem: 'Überflug: Aufnahme gestört', loop_exception: 'Scheduler: Fehler in der Schleife',
@@ -1524,7 +1525,7 @@
   };
   const KEY_TEXT = { schedule: 'Zeitplan', name: 'Name', bands: 'Bänder', until: 'bis', run_id: 'Lauf', peaks: 'Treffer', rejected: 'verworfen', duration_s: 'Dauer s', band: 'Band', sat: 'Satellit', error: 'Fehler',
     reason: 'Grund', hits: 'Treffer', channels: 'Kanäle', max_el: 'max. Höhe°', freq_hz: 'Frequenz', rf_hz: 'Frequenz', device: 'Gerät',
-    problem: 'Problem', interval_min: 'Intervall min', rule: 'Regel', detail: 'Was', coverage: 'abgehört (MHz)', windows: 'Fenstermitten (MHz)', segments: 'Segmente', channels_n: 'Kanäle', digital: 'Digital (MHz)', freq_mhz: 'Frequenzen (MHz)', seconds_band: 'Dauer s', seconds: 'Sekunden', stack: 'Stelle', where: 'Stand', silent_min: 'still seit min', tune_hz: 'Mitte', until: 'bis', per_channel: 'je Kanal', plan: 'Plan' };
+    problem: 'Problem', interval_min: 'Intervall min', rule: 'Regel', detail: 'Was', coverage: 'abgehört (MHz)', windows: 'Fenstermitten (MHz)', segments: 'Segmente', channels_n: 'Kanäle', digital: 'Digital (MHz)', freq_mhz: 'Frequenzen (MHz)', seconds_band: 'Dauer s', seconds: 'Sekunden', stack: 'Stelle', target: 'für', old: 'vorher', new: 'jetzt', where: 'Stand', silent_min: 'still seit min', tune_hz: 'Mitte', until: 'bis', per_channel: 'je Kanal', plan: 'Plan' };
   function fmtVal(k, v) {
     if (v == null) return '';
     if ((k.endsWith('_hz') || k === 'rf_hz') && typeof v === 'number') return (v / 1e6).toFixed(4) + ' MHz';
@@ -2783,14 +2784,27 @@
       <td><input type="number" data-k="el" value="${p.el ?? ''}" min="0" max="90"></td>
       <td><button type="button" class="btn btn-small btn-danger" data-del="${i}" title="Profil löschen">✕</button></td></tr>`).join('')
       || '<tr><td colspan="6" class="muted">Noch keine Antenne angelegt.</td></tr>';
-    const opts = (sel, cur, custom) => { sel.innerHTML = (custom ? `<option value="">${custom}</option>` : '')
+    const opts = (sel, cur) => { sel.innerHTML = `<option value="auto">${EN ? 'automatic by band' : 'automatisch nach Band'}</option>`
       + antData.profiles.map(p => `<option value="${esc(p.id)}">${esc(p.name)}${p.fmin != null ? ' · ' + antRange(p) + ' MHz' : ''}${p.az != null ? ' · ' + p.az + '°' : ''}</option>`).join('');
-      sel.value = cur || ''; };
-    const act = settings && settings.active_device === 'pmsdr' ? 'pmsdr' : 'rtlsdr';
-    opts($('antQuick'), antData.current[act], '– eigene Angabe –');
-    $('antQuick').dataset.target = act;
+      sel.value = antData.profiles.some(p => p.id === cur) ? cur : 'auto'; };
+    opts($('antQuick'), antData.current.scan);
+    opts($('liveAnt'), antData.current.live);
     $('antQuick').closest('.ant-quick').hidden = !antData.profiles.length;
-    document.querySelectorAll('select[data-antsel]').forEach(sel => opts(sel, antData.current.rtlsdr, '– eigene Angaben –'));
+    $('liveAnt').closest('.field').hidden = !antData.profiles.length;
+    antHints();
+  }
+  // Frequenzbereich der Antenne ist nur ein Hinweis: außerhalb wird trotzdem gescannt bzw. gehört (1.8.33)
+  const antById = id => antData.profiles.find(p => p.id === id);
+  const antCovers = (p, lo, hi) => p.fmin == null || p.fmax == null || (lo >= p.fmin * 1e6 && hi <= p.fmax * 1e6);
+  function antHints() {
+    const sp = antById(antData.current.scan), sel = (settings && settings.selected_bands) || [];
+    const out = sp ? bandplan.filter(b => sel.includes(b.name) && b.name !== 'EiBi' && b.start_hz != null && !antCovers(sp, b.start_hz, b.stop_hz)).map(b => b.name) : [];
+    $('antHint').textContent = out.length ? (EN ? `${sp.name} is not made for ${out.join(', ')} – scanned anyway.` : `${sp.name} ist nicht für ${out.join(', ')} gedacht – wird trotzdem gescannt.`) : '';
+    $('antHint').hidden = !out.length;
+    const lp = antById(antData.current.live), f = parseFloat(String($('liveFreq').value || '').replace(',', '.')) * 1e6;
+    const lout = lp && f > 0 && !antCovers(lp, f, f);
+    $('liveAntHint').textContent = lout ? (EN ? `${lp.name} is not made for this frequency (${antRange(lp)} MHz) – listening anyway.` : `${lp.name} ist nicht für diese Frequenz gedacht (${antRange(lp)} MHz) – es wird trotzdem gehört.`) : '';
+    $('liveAntHint').hidden = !lout;
   }
   async function loadAntennas() { try { antData = await api('/api/antennas'); renderAntProfiles(); } catch (e) { } }
   function antRowsData() {
@@ -2807,24 +2821,25 @@
   autoSave($('antRows'), () => { if (antRowsData().every(r => r.name)) antSaveNow(); });
   $('antSave').addEventListener('click', () => antSaveNow());
   async function antSaveNow() {
-    try { antData = await post('/api/antennas', { profiles: antRowsData() }); renderAntProfiles(); note($('antNote'), '✓ gespeichert – gewählte Profile sind gleich übernommen');
+    try { antData = await post('/api/antennas', { profiles: antRowsData() }); renderAntProfiles(); note($('antNote'), '✓ gespeichert');
           loadSticks(); loadSettings(); }
     catch (err) { note($('antNote'), 'Fehler: ' + err.message, true); }
   }
-  async function antSelect(target, id, from) {
+  async function antSelect(target, id) {
     if (!id) return;
     try {
       const d = await post('/api/antennas/select', { target, id });
       antData.current = d.current; renderAntProfiles();
-      toast(`✓ Antenne ${d.profile.name} – gilt ab sofort`);
-      loadSettings(); if (from !== 'sticks') loadSticks(); else sticksLast = '';
-      loadSatPasses();
+      const what = target === 'live' ? 'Live' : 'Scan';
+      toast(id === 'auto' ? `✓ ${what}: ${EN ? 'antenna automatic by band' : 'Antenne automatisch nach Band'}` : `✓ ${what}: ${EN ? 'antenna' : 'Antenne'} ${d.profile.name}`);
+      loadSettings(); if (target === 'scan') loadSatPasses();
     } catch (err) { toast('Fehler: ' + err.message); }
   }
-  // Ziel erst beim Auswählen bestimmen: das Gerät, das gerade wirklich scannt (beim ersten Zeichnen waren die
-  // Einstellungen evtl. noch nicht geladen – dann ging die Wahl an den Stick, auch wenn die PMSDR scannte)
-  $('antQuick').addEventListener('change', e => antSelect(settings && settings.active_device === 'pmsdr' ? 'pmsdr' : 'rtlsdr', e.target.value));
-  document.addEventListener('change', e => { const s2 = e.target.closest('select[data-antsel]'); if (s2) antSelect('rtlsdr', s2.value, 'sticks'); });
+  // Antenne gehört zum Vorgang (Scan / Live), nicht mehr zum Stick (1.8.33)
+  $('antQuick').addEventListener('change', e => antSelect('scan', e.target.value));
+  $('liveAnt').addEventListener('change', e => antSelect('live', e.target.value));
+  $('liveFreq').addEventListener('input', () => antHints());
+  $('liveFreq').addEventListener('change', () => antHints());
   loadAntennas();
 
   // ---------- System: Dienste (bin/services.py) ----------
@@ -3326,13 +3341,7 @@
           <label class="field" title="Frequenzkorrektur des Sticks in ppm (Quarzfehler). Leer = Wert aus dem Bandplan. Sticks mit TCXO wie der NESDR SMArt brauchen meist 0."><span>ppm</span><input data-f="ppm" type="number" step="1" min="-200" max="200" placeholder="–" value="${r.ppm ?? ''}"></label>
           <label class="field" title="Verstärkung in dB für Scan und Live. Leer = Wert aus dem Bandplan. Zu hoch übersteuert bei starken Ortssendern, zu niedrig verliert schwache Signale. Für Satelliten gibt es eine eigene Einstellung."><span>Verstärkung (dB)</span><input data-f="gain" type="number" step="0.1" min="0" max="60" placeholder="–" value="${r.gain ?? ''}"></label>
           <label class="field" title="Kann dieser Stick Kurzwelle (Direktabtastung)? „automatisch“ richtet sich nach der Modellbezeichnung im Stick – die stimmt nicht immer (ältere Modelle melden sich als neuere, Billigsticks tragen irgendeinen Namen). „nein“: nur 24 MHz – 1,7 GHz, Kurzwelle bleibt der PMSDR."><span>Kurzwelle</span><select data-f="hf_mode">${[['auto', EN ? 'automatic (model)' : 'automatisch (Modell)'], ['on', EN ? 'yes' : 'ja'], ['off', EN ? 'no' : 'nein']].map(([v, l]) => `<option value="${v}"${(r.hf_mode || 'auto') === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
-          <label class="field" title="Name der angeschlossenen Antenne – nur eine Beschriftung. Erscheint in der Scan-Anzeige, bei jedem Überflug und bei jedem Treffer."><span>Antenne</span><input data-f="antenna" type="text" maxlength="60" placeholder="z. B. Discone" value="${esc(r.antenna || '')}"></label>
-          <label class="field" title="Richtung, in die eine Richtantenne zeigt: 0° Nord, 90° Ost, 180° Süd, 270° West. Leer lassen bei Rundstrahlern (Discone, X30)."><span>Richtung (°)</span><input data-f="ant_az" type="number" step="1" min="0" max="360" placeholder="Rundstrahler" value="${r.ant_az ?? ''}"></label>
-          <label class="field" title="Öffnungswinkel der Hauptkeule in Grad. 4-Element-Yagi etwa 60–70°, 10 Elemente etwa 35°. Leer = 70°."><span>Öffnungswinkel (°)</span><input data-f="ant_bw" type="number" step="1" min="10" max="360" placeholder="70" value="${r.ant_bw ?? ''}"></label>
-          <label class="field" title="Neigung der Antenne nach oben: 0 = waagrecht. Bei 0° und 70° Öffnungswinkel zählt alles bis 35° Höhe als „im Strahl“."><span>Erhebung (°)</span><input data-f="ant_el" type="number" step="1" min="0" max="90" placeholder="0" value="${r.ant_el ?? ''}"></label>
-          <label class="field" title="Frequenzbereich der Antenne in MHz, z. B. 137–150 (mit Bindestrich). Satelliten außerhalb gelten als „falsches Band“. Leer = alle Frequenzen."><span>gilt für (MHz)</span><input data-f="ant_range" type="text" inputmode="decimal" maxlength="20" placeholder="z. B. 137–150" value="${r.ant_fmin != null || r.ant_fmax != null ? `${r.ant_fmin ?? ''}–${r.ant_fmax ?? ''}` : ''}"></label>
-          <button type="button" class="info-btn" data-info="Richtantenne (z. B. Yagi): Richtung = Azimut, in den sie zeigt (0° Nord, 90° Ost, 180° Süd, 270° West), Öffnungswinkel = Breite der Keule (4-Element-Yagi etwa 60–70°), Erhebung = wie weit sie nach oben geneigt ist (waagrecht 0°). „gilt für MHz“: Frequenzbereich der Antenne, z. B. 144–146. Die Überflugliste zeigt dann, welcher Teil eines Überflugs durch die Keule läuft. Für einen Rundstrahler (Discone, X30) Richtung leer lassen.">ⓘ</button>
-          ${role === 'main' ? '<label class="field stick-antprof" title="Antennen-Profil wählen – wird sofort gespeichert und füllt Antenne, Richtung, Öffnungswinkel, Erhebung und Frequenzbereich"><span>Antennen-Profil</span><select data-antsel></select></label>' : ''}
+          <p class="hint stick-ant-hint">${EN ? 'Antenna: chosen in the scan box and in Live – profiles under Antennas.' : 'Antenne: wird im Scan-Kasten und in Live gewählt – Profile unter Antennen.'}</p>
           <div class="stick-actions"><button class="btn" data-a="save" hidden>Speichern</button>${(r.generic || r.duplicate) && r.present && d.eeprom ? '<button class="btn" data-a="serial">Seriennummer schreiben</button>' : ''}${r.present ? '' : '<button class="btn btn-danger" data-a="forget">Vergessen</button>'}<span class="save-note stick-note" aria-live="polite"></span></div>
         </div>`;
       } else if (!r.present) {
@@ -3350,9 +3359,9 @@
     $('sticksList').querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', () => stickAction(b)));
     $('sticksList').querySelectorAll('input, select').forEach(el => {
       el.addEventListener('focus', () => { sticksEditing = true; });
-      el.addEventListener('input', () => { if (!el.matches('[data-antsel]') && !sticksDirty) sticksDirty = Date.now(); });
+      el.addEventListener('input', () => { if (!sticksDirty) sticksDirty = Date.now(); });
       // jede Änderung speichert die Karte gleich (Profilwahl speichert ohnehin sofort)
-      el.addEventListener('change', () => { if (el.matches('[data-antsel]')) return; sticksDirty = sticksDirty || Date.now();
+      el.addEventListener('change', () => { sticksDirty = sticksDirty || Date.now();
         clearTimeout(el.closest('[data-key]')._t); const b = el.closest('[data-key]').querySelector('[data-a="save"]');
         if (b) el.closest('[data-key]')._t = setTimeout(() => stickAction(b), 400); });
       el.addEventListener('blur', () => { setTimeout(() => { sticksEditing = !!document.activeElement.closest?.('#sticksList input, #sticksList select'); }, 0); });

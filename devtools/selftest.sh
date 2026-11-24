@@ -342,10 +342,10 @@ python3 - <<'PY' && ok "Strahl je Überflug, Bewertung, falsches Band" || bad "R
 import json, os, shutil, sys
 sys.path.insert(0, "bin")
 bak = None
-if os.path.exists("data/sticks.json"):
-    bak = open("data/sticks.json").read()
-json.dump({"sticks": {"x": {"role": "main", "kind": "rtl", "antenna": "Yagi", "ant_az": 245, "ant_bw": 70,
-                            "ant_fmin": 137, "ant_fmax": 150}}}, open("data/sticks.json", "w"))
+if os.path.exists("data/antennas.json"):
+    bak = open("data/antennas.json").read()
+json.dump({"profiles": [{"id": "yagi", "name": "Yagi", "az": 245, "bw": 70, "el": None, "fmin": 137, "fmax": 150}],
+           "use": {"scan": "yagi", "live": "yagi"}}, open("data/antennas.json", "w"))
 try:
     import satellites as S
     r = S.upcoming(["ao73", "so50"], "JN59HH", fetch=False, past_s=0, hours=48)
@@ -365,9 +365,9 @@ try:
     assert d["beam"] and d["beam"]["az"] == 245
 finally:
     if bak is None:
-        os.remove("data/sticks.json")
+        os.remove("data/antennas.json")
     else:
-        open("data/sticks.json", "w").write(bak)
+        open("data/antennas.json", "w").write(bak)
 PY
 echo "== 17 Sicherung und Wiederherstellung"
 python3 - <<'PY' && ok "sichern (3 Umfänge, ohne Zugangsdaten), einspielen, manipulierte Datei abgelehnt" || bad "Sicherung"
@@ -971,29 +971,46 @@ recent = W.stations(1 / 24, "", "", 1000, 0)["total"]                 # letzte S
 assert recent <= W.stations(0, "", "", 1, 0)["total"]
 PY
 echo "== 32 Antennen-Profile"
-(cd bin && python3 - <<'PY') && ok "Profile aus bisherigen Angaben, Auswahl übernimmt Richtung und Bereich, Handänderung löst das Profil" || bad "Antennen-Profile"
+(cd bin && python3 - <<'PY') && ok "Profile und Wahl aus bisherigen Angaben, Scan und Live getrennt, automatisch nach Band, außerhalb nur Hinweis, Stick bleibt unberührt" || bad "Antennen-Profile"
 import json, tempfile
 from pathlib import Path
-import sticks as STK, antennas as AN
+import sticks as STK, antennas as AN, satellites as SAT
 STK.REG = Path(tempfile.mkdtemp()) / "sticks.json"
 json.dump({"sticks": {"a": {"key": "a", "role": "main", "kind": "rtl", "antenna": "Discone"},
                       "b": {"key": "b", "role": "spare", "kind": "rtl", "antenna": "Yagi", "ant_az": 245, "ant_bw": 70,
                             "ant_fmin": 137, "ant_fmax": 150}}}, open(STK.REG, "w"))
+STK.effective_main = lambda reg=None: STK.load()["sticks"]["a"]
 AN.FILE = Path(tempfile.mkdtemp()) / "antennas.json"
 d = AN.load()
 names = {p["name"]: p for p in d["profiles"]}
 assert "Discone" in names and names["Yagi"]["az"] == 245 and names["Yagi"]["fmax"] == 150, d
-AN.select("rtlsdr", names["Yagi"]["id"])
-m = STK.load()["sticks"]["a"]
-assert m["antenna"] == "Yagi" and m["ant_az"] == 245 and m["ant_fmin"] == 137 and m["ant_profile"] == names["Yagi"]["id"], m
-assert AN.current()["rtlsdr"] == names["Yagi"]["id"]
-hf = AN.set_profiles(AN.load()["profiles"] + [{"name": "HF-360", "fmin": 0.1, "fmax": 30}])["profiles"][-1]
-AN.select("rtlsdr", hf["id"])                              # Kurzwellenantenne am Stick (ab 100 kHz) – war ein Fehler
-assert STK.load()["sticks"]["a"]["ant_fmin"] == 0.1
-STK.update("a", antenna="Selbstbau")                      # von Hand geändert: kein Profil mehr
-assert STK.load()["sticks"]["a"].get("ant_profile") is None
+dis, yagi = names["Discone"]["id"], names["Yagi"]["id"]
+assert AN.current() == {"scan": dis, "live": dis}, AN.current()        # bisherige Antenne des Haupt-Sticks
+AN.select("scan", yagi)
+assert AN.current() == {"scan": yagi, "live": dis}                     # Live bleibt
+assert STK.load()["sticks"]["a"]["antenna"] == "Discone"               # der Stick bleibt unberührt
+r = AN.resolve("scan", 437.8e6)
+assert r["profile"]["id"] == yagi and r["outside"] and not r["auto"]   # 70 cm auf der Yagi: Hinweis, keine Sperre
+assert not AN.resolve("scan", 145.8e6)["outside"] and AN.label("live", 145e6) == "Discone"
+assert SAT.antenna_beam()["az"] == 245                                 # Überflugplanung: Richtantenne des Scans
+AN.select("rtlsdr", dis)                                               # alte Ziele zählen als Scan
+assert AN.current()["scan"] == dis and SAT.antenna_beam() is None
+hf = AN.set_profiles(AN.load()["profiles"] + [{"name": "HF-360", "fmin": 1.8, "fmax": 30}])["profiles"][-1]
+assert AN.current()["scan"] == dis                                     # Speichern der Profile lässt die Wahl stehen
+AN.select("scan", "auto")
+assert AN.label("scan", 7.074e6) == "HF-360" and AN.label("scan", 145.5e6) == "Yagi"
+assert AN.label("scan", 1296e6) == "Discone"                           # kein Bereich passt: die Antenne ohne Bereich
+AN.set_profiles([p for p in AN.load()["profiles"] if p["id"] != dis])  # Discone gelöscht
+assert AN.current()["live"] == "auto" and AN.label("scan", 1296e6) is None
+AN.set_profiles([{"name": "Sigma HF-360pro", "fmin": 1.8, "fmax": 30}])
+r = AN.resolve("scan", 437.8e6)                                        # nur eine Antenne: die hängt dran, auch auf 70 cm
+assert r["profile"]["name"] == "Sigma HF-360pro" and r["outside"]
 try:
     AN.set_profiles([{"name": "X", "fmin": 150, "fmax": 137}]); raise SystemExit("Bereich falsch herum angenommen")
+except ValueError:
+    pass
+try:
+    AN.select("scan", "gibtsnicht"); raise SystemExit("unbekanntes Profil angenommen")
 except ValueError:
     pass
 PY
@@ -3614,6 +3631,27 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 })();
 JS
 fi
+
+echo "== 92 Antenne je Vorgang: Scanner je Fenster, Live folgt der Frequenz, Oberfläche ohne Antennenfelder am Stick"
+(cd bin && timeout 90 python3 - "$SRC" <<'PY') && ok "Scan-Fenster und Live nehmen bei „automatisch“ die passende Antenne, Auswahl in Scan-Kasten und Live, Stickkarte ohne Antenne" || bad "Antenne je Vorgang"
+import json, sys, tempfile
+from pathlib import Path
+import antennas as AN, scanner as SC, live_decode as LD
+AN.FILE = Path(tempfile.mkdtemp()) / "antennas.json"
+AN.save({"profiles": [{"id": "sigma", "name": "Sigma", "fmin": 1.8, "fmax": 30}, {"id": "x30", "name": "X30", "fmin": 140, "fmax": 450}],
+         "use": {"scan": "auto", "live": "sigma"}})
+assert SC.antenna_label("rtlhf", 7.074e6) == "Sigma" and SC.antenna_label("rtlsdr", 439.4e6) == "X30"
+dec = object.__new__(LD.LiveDecoders); dec._antenna = None
+dec.freq_hz = 439.4e6
+assert dec.antenna == "Sigma"                                     # Live fest auf Sigma, auch auf 70 cm
+AN.select("live", "auto"); assert dec.antenna == "X30"
+dec.freq_hz = 14.074e6; assert dec.antenna == "Sigma"
+web = Path(sys.argv[1]) / "web"
+js, html = (web / "app.js").read_text(), (web / "index.html").read_text()
+assert 'id="liveAnt"' in html and 'id="antHint"' in html and 'id="liveAntHint"' in html
+assert "antSelect('scan'" in js and "antSelect('live'" in js and "data-antsel" not in js
+assert 'data-f="antenna"' not in js and 'data-f="ant_az"' not in js        # Stickkarte ohne Antennenfelder
+PY
 
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

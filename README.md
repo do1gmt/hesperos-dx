@@ -215,7 +215,7 @@ above it is recorded, passes that never get above it are dropped. *Only passes r
 default 10°): lower passes stay greyed out in the list ("too low") and are not recorded.
 
 **Spare stick and restoring on other hardware:** a stick with the role *spare* steps in when the main stick is
-missing (only if exactly one spare is plugged in) – with its own gain, ppm, antenna and shortwave setting; a notice
+missing (only if exactly one spare is plugged in) – with its own gain, ppm and shortwave setting; a notice
 says so, and the main stick is used again as soon as it is back. New, not yet assigned sticks never step in.
 Restoring a backup from another Pi: if the main stick of the backup is not plugged in but exactly one other stick is,
 that one becomes the main stick (the old one stays registered as spare).
@@ -223,9 +223,14 @@ that one becomes the main stick (the old one stays registered as spare).
 **Antenna profiles:** under *System → Devices → Antennas* (a collapsible section at the top of the card – edit the
 fields in place, "+ Antenna" adds one, ✕ deletes, then "Save") each antenna is created once (name, frequency range,
 and for directional antennas direction, beamwidth, elevation – the existing entries become the first profiles).
-When switching antennas, just choose the profile in the scan box ("Antenna ▾") or at the main stick / HF receiver
-– it is saved immediately, the pass planning uses its range and beam, and the change is logged. Editing a profile
-updates the receivers that use it; changing the fields by hand turns the profile off for that stick.
+Since 1.8.33 the antenna belongs to what you do, not to the stick: choose it in the scan box ("Antenna ▾", also
+used for satellite passes) and separately in Live – a fixed profile or **"automatic by band"** (the profile whose
+frequency range fits, the narrowest first; if none fits, the one without a range; with only one antenna that one).
+The frequency range is only a hint: outside of it you still scan and listen, the scan box and Live just say so
+(e.g. "Sigma is not made for 2m, 70cm – scanned anyway"). The choice is saved immediately and logged; hits, passes,
+Live stations, PSK Reporter spots and pictures carry the antenna that was actually used, and the pass planning uses
+the range and beam of the scan antenna. On the first start the previous choice (main stick or HF receiver) is taken
+over. Later, an antenna switch controlled by the Pi can select the antenna by band itself.
 
 **Scans and satellite passes share the stick.** A scan is only started if it will be finished before the next
 important pass (estimated from the longest recent scans and the estimate for the current band selection). If a

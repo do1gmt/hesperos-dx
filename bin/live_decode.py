@@ -220,9 +220,23 @@ ON_CALLS = [None]        # Rückruf (calls, band, t) für neu gehörte Rufzeiche
 
 
 class LiveDecoders:
+    @property
+    def antenna(self):
+        """Antenne des Live-Empfangs auf der eingestellten Frequenz (Antennen-Wahl „Live“, 1.8.33) – für Stationen,
+        PSK Reporter und Bilder; bei „automatisch nach Band“ wechselt sie mit der Frequenz."""
+        try:
+            import antennas as AN
+            return AN.label("live", self.freq_hz or None) or self._antenna
+        except Exception:
+            return self._antenna
+
+    @antenna.setter
+    def antenna(self, v):
+        self._antenna = v
+
     def __init__(self):
         self.kind = "auto"                    # gewählt im Dashboard
-        self.antenna = None                   # Antenne des Live-Empfängers (für PSK Reporter)
+        self._antenna = None                  # nur noch Rückfall (Antenne kommt aus der Antennen-Wahl für Live)
         self.active = None                    # gerade laufender Dekoder (ft8, ft4, packet, pocsag)
         self.freq_hz, self.mode = 0, "nfm"
         self.events = collections.deque(maxlen=200)

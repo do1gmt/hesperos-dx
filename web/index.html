@@ -103,7 +103,8 @@
           </div>
         </div>
         <div class="device-switch" id="deviceSwitch" role="radiogroup" aria-label="Angeschlossenes Gerät"></div>
-        <label class="field ant-quick" title="Welche Antenne gerade am gewählten Empfänger hängt – beim Umschalten hier wählen, wird sofort gespeichert. Profile anlegen: System → Geräte → Antennen."><span>Antenne</span><select id="antQuick"></select></label>
+        <label class="field ant-quick" title="Welche Antenne der Scan benutzt (auch für Überflüge) – fest oder automatisch nach Band (das Profil, dessen Frequenzbereich passt). Wird sofort gespeichert. Profile anlegen: System → Geräte → Antennen."><span>Antenne</span><select id="antQuick"></select></label>
+        <p class="hint ant-hint" id="antHint" hidden></p>
         <p class="hint" id="deviceHint"></p>
         <div class="row">
           <label class="field"><span>Automatisch (Start zu Start)</span><select id="interval"></select></label>
@@ -276,7 +277,9 @@
       <label class="field"><span>Demodulator</span>
         <select id="liveMode"><option value="nfm">FM schmal</option><option value="wfm">FM breit</option><option value="am">AM</option><option value="usb">USB</option><option value="lsb">LSB</option></select>
       </label>
+      <label class="field" title="Welche Antenne Live benutzt – fest oder automatisch nach Band. Steht bei gehörten Stationen, PSK-Reporter-Meldungen und Bildern dabei." hidden><span>Antenne</span><select id="liveAnt"></select></label>
     </div>
+    <p class="hint ant-hint" id="liveAntHint" hidden></p>
     <div class="row tune-row">
       <button type="button" class="btn btn-small" data-livestep="-1">◀</button>
       <select id="liveStep"><option value="100">100 Hz</option><option value="1000">1 kHz</option><option value="5000">5 kHz</option><option value="8333">8,33 kHz</option><option value="12500" selected>12,5 kHz</option><option value="25000">25 kHz</option><option value="100000">100 kHz</option></select>
@@ -453,7 +456,7 @@
       <section class="panel" id="panel-sticks">
         <h2>Geräte</h2>
         <details class="ant-profiles" id="antBox"><summary><b>Antennen</b> <small class="muted" id="antCount"></small></summary>
-          <p class="hint">Jede Antenne einmal anlegen – beim Umschalten dann nur noch auswählen (im Scan-Kasten oder hier beim Haupt-Stick), das wird sofort gespeichert. „gilt für“: Frequenzbereich in MHz (Satelliten außerhalb gelten als „falsches Band“); Richtung/Öffnungswinkel/Erhebung nur bei Richtantennen.</p>
+          <p class="hint">Jede Antenne einmal anlegen. Welche benutzt wird, wählst du im Scan-Kasten (gilt auch für Überflüge) und in Live – fest oder „automatisch nach Band“: dann gilt das Profil, dessen Frequenzbereich passt. „gilt für“: Frequenzbereich in MHz – nur ein Hinweis, gescannt wird auch außerhalb (Satelliten außerhalb gelten als „falsches Band“); Richtung/Öffnungswinkel/Erhebung nur bei Richtantennen.</p>
           <div class="table-wrap"><table class="table ant-table"><thead><tr><th>Name</th><th>gilt für (MHz)</th><th>Richtung (°)</th><th>Öffnung (°)</th><th>Erhebung (°)</th><th></th></tr></thead><tbody id="antRows"></tbody></table></div>
           <div class="actions"><button type="button" class="btn" id="antAdd">＋ Antenne</button><button type="button" class="btn btn-primary" id="antSave" hidden>Speichern</button></div>
           <div class="save-note" id="antNote" aria-live="polite"></div>
