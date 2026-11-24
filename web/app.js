@@ -1569,7 +1569,7 @@
   // ---------- Protokoll ----------
   const EVENT_TEXT = {
     // 1.8.42: Ereignisse ohne Beschreibung (sonst stand im Protokoll der Rohname)
-    'mesh_connected': 'Mesh: verbunden', 'mesh_lost': 'Mesh: Verbindung weg', 'mesh_no_access': 'Mesh: kein Zugriff auf den Knoten', 'mesh_no_answer': 'Mesh: Gerät antwortet nicht', 'mesh_stopped': 'Mesh: beendet', 'mesh_msg': 'Mesh-Nachricht', 'mesh_open_failed': 'Mesh: Gerät ließ sich nicht öffnen', 'mesh_start_failed': 'Mesh ließ sich nicht starten', 'mesh_port_set': 'Mesh: Anschluss gewählt', 'mesh_alert_failed': 'Mesh-Warnung ließ sich nicht melden', 'mesh_set': 'Mesh-Knoten eingestellt', 'mesh_set_failed': 'Mesh-Knoten ließ sich nicht einstellen', 'mesh_clock_set': 'Mesh: Uhr des Knotens gestellt', 'mesh_clock_failed': 'Mesh: Uhr ließ sich nicht stellen',
+    'mesh_connected': 'Mesh: verbunden', 'mesh_lost': 'Mesh: Verbindung weg', 'mesh_no_access': 'Mesh: kein Zugriff auf den Knoten', 'mesh_no_answer': 'Mesh: Gerät antwortet nicht', 'mesh_stopped': 'Mesh: beendet', 'mesh_msg': 'Mesh-Nachricht', 'mesh_open_failed': 'Mesh: Gerät ließ sich nicht öffnen', 'mesh_start_failed': 'Mesh ließ sich nicht starten', 'mesh_port_set': 'Mesh: Anschluss gewählt', 'mesh_alert_failed': 'Mesh-Warnung ließ sich nicht melden', 'mesh_set': 'Mesh-Knoten eingestellt', 'mesh_set_failed': 'Mesh-Knoten ließ sich nicht einstellen', 'mesh_clock_set': 'Mesh: Uhr des Knotens gestellt', 'mesh_clock_failed': 'Mesh: Uhr ließ sich nicht stellen', 'mesh_server_connected': 'Mesh: Repeater/Room-Server verbunden',
     'analysis_skipped': 'Auswertung übersprungen', 'auto_backup': 'Automatische Sicherung', 'backup_now': 'Sicherung von Hand', 'decode_skipped': 'Dekodieren übersprungen', 'stick_main_auto': 'Stick automatisch Haupt-Stick', 'stick_new': 'Neuer Stick erkannt', 'stick_serial_written': 'Seriennummer geschrieben', 'stick_unsupported': 'Gerät nicht unterstützt', 'check_failed': 'Prüfung fehlgeschlagen', 'internet_back': 'Internet wieder da', 'network_changed': 'Netz gewechselt', 'live_gap': 'Live: Lücke im Empfang', 'live_heard_failed': 'Live: Gehörte nicht gespeichert', 'live_recorded': 'Live: Aufnahme gespeichert', 'live.start_failed': 'Live ließ sich nicht starten', 'watch_loop_failed': 'Dauerwache: Fehler', 'watch_off': 'Dauerwache aus', 'watch_on': 'Dauerwache an', 'watch_restarted': 'Dauerwache neu gestartet', 'outbox_sent': 'Nachgeholte Nachrichten verschickt', 'test_mail_sent': 'Test-Mail verschickt', 'test_push_sent': 'Test-Push verschickt', 'sstv_upload_failed': 'SSTV-Bild: Upload fehlgeschlagen', 'sstv_uploaded': 'SSTV-Bild hochgeladen', 'rds_decoded': 'RDS dekodiert', 'rds_failed': 'RDS: Fehler', 'rundir_recreated': 'Arbeitsordner neu angelegt', 'pass_stick_restart': 'Überflug: Stick neu gestartet', 'publish_prepare_failed': 'Überflug: Webseiten-Upload nicht vorbereitet', 'waterfall_failed': 'Wasserfall ließ sich nicht erzeugen', 'band_summary_failed': 'Bandübersicht: Fehler', 'fm_watch_failed': 'UKW-Beobachtung: Fehler', 'pmsdr_fifo_reconnect': 'PMSDR: Datenstrom neu verbunden', 'pmsdr_input_set': 'PMSDR: Eingang umgestellt', 'rtl_orphans_killed': 'Verwaiste RTL-Prozesse beendet', 'run_exception': 'Scan: unerwarteter Fehler', 'scan_yielded': 'Scan gibt den Stick frei', 'health_failed': 'Selbstprüfung: Fehler', 'publish_failed': 'Webseiten-Upload: Fehler', 'restore_done': 'Sicherung eingespielt', 'restore_failed': 'Einspielen fehlgeschlagen', 'restore_stick_adopt_failed': 'Einspielen: Stick nicht übernommen', 'restore_stick_adopted': 'Einspielen: Stick übernommen', 'satellite_arming': 'Satelliten werden scharfgeschaltet', 'satellite_watchdog': 'Überflug hängt – beendet', 'scan_yield_requested': 'Scan soll den Stick freigeben', 'settings_unreadable': 'Einstellungen nicht lesbar', 'sticks_failed': 'Sticks: Fehler', 'sysmon_failed': 'Systemwerte: Fehler', 'reboot_requested': 'Neustart angefordert', 'restart_requested': 'Dienst-Neustart angefordert', 'dir_move_failed': 'Programmordner nicht umgezogen', 'dir_move_skipped': 'Programmordner-Umzug ausgelassen', 'dir_moved': 'Programmordner umgezogen', 'hostname_change_failed': 'Rechnername nicht geändert', 'hostname_changed': 'Rechnername geändert', 'hostname_notice_failed': 'Rechnername: Hinweis fehlgeschlagen', 'services_rename_failed': 'Dienste nicht umbenannt', 'services_renamed': 'Dienste umbenannt', 'backup_dir_move_failed': 'Sicherungsordner nicht umgezogen', 'backup_dir_rename_failed': 'Sicherungsordner nicht umbenannt', 'backup_dir_renamed': 'Sicherungsordner umbenannt', 'update_failed': 'Update fehlgeschlagen', 'auto_backup_set': 'Automatische Sicherung eingestellt', 'backup_downloaded': 'Sicherung heruntergeladen', 'backup_from_target': 'Sicherung vom Ziel eingespielt', 'backup_target_nas': 'Sicherungsziel: Netzwerkfreigabe', 'backup_target_nas_removed': 'Netzwerkfreigabe entfernt', 'backup_target_usb': 'Sicherungsziel: USB-Stick', 'backup_uploaded': 'Sicherung hochgeladen', 'backup_usb_ejected': 'USB-Stick ausgeworfen', 'diagnose_downloaded': 'Diagnose heruntergeladen', 'eibi_refresh_failed': 'EiBi: Herunterladen fehlgeschlagen', 'eibi_uploaded': 'EiBi-Liste hochgeladen', 'follow_updated': 'Satelliten-Nachführung eingestellt', 'hf_device_updated': 'Kurzwellengerät eingestellt', 'interference_changed': 'Störlinie geändert', 'live_favorites_saved': 'Live-Favoriten gespeichert', 'location_confirmed': 'Standort bestätigt', 'publish_set': 'Webseiten-Upload eingestellt', 'restore_requested': 'Einspielen angefordert', 'satellites_armed_now': 'Satelliten sofort scharf', 'satellites_arming': 'Satelliten in 1 Minute scharf', 'scan_stop_requested': 'Scan-Abbruch angefordert', 'scheduler_dead_fallback': 'Zeitplaner antwortet nicht – Scan direkt gestartet', 'sstv_event_added': 'SSTV-Termin eingetragen', 'sstv_event_deleted': 'SSTV-Termin gelöscht', 'sstv_events_failed': 'SSTV-Termine: Abruf fehlgeschlagen', 'sstv_manual_queued': 'SSTV-Bild für die Webseite vorgemerkt', 'stick_updated': 'Stick-Einstellungen gespeichert', 'time_mode_set': 'Zeitangaben umgestellt', 'ui_prefs_failed': 'Ansicht-Profil: Fehler', 'update_started': 'Update gestartet', 'watchdog_ping_failed': 'Watchdog-Meldung fehlgeschlagen', 'webapp_stall': 'Dashboard hing kurz', 'webapp_stall_probe_failed': 'Dashboard-Hänger: Prüfung fehlgeschlagen', 'wifi_fallback_added': 'Ersatz-WLAN eingetragen', 'wifi_fallback_removed': 'Ersatz-WLAN entfernt', 'wsjtx_udp_set': 'Weitergabe im Netz (WSJT-X) eingestellt',
     'notice_raised': 'Hinweis gemeldet', 'notice_resolved': 'Hinweis behoben', 'notice_event': 'Ereignis gemeldet', 'update_done': 'Update fertig', 'rescue.start': 'Notfallseite gestartet', 'sysupdate_checked': 'Systemupdates geprüft', 'sysupgrade_requested': 'Systemupdate angefordert', 'sysupgrade_started': 'Systemupdate gestartet', 'sysupgrade_done': 'Systemupdate fertig', 'sysupgrade_failed': 'Systemupdate fehlgeschlagen', 'sysupgrade_waiting': 'Systemupdate wartet auf eine freie Minute', 'sysupgrade_cancelled': 'Systemupdate nicht mehr angefordert', 'sysupgrade_start_failed': 'Systemupdate ließ sich nicht starten', 'reboot_after_update': 'Neustart nach Systemupdate', 'reboot_postponed': 'Neustart verschoben', 'reboot_done': 'Neustart nach Systemupdate erledigt', 'sysupdate_settings': 'Systemupdates eingestellt', 'sysupdate_failed': 'Systemupdates: Fehler', 'foreign_request_blocked': 'Anfrage einer fremden Webseite abgewiesen', 'backup_key_set': 'Passwort der Zugangsdaten gesetzt', 'backup_key_cleared': 'Passwort der Zugangsdaten gelöscht', 'live_image_keep': 'Bild aus Live behalten (★)', 'live_image_unkeep': 'Bild aus Live nicht mehr behalten', 'live_image_delete': 'Bild aus Live gelöscht', 'live_image_publish': 'Bild aus Live für die Webseite vorgemerkt', 'ui_prefs_replaced': 'Ansicht-Profil übernommen', 'ui_prefs_copied': 'Ansicht-Profil kopiert', 'backup_dir_moved': 'Sicherungsordner umgezogen', 'writewatch_failed': 'Schreib-Zählung: Fehler', 'db_keeper_failed': 'Ruhende Datenbank-Verbindung: Fehler', 'live_yield': 'Live hält kurz an', 'live_resumed': 'Live läuft weiter', 'auth_none': 'Dashboard ohne Passwort', 'live_thumb_failed': 'Vorschaubild ließ sich nicht erzeugen',
     run_start: 'Scan gestartet', run_done: 'Scan fertig', run_failed: 'Scan fehlgeschlagen', run_cancelled: 'Scan abgebrochen',
@@ -1598,6 +1598,9 @@
     return String(v);
   }
   const logPage = { offset: 0 };
+  // „pro Seite“ im Ansicht-Profil merken (log.per), wie bei Treffern und Stationen (1.8.49)
+  { const v = localStorage.getItem('log.per'); if (['50', '100', '250', '500'].includes(v)) $('logPerPage').value = v; }
+  $('logPerPage').addEventListener('change', e => localStorage.setItem('log.per', e.target.value));
   async function loadLogs() {
     try {
       const per = Number($('logPerPage').value);
@@ -2711,6 +2714,7 @@
 
   // ---------- Mesh (MeshCore-Knoten am USB, bin/mesh.py) ----------
   const meshType = t => EN ? t : ({ Companion: 'Companion', Repeater: 'Repeater', Room: 'Raum', Sensor: 'Sensor' }[t] || t);
+  const meshRole = r => EN ? ({ 'Room-Server': 'Room server' }[r] || r) : r;
   const meshPage = { before: null, rows: [], total: 0, end: true };
   // Abweichung der Knoten-Uhr lesbar: −300 → „5 min nach“ / „5 min slow“
   const meshDrift = d => { const a = Math.abs(d), v = a >= 7200 ? `${Math.round(a / 3600)} h` : a >= 120 ? `${Math.round(a / 60)} min` : `${a} s`;
@@ -2720,7 +2724,8 @@
     let d; try { d = await api('/api/mesh?limit=100' + (more && meshPage.before ? '&before=' + meshPage.before : '')); } catch (e) { return; }
     const st = d.status, me = st.self || {}, dev = st.device || {};
     // ohne Knoten und ohne Daten bleibt die Karte weg (nicht jeder Pi hat einen)
-    const any = st.state === 'connected' || d.total > 0 || d.nodes.length > 0 || d.port_setting !== 'auto' || st.error;
+    const servers = st.servers || [];
+    const any = st.state === 'connected' || servers.length || d.total > 0 || d.nodes.length > 0 || d.port_setting !== 'auto' || st.error;
     $('panel-mesh').hidden = !any; $('mapMeshChip').hidden = !d.nodes.some(n => n.lat != null);
     if (!any) return;
     const rx = st.last_rx;
@@ -2730,7 +2735,8 @@
     const S = {
       connected: (EN ? 'Connected: ' : 'Verbunden: ') + [me.name, [dev.model, dev.version].filter(Boolean).join(' '), radio].filter(Boolean).join(' · ') + ' · ' + pk,
       connecting: EN ? 'Connecting …' : 'Verbinde …',
-      searching: st.error ? (EN ? `Connection lost (${st.error}) – searching again …` : `Verbindung weg (${st.error}) – suche erneut …`)
+      searching: servers.length ? (EN ? 'No companion node on USB – messages and heard nodes come only through a node with "Companion Radio (USB)" firmware.' : 'Kein Companion-Knoten am USB – Nachrichten und gehörte Knoten kommen nur über einen Knoten mit der Firmware „Companion Radio (USB)“.')
+        : st.error ? (EN ? `Connection lost (${st.error}) – searching again …` : `Verbindung weg (${st.error}) – suche erneut …`)
         : (EN ? 'No MeshCore node found on USB – plug in a node with "Companion Radio (USB)" firmware.' : 'Kein MeshCore-Knoten am USB gefunden – Knoten mit der Firmware „Companion Radio (USB)“ anstecken.'),
       error: st.error === 'no_access' ? (EN ? `No access to ${st.port} – see notices (group dialout).` : `Kein Zugriff auf ${st.port} – siehe Hinweise (Gruppe dialout).`) : String(st.error || ''),
       off: EN ? 'Switched off.' : 'Ausgeschaltet.',
@@ -2765,7 +2771,23 @@
     }
     $('meshState').classList.toggle('warn-text', st.state === 'error');
     cardStatus('panel-mesh', st.state === 'connected' ? (EN ? `connected · ${st.packets_hour} packets/h · ${d.total} messages` : `verbunden · ${st.packets_hour} Pakete/h · ${d.total} Nachrichten`)
+      : servers.length ? servers.map(x => `${x.role} ${x.name}`).join(', ') + (EN ? ' connected' : ' verbunden')
       : st.state === 'off' ? (EN ? 'off' : 'aus') : (EN ? 'no node' : 'kein Knoten'), st.state === 'error');
+    // Repeater/Room-Server am USB (Text-Konsole): Zustand, Funk, Statistik, Uhr
+    const upT = v => v >= 86400 ? `${Math.floor(v / 86400)} d` : v >= 3600 ? `${Math.floor(v / 3600)} h` : `${Math.floor(v / 60)} min`;
+    $('meshServers').innerHTML = servers.map(x => {
+      const t = x.stats || {}, c = x.clock || {};
+      const radioS = x.freq_mhz ? `${x.freq_mhz.toFixed(3)} MHz · SF${x.sf} · ${x.bw_khz} kHz · CR ${x.cr}${x.tx_power != null ? ` · ${x.tx_power} dBm` : ''}` : '';
+      const clk = c.drift_s == null ? '' : c.set ? (EN ? `clock set (was ${meshDrift(c.drift_s)})` : `Uhr gestellt (ging ${meshDrift(c.drift_s)})`)
+        : c.ahead ? (EN ? `clock ${meshDrift(c.drift_s)} – the firmware cannot set it back` : `Uhr geht ${meshDrift(c.drift_s)} – zurückstellen lässt die Firmware nicht zu`)
+        : (EN ? 'clock right' : 'Uhr stimmt');
+      const st2 = [t.battery_mv ? `${(t.battery_mv / 1000).toFixed(2).replace('.', DS)} V` : '', t.uptime_secs != null ? (EN ? 'up ' : 'läuft seit ') + upT(t.uptime_secs) : '',
+        t.noise_floor != null ? (EN ? 'noise ' : 'Rauschen ') + t.noise_floor + ' dBm' : '',
+        t.tx_air_secs != null ? (EN ? `airtime TX ${t.tx_air_secs} s / RX ${t.rx_air_secs} s` : `Sendezeit ${t.tx_air_secs} s / Empfang ${t.rx_air_secs} s`) : '',
+        t.recv != null ? (EN ? `packets received ${t.recv}, sent ${t.sent}${t.recv_errors ? `, errors ${t.recv_errors}` : ''}` : `Pakete empfangen ${t.recv}, gesendet ${t.sent}${t.recv_errors ? `, Fehler ${t.recv_errors}` : ''}`) : ''].filter(Boolean).join(' · ');
+      return `<div class="mesh-server"><b>${esc(meshRole(x.role))} ${EN ? 'on USB' : 'am USB'}: <span class="no-i18n">${esc(x.name || '?')}</span></b>
+        <div class="hint">${esc([x.version, x.board, radioS, x.lat != null ? `${x.lat.toFixed(3)}, ${x.lon.toFixed(3)}` : ''].filter(Boolean).join(' · '))}</div>
+        <div class="hint">${esc([st2, clk].filter(Boolean).join(' · '))}</div></div>`; }).join('');
     // Kanäle zur Auswahl
     const chSel = $('meshChan'), cur = chSel.value, names = Object.values(st.channels || {});
     const want = ['', ...names, 'dm'];

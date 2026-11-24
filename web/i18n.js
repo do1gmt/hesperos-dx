@@ -334,6 +334,9 @@
     'Passwort zu kurz (mindestens 8 Zeichen)': 'Password too short (at least 8 characters)',
     'Anmeldung': 'Login', 'Abgemeldet': 'Logged out', 'Anmeldung fehlgeschlagen': 'Login failed', 'Anmeldung gesperrt': 'Login blocked',
     'Passwort gesetzt': 'Password set', 'Zugangsschutz ausgeschaltet': 'Access protection switched off',
+    // 1.8.49: Repeater/Room-Server am USB
+    'Mesh: Repeater/Room-Server verbunden': 'Mesh: repeater/room server connected',
+    'Ein Repeater oder Room-Server mit MeshCore-Firmware am USB (auch zusätzlich zum Companion) erscheint oben mit Firmware, Funkdaten, Akku, Laufzeit, Rauschen, Sendezeit und Paketzählern; seine Uhr stellt der Pi, wenn sie nachgeht.': 'A repeater or room server with MeshCore firmware on USB (also in addition to the companion) appears above with firmware, radio settings, battery, uptime, noise, airtime and packet counters; the Pi sets its clock when it is slow.',
     // 1.8.48: Mesh-Knoten einstellen
     'Knoten einstellen': 'Node settings', 'Name des Knotens': 'Name of the node', 'Name speichern': 'Save name', 'Position aus dem Locator (ungefähr)': 'Position from the locator (approximate)',
     'Mitte des 6-stelligen Locator-Felds aus Einstellungen → Station – etwa 5 × 2,5 km genau, nicht dein Haus': 'Centre of the 6-character locator square from Settings → Station – about 5 × 2.5 km, not your house',

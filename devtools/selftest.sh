@@ -4210,5 +4210,34 @@ assert "Number(localStorage.getItem('stations.per')) : 25 }" in js and "localSto
 assert "const stPage = { offset: 0, per: 100 }" not in js
 PY
 
+echo "== 109 Room-Server/Repeater am USB (Text-Konsole) neben dem Companion; Protokoll merkt „pro Seite“"
+MF=$(mktemp -d); (python3 "$SRC/devtools/mesh_fake.py" "$MF" > "$MF/o1" 2>&1 &); (python3 "$SRC/devtools/mesh_fake.py" "$MF" room > "$MF/o2" 2>&1 &); sleep 1
+(cd bin && HSP_MESH_DEV_GLOB="$MF/by-id/*" HSP_MESH_SYS_TTY="$MF/sys" timeout 60 python3 - "$SRC" <<'PY') && ok "Companion und Room-Server gleichzeitig erkannt; Room-Server: Rolle, Name, Firmware, Funkdaten, Statistik, Uhr vorgestellt (3 h nach); Companion-Zustand bleibt „verbunden“; Dashboard zeigt ihn" || bad "Room-Server am USB"
+import sys, time, threading, tempfile
+from pathlib import Path
+import mesh as M
+M.DB = Path(tempfile.mkdtemp()) / "t.db"
+logs, stop = [], [False]
+threading.Thread(target=M.run, args=(lambda: "auto", lambda *a, **k: logs.append(a[2]), None, lambda: stop[0], 2), daemon=True).start()
+for _ in range(60):
+    time.sleep(0.5)
+    s = M.status()
+    if s["state"] == "connected" and s["servers"] and s["servers"][0].get("stats"):
+        break
+time.sleep(2)
+s = M.status(); stop[0] = True
+assert s["state"] == "connected" and s["self"]["name"] == "DO1GMT Pi", s["state"]          # Probe des Servers stört nicht
+sv = s["servers"][0]
+assert sv["role"] == "Room-Server" and sv["name"] == "DO1GMT Room" and sv["version"].startswith("v1.18") and sv["board"] == "Heltec V4"
+assert sv["freq_mhz"] == 869.618 and sv["sf"] == 8 and sv["bw_khz"] == 62.5 and sv["tx_power"] == 22 and sv["lat"] == 49.123
+assert sv["stats"]["battery_mv"] == 4980 and sv["stats"]["noise_floor"] == -110 and sv["stats"]["recv"] == 2410
+assert sv["clock"]["set"] and abs(sv["clock"]["drift_s"] + 10800) <= 60
+assert "mesh_server_connected" in logs and "mesh_connected" in logs
+src = Path(sys.argv[1]); js = (src / "web" / "app.js").read_text(); html = (src / "web" / "index.html").read_text()
+assert 'id="meshServers"' in html and "$('meshServers').innerHTML = servers.map" in js and "'mesh_server_connected':" in js
+assert "localStorage.setItem('log.per', e.target.value)" in js and "'log.per'," in (src / "web" / "prefs.js").read_text()
+PY
+pkill -f "mesh_fake.py $MF" 2>/dev/null; rm -rf "$MF"
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

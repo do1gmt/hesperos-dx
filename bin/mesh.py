@@ -239,6 +239,8 @@ class Session:
         self.l, self.log = link, log
         self.waiting = True
         self.contacts_mod = 0
+
+    def drain(self):
         while True:                                          # Aufträge aus einer früheren Verbindung verwerfen
             try:
                 _n, _k, box, done = _CMDS.get_nowait()
@@ -556,6 +558,7 @@ def status():
     s["packet_types"] = {PAYLOAD_TYPES[p] if p < len(PAYLOAD_TYPES) else str(p): recent.count(p) for p in set(recent)}
     s["channels"] = {str(k): v for k, v in (s.get("channels") or {}).items()}
     s["candidates"] = [p for p, _, _ in candidates()]
+    s["servers"] = [dict(v) for v in list(SERVERS.values())]
     return s
 
 
@@ -596,70 +599,215 @@ def nodes():
 
 # ---------- Hintergrund ----------
 
-def run(get_port, log, notice=None, stop=lambda: False, rescan=30):
-    """Dauerschleife (eigener Faden im Dashboard): Knoten suchen, verbinden, mithören, bei Abbruch neu suchen.
-    get_port() → "auto" | "off" | Pfad. Ein Gerät, das nicht antwortet, wird erst nach dem Abziehen wieder versucht."""
-    failed, last_prune = {}, 0
-    while not stop():
-        port = (get_port() or "auto").strip()
-        if port == "off":
-            STATUS.update(state="off", port="", error="")
-            time.sleep(rescan)
-            continue
-        if time.time() - last_prune > 86400:
+# ---------- Repeater, Room-Server, Sensor am USB (Text-Konsole, 1.8.49) ----------
+# Diese Firmwares sprechen kein Companion-Protokoll, sondern eine Text-Konsole (115200 Bd): Befehl + „\r“, das Gerät
+# wiederholt die Zeichen und antwortet mit „  -> Antwort“. Gelesen wird nur (ver, get …, stats-*, clock); geschrieben
+# wird allein die Uhr (time <epoch>, nur vorwärts – so will es die Firmware).
+SERVERS = {}                                     # Anschluss → Zustand eines Repeaters/Room-Servers am USB
+ROLES = {"room_server": "Room-Server", "repeater": "Repeater", "sensor": "Sensor"}
+
+
+class CliSession:
+    def __init__(self, link, log, port):
+        self.l, self.log, self.port = link, log, port
+        self.buf = b""
+
+    def _read(self, timeout):
+        r, _, _ = select.select([self.l.fd], [], [], timeout)
+        if r:
+            d = os.read(self.l.fd, 4096)
+            if not d:
+                raise EOFError("Gerät liefert nichts mehr")
+            self.buf += d
+
+    def cmd(self, text, timeout=3.0):
+        """Befehl schicken, Antwort hinter „  -> “ zurückgeben (None = keine Antwort)."""
+        self.buf = b""
+        os.write(self.l.fd, text.encode("utf-8") + b"\r")
+        end = time.time() + timeout
+        while time.time() < end:
+            self._read(max(0.05, end - time.time()))
+            while b"\n" in self.buf:
+                line, self.buf = self.buf.split(b"\n", 1)
+                t = line.decode("utf-8", "replace")
+                if "  -> " in t:
+                    return t.rsplit("  -> ", 1)[1].strip("\r ")
+        return None
+
+    def get(self, key):
+        r = self.cmd("get " + key)
+        return r[2:].strip() if r and r.startswith("> ") else None
+
+    def start(self):
+        self.cmd("", timeout=1.0)                            # Reste vom Companion-Versuch abschließen
+        ver = self.cmd("ver")
+        if not ver or "Build" not in ver and not ver.startswith("v"):
+            return False
+        role = self.get("role") or ""
+        radio = (self.get("radio") or "").split(",")
+        st = {"port": self.port, "role": ROLES.get(role, role or "?"), "role_id": role, "version": ver,
+              "board": self.cmd("board") or "", "name": self.get("name") or "", "since": _iso(), "stats": {}, "clock": {}}
+        try:
+            st.update(freq_mhz=float(radio[0]), bw_khz=float(radio[1]), sf=int(radio[2]), cr=int(radio[3]))
+        except (ValueError, IndexError):
+            pass
+        try:
+            st["tx_power"] = int(self.get("tx") or "")
+        except ValueError:
+            pass
+        try:
+            la, lo = float(self.get("lat") or 0), float(self.get("lon") or 0)
+            st.update(lat=la if (la or lo) else None, lon=lo if (la or lo) else None)
+        except ValueError:
+            pass
+        SERVERS[self.port] = st
+        self.clock()
+        self.stats()
+        return True
+
+    def clock(self):
+        """Uhr lesen („21:28 - 24/11/2026 UTC“, minutengenau) und stellen, wenn sie mehr als 90 s nachgeht."""
+        import calendar
+        r = self.cmd("clock") or ""
+        try:
+            hm, dmy = r.replace(" UTC", "").split(" - ")
+            hh, mm = map(int, hm.split(":"))
+            d, mo, y = map(int, dmy.split("/"))
+            t = calendar.timegm((y, mo, d, hh, mm, 0))
+        except ValueError:
+            return
+        drift = t - int(time.time())                         # minutengenau: ±60 s sind „stimmt“
+        c = {"drift_s": drift, "checked": _iso()}
+        if drift < -90:
+            res = self.cmd(f"time {int(time.time())}") or ""
+            c["set"] = res.startswith("OK")
+            self.log("INFO" if c["set"] else "WARN", "mesh", "mesh_clock_set" if c["set"] else "mesh_clock_failed",
+                     drift_s=drift, device=SERVERS[self.port].get("name"))
+        elif drift > 90:
+            c["ahead"] = True                                # vorgehende Uhr lässt die Firmware nicht zurückstellen
+        SERVERS[self.port]["clock"] = c
+
+    def stats(self):
+        import json as _j
+        st = {}
+        for c in ("stats-core", "stats-radio", "stats-packets"):
+            r = self.cmd(c)
             try:
-                prune()
-            except Exception:
+                st.update(_j.loads(r))
+            except (TypeError, ValueError):
                 pass
-            last_prune = time.time()
-        cands = [(port, os.path.realpath(port), "")] if port != "auto" else candidates()
-        present = {p for p, _, _ in cands}
-        for p in list(failed):
-            if p not in present:
-                failed.pop(p)                                # abgezogen: beim nächsten Anstecken wieder versuchen
-        todo = [c for c in cands if c[0] not in failed]
-        if not todo:
-            STATUS.update(state="searching", port="", error=STATUS.get("error", "") if cands else "")
-            time.sleep(rescan)
-            continue
-        for p, real, vid in todo:
-            STATUS.update(state="connecting", port=p, error="")
-            try:
-                link = Link(p)
-            except NoAccess as e:
-                failed[p] = True
-                STATUS.update(state="error", error="no_access")
-                log("WARN", "mesh", "mesh_no_access", port=p, error=str(e))
-                if notice:
-                    notice("access", p)
-                continue
-            except OSError as e:
-                failed[p] = True
-                log("DEBUG", "mesh", "mesh_open_failed", port=p, error=str(e))
-                continue
-            try:
-                time.sleep(1.5)                              # ESP32 startet beim Öffnen manchmal neu
-                s = Session(link, log)
-                if not s.start():
-                    failed[p] = True
-                    log("INFO", "mesh", "mesh_no_answer", port=p, hint="keine MeshCore-Companion-Firmware (USB)?")
-                    continue
+        if st:
+            st["time"] = _iso()
+            SERVERS[self.port]["stats"] = st
+
+    def loop(self, stop):
+        t_stats, t_clock = time.time(), time.time()
+        while not stop():
+            self._read(1.0)                                  # Ausgaben des Geräts zwischendurch verwerfen
+            self.buf = self.buf[-4096:]
+            if time.time() - t_stats > 60:
+                self.stats()
+                t_stats = time.time()
+            if time.time() - t_clock > 3600:                 # ohne Akku-Uhr: nach jedem Neustart wieder stellen
+                self.clock()
+                t_clock = time.time()
+
+
+# ---------- Hintergrund ----------
+
+_ACTIVE = {}                                     # Anschluss → "probing" | "companion" | "server"
+
+
+def _worker(p, log, notice, stop, failed):
+    try:
+        link = Link(p)
+    except NoAccess as e:
+        failed[p] = True
+        STATUS.update(state="error", error="no_access", port=p)
+        log("WARN", "mesh", "mesh_no_access", port=p, error=str(e))
+        if notice:
+            notice("access", p)
+        _ACTIVE.pop(p, None)
+        return
+    except OSError as e:
+        failed[p] = True
+        log("DEBUG", "mesh", "mesh_open_failed", port=p, error=str(e))
+        _ACTIVE.pop(p, None)
+        return
+    kind = None
+    try:
+        time.sleep(1.5)                                      # ESP32 startet beim Öffnen manchmal neu
+        if "companion" not in _ACTIVE.values():
+            s = Session(link, log)
+            if s.start():
+                s.drain()
+                kind = _ACTIVE[p] = "companion"
                 me, dev = STATUS["self"], STATUS["device"]
                 STATUS.update(state="connected", port=p, error="", since=_iso())
                 log("INFO", "mesh", "mesh_connected", port=p, node=me.get("name"), model=dev.get("model"),
                     version=dev.get("version"), freq_mhz=me.get("freq_mhz"), sf=me.get("sf"), bw_khz=me.get("bw_khz"))
                 if notice:
                     notice("ok", p)
-                s.loop(lambda: stop() or (get_port() or "auto").strip() not in ("auto", p))
-                STATUS.update(state="searching", error="")
+                s.loop(lambda: stop(p))
                 log("INFO", "mesh", "mesh_stopped", port=p)
-            except (OSError, EOFError) as e:
-                STATUS.update(state="searching", error=str(e))
-                log("WARN", "mesh", "mesh_lost", port=p, error=f"{type(e).__name__}: {e}")
-            finally:
-                link.close()
-            break
-        time.sleep(2)
+                return
+        cli = CliSession(link, log, p)
+        if cli.start():
+            kind = _ACTIVE[p] = "server"
+            sv = SERVERS[p]
+            log("INFO", "mesh", "mesh_server_connected", port=p, role=sv["role"], node=sv["name"], version=sv["version"],
+                board=sv["board"])
+            if notice:
+                notice("ok", p)
+            cli.loop(lambda: stop(p))
+            log("INFO", "mesh", "mesh_stopped", port=p)
+            return
+        failed[p] = True
+        log("INFO", "mesh", "mesh_no_answer", port=p, hint="keine MeshCore-Firmware mit Companion (USB) oder Text-Konsole?")
+    except (OSError, EOFError) as e:
+        log("WARN", "mesh", "mesh_lost", port=p, error=f"{type(e).__name__}: {e}")
+        if kind == "companion":
+            STATUS.update(error=str(e))
+    finally:
+        link.close()
+        _ACTIVE.pop(p, None)
+        SERVERS.pop(p, None)
+        if kind == "companion":
+            STATUS.update(state="searching")
+
+
+def run(get_port, log, notice=None, stop=lambda: False, rescan=30):
+    """Dauerschleife (eigener Faden im Dashboard): Geräte suchen und je Gerät einen Faden starten – ein Companion
+    (Nachrichten, Knoten, Einstellungen) und beliebig viele Repeater/Room-Server (Zustand, Uhr). Ein Gerät, das gar
+    nicht antwortet, wird erst nach dem Abziehen wieder versucht. get_port() → "auto" | "off" | Pfad."""
+    failed, last_prune = {}, 0
+    while not stop():
+        port = (get_port() or "auto").strip()
+        if time.time() - last_prune > 86400:
+            try:
+                prune()
+            except Exception:
+                pass
+            last_prune = time.time()
+        if port == "off":
+            if not _ACTIVE:
+                STATUS.update(state="off", port="", error="")
+            time.sleep(min(rescan, 5))
+            continue
+        cands = [(port, os.path.realpath(port), "")] if port != "auto" else candidates()
+        present = {p for p, _, _ in cands}
+        for p in list(failed):
+            if p not in present:
+                failed.pop(p)                                # abgezogen: beim nächsten Anstecken wieder versuchen
+        for p, _r, _v in cands:
+            if p in failed or p in _ACTIVE:
+                continue
+            _ACTIVE[p] = "probing"
+            keep = lambda q, port_now=port: (stop() or (get_port() or "auto").strip() not in ("auto", q))
+            threading.Thread(target=_worker, args=(p, log, notice, keep, failed), daemon=True, name="mesh-" + p[-12:]).start()
+        if "companion" not in _ACTIVE.values() and "probing" not in _ACTIVE.values() and STATUS.get("state") != "error":
+            STATUS.update(state="searching", port="")
+        time.sleep(2 if any(v == "probing" for v in _ACTIVE.values()) else min(rescan, 10))
 
 
 def command(cmd, timeout=15, **kw):

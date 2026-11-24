@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Nachgebildeter MeshCore-Companion-Knoten (USB) für Selbsttest und UI-Probe – ohne Hardware.
 
-    python3 devtools/mesh_fake.py <ordner>      legt <ordner>/by-id/usb-Espressif_fake-if00 (→ pty) und
+    python3 devtools/mesh_fake.py <ordner> [room]   (room: Room-Server mit Text-Konsole statt Companion) legt <ordner>/by-id/usb-Espressif_fake-if00 (→ pty) und
                                                 <ordner>/sys/<pts>/device/idVendor = 303a an und antwortet wie
                                                 ein Knoten (Kanäle, Kontakte, Nachrichten, Paket-Log).
 Danach: HSP_MESH_DEV_GLOB=<ordner>/by-id/* HSP_MESH_SYS_TTY=<ordner>/sys
@@ -24,12 +24,53 @@ def contact(key, typ, name, adv, lat, lon):
             + int(lon * 1e6).to_bytes(4, "little", signed=True) + (1000).to_bytes(4, "little"))
 
 
-def main(d):
+def room(m):
+    """Room-Server: Text-Konsole wie die MeshCore-Firmware (Zeichen zurück, Antwort mit „  -> “)."""
+    clock = int(time.time()) - 3 * 3600                      # Uhr nach Neustart ohne Akku-Uhr: 3 h nach
+    t0, buf = time.time(), b""
+    while True:
+        r, _, _ = select.select([m], [], [], 0.5)
+        if not r:
+            continue
+        try:
+            d = os.read(m, 4096)
+        except OSError:
+            return
+        for ch in d:
+            c = bytes([ch])
+            if c == b"\n":
+                continue
+            os.write(m, c)                                   # Echo wie die Firmware
+            buf += c
+            if c != b"\r":
+                continue
+            cmd, buf = buf[:-1].decode("latin-1"), b""
+            now = clock + int(time.time() - t0)
+            g = time.gmtime(now)
+            rep = {"ver": "v1.18.0 (Build: 23-Oct-2026)", "board": "Heltec V4", "get role": "> room_server",
+                   "get name": "> DO1GMT Room", "get radio": "> 869.618,62.5,8,5", "get tx": "> 22", "get lat": "> 49.123",
+                   "get lon": "> 10.456", "clock": f"{g.tm_hour:02d}:{g.tm_min:02d} - {g.tm_mday}/{g.tm_mon}/{g.tm_year} UTC",
+                   "stats-core": '{"battery_mv":4980,"uptime_secs":5400,"errors":0,"queue_len":0}',
+                   "stats-radio": '{"noise_floor":-110,"last_rssi":-70,"last_snr":9.25,"tx_air_secs":33,"rx_air_secs":812}',
+                   "stats-packets": '{"recv":2410,"sent":96,"flood_tx":80,"direct_tx":16,"flood_rx":2000,"direct_rx":410,"recv_errors":3}'}.get(cmd)
+            if cmd.startswith("time "):
+                v = int(cmd[5:])
+                if v > now:
+                    clock, t0 = v, time.time()
+                    rep = "OK - clock set"
+                else:
+                    rep = "(ERR: clock cannot go backwards)"
+            if rep is None:
+                rep = "Unknown command"
+            os.write(m, ("  -> " + rep + "\r\n").encode())
+
+
+def main(d, mode="companion"):
     os.makedirs(d + "/by-id", exist_ok=True)
     m, s = pty.openpty()
     tty.setraw(m)
     name = os.ttyname(s)
-    link = d + "/by-id/usb-Espressif_Systems_heltec_fake-if00"
+    link = d + ("/by-id/usb-Espressif_Systems_room_fake-if00" if mode == "room" else "/by-id/usb-Espressif_Systems_heltec_fake-if00")
     if os.path.lexists(link):
         os.remove(link)
     os.symlink(name, link)
@@ -37,6 +78,8 @@ def main(d):
     os.makedirs(sd, exist_ok=True)
     open(sd + "/idVendor", "w").write("303a\n")
     print(link, flush=True)
+    if mode == "room":
+        return room(m)
     now = int(time.time())
     queue = [  # Nachrichten, die „warten“
         bytes([17, 40, 0, 0, 0, 2, 0]) + now.to_bytes(4, "little") + "DL1ABC Mobil: Hallo Mesh aus Franken".encode(),
@@ -116,4 +159,4 @@ def main(d):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else "companion")

@@ -625,6 +625,11 @@ the node are shown in the card's status line. Messages are kept for 90 days. The
 serial port, a notice says which command fixes it (`sudo usermod -aG dialout <user>`, then restart). *Node on USB*
 in the card switches detection off or picks a port.
 
+A MeshCore **repeater or room server** on the Pi's USB (also in addition to the companion) is found as well – its
+firmware speaks a text console instead of the companion protocol. The card shows its role, name, firmware,
+board, radio settings, battery, uptime, noise floor, airtime and packet counters (every minute), and the Pi sets
+its clock when it is slow (these devices lose the time on every restart). Nothing else is changed on it.
+
 ## Data sources
 
 - Orbital elements: [CelesTrak](https://celestrak.org) (fallback: AMSAT).

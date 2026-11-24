@@ -885,3 +885,5 @@ body.dragging-card, body.dragging-card * { user-select: none; -webkit-user-selec
 .mesh-set-row { display: flex; flex-wrap: wrap; gap: .5rem; align-items: flex-end; margin: .5rem 0; }
 .mesh-set-row .field { flex: 1 1 14rem; max-width: 22rem; margin: 0; }
 .mesh-chan { display: inline-flex; align-items: center; gap: .3rem; margin: 0 .4rem .3rem 0; padding: .15rem .5rem; border: 1px solid var(--line, #334155); border-radius: 999px; }
+.mesh-server { border: 1px solid var(--line, #334155); border-radius: 8px; padding: .5rem .7rem; margin: .4rem 0 .6rem; }
+.mesh-server .hint { margin: .15rem 0 0; }

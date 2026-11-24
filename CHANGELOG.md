@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.8.49 – 2026-11-24
+
+- **Repeater or room server on USB:** these MeshCore firmwares speak a text console instead of the companion
+  protocol, so the Pi did not find them ("device does not answer"). Now every USB node gets its own connection:
+  the companion as before, plus any number of repeaters/room servers. For those the Mesh card shows role, name,
+  firmware, board, radio settings (incl. TX power, position), battery, uptime, noise floor, airtime, packets
+  received/sent/errors (every minute), and the Pi sets their clock when it is more than 90 s slow (checked at
+  connect and hourly – without a clock chip they lose the time on every restart; setting it back is not allowed
+  by the firmware and is shown instead). Log `mesh_server_connected`.
+- Probing a room server no longer disturbs the state of a connected companion.
+- **Log:** the choice "per page" is kept (view profile, `log.per`), like for hits and stations.
+- Self-test section 109; the simulated node can also act as a room server (`devtools/mesh_fake.py <dir> room`).
+
 ## 1.8.48 – 2026-11-24
 
 - **Mesh (MeshCore), step 3 – node settings** (Stations → Mesh → *Node settings*), sent to the node over the same

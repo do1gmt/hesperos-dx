@@ -245,6 +245,7 @@
   <section class="panel" id="panel-mesh" hidden>
     <h2>Mesh (MeshCore)</h2>
     <p class="hint" id="meshState">–</p>
+    <div id="meshServers"></div>
     <div class="row filter-row">
       <label class="field"><span>Kanal</span><select id="meshChan"><option value="">alle</option></select></label>
     </div>
@@ -279,6 +280,7 @@
     <label class="field mesh-port"><span>Knoten am USB</span><select id="meshPort"><option value="auto">automatisch erkennen</option><option value="off">aus</option></select></label>
     <div class="save-note" id="meshNote" aria-live="polite"></div>
     <p class="hint">Ein MeshCore-Knoten mit der Firmware „Companion Radio (USB)“ (z. B. Heltec V3/V4, RAK) am USB des Pi: Hesperos DX liest mit, was er empfängt – Nachrichten in seinen Kanälen, Direktnachrichten an ihn und die Knoten in Reichweite. Ins Mesh gesendet wird nichts; am Knoten geändert wird nur, was du unter „Knoten einstellen“ wählst, und die Uhr. Nachrichten bleiben 90 Tage, Positionen zeigt die Karte oben unter „Mesh“.</p>
+    <p class="hint">Ein Repeater oder Room-Server mit MeshCore-Firmware am USB (auch zusätzlich zum Companion) erscheint oben mit Firmware, Funkdaten, Akku, Laufzeit, Rauschen, Sendezeit und Paketzählern; seine Uhr stellt der Pi, wenn sie nachgeht.</p>
   </section>
   <section class="panel" id="panel-stations-2">
     <h2>Störlinien</h2>
