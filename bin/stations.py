@@ -42,6 +42,7 @@ EVENTS = {
     "aprs_iss": "APRS über die ISS",
     "satellite": "Satellit gehört (alle Treffer im Band Satelliten)",
     "mesh_dm": "Mesh: Direktnachricht an meinen Knoten",
+    "mesh_room": "Mesh: neuer Beitrag am schwarzen Brett (Room-Server)",
 }
 
 
@@ -526,13 +527,16 @@ def mesh_rules(kind, data, rules):
                 out.append((rule, d, name))
         elif kind == "msg":
             sender, text = str(data.get("sender") or "?"), str(data.get("text") or "")
-            where = "direkt" if data.get("kind") == "dm" else (data.get("channel_name") or "Kanal")
+            where = {"dm": "direkt", "room": f"Brett {data.get('channel_name') or ''}".strip()}.get(data.get("kind")) \
+                or (data.get("channel_name") or "Kanal")
             d = f"{where} · {sender}: {text[:160]}" + (f" · SNR {float(data['snr']):.0f} dB" if data.get("snr") is not None else "")
-            if typ == "mesh_node" and data.get("kind") == "chan" and fnmatch.fnmatch(sender.lower(), val.lower()):
+            if typ == "mesh_node" and data.get("kind") in ("chan", "room") and fnmatch.fnmatch(sender.lower(), val.lower()):
                 out.append((rule, d, sender))
             elif typ == "mesh_text" and val.lower() in text.lower():
                 out.append((rule, d, sender))
             elif typ == "event" and val == "mesh_dm" and data.get("kind") == "dm":
+                out.append((rule, d, sender))
+            elif typ == "event" and val == "mesh_room" and data.get("kind") == "room":
                 out.append((rule, d, sender))
     return out
 

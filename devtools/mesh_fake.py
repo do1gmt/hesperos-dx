@@ -27,6 +27,7 @@ def contact(key, typ, name, adv, lat, lon):
 def room(m):
     """Room-Server: Text-Konsole wie die MeshCore-Firmware (Zeichen zurück, Antwort mit „  -> “)."""
     clock = int(time.time()) - 3 * 3600                      # Uhr nach Neustart ohne Akku-Uhr: 3 h nach
+    cfg = {"guest": "geheim", "ro": "off", "owner": "Tom, DO1GMT", "name": "DO1GMT Room", "lat": "49.123", "lon": "10.456"}
     t0, buf = time.time(), b""
     while True:
         r, _, _ = select.select([m], [], [], 0.5)
@@ -53,6 +54,28 @@ def room(m):
                    "stats-core": '{"battery_mv":4980,"uptime_secs":5400,"errors":0,"queue_len":0}',
                    "stats-radio": '{"noise_floor":-110,"last_rssi":-70,"last_snr":9.25,"tx_air_secs":33,"rx_air_secs":812}',
                    "stats-packets": '{"recv":2410,"sent":96,"flood_tx":80,"direct_tx":16,"flood_rx":2000,"direct_rx":410,"recv_errors":3}'}.get(cmd)
+            if cmd == "get public.key":
+                rep = "> " + "33" * 32
+            elif cmd == "get guest.password":
+                rep = "> " + cfg["guest"]
+            elif cmd == "get allow.read.only":
+                rep = "> " + cfg["ro"]
+            elif cmd == "get owner.info":
+                rep = "> " + cfg["owner"]
+            elif cmd.startswith("set ") and " " in cmd[4:]:
+                k, v = cmd[4:].split(" ", 1)
+                cfg[{"guest.password": "guest", "allow.read.only": "ro", "owner.info": "owner", "name": "name",
+                     "lat": "lat", "lon": "lon"}.get(k, k)] = v
+                rep = "OK"
+            elif cmd == "advert":
+                rep = "OK - Advert sent"
+            elif cmd.startswith("room.post "):
+                rep = "OK"
+            elif cmd == "get acl":
+                os.write(m, b"ACL:\r\n03 " + ("11" * 32).encode() + b"\r\n02 " + ("aabbccddeeff" + "01" * 26).encode() + b"\r\n")
+                continue
+            elif cmd in ("get name", "get lat", "get lon"):
+                rep = "> " + cfg[cmd[4:]]
             if cmd.startswith("time "):
                 v = int(cmd[5:])
                 if v > now:
@@ -142,6 +165,16 @@ def main(d, mode="companion"):
             elif c == 0x0E:
                 me["lat"], me["lon"] = int.from_bytes(p[1:5], "little", signed=True) / 1e6, int.from_bytes(p[5:9], "little", signed=True) / 1e6
                 os.write(m, frame(bytes([0])))
+            elif c == 0x1A:                                  # Anmeldung an einem Room-Server
+                key, pw = p[1:33], p[33:].decode()
+                os.write(m, frame(bytes([6, 0]) + bytes(4) + (3000).to_bytes(4, "little")))
+                if key == b"\x33" * 32 and pw == "geheim":
+                    os.write(m, frame(bytes([0x85, 0]) + b"\x33" * 6 + bytes(6)))
+                    queue.append(bytes([16, 30, 0, 0]) + b"\x33" * 6 + bytes([0, 2]) + int(time.time()).to_bytes(4, "little")
+                                 + bytes.fromhex("aabbccdd") + "Schwarzes Brett: Treffen Samstag 10 Uhr".encode())
+                    os.write(m, frame(bytes([0x83])))
+                else:
+                    os.write(m, frame(bytes([0x86, 0]) + key[:6]))
             elif c == 56:
                 sub = p[1]
                 body = {0: (4150).to_bytes(2, "little") + (7200).to_bytes(4, "little") + bytes(3),
@@ -151,6 +184,7 @@ def main(d, mode="companion"):
             elif c == 4:
                 os.write(m, frame(bytes([2]) + (1).to_bytes(4, "little")))
                 os.write(m, frame(contact(b"\xaa\xbb\xcc\xdd\xee\xff" + b"\x01" * 26, 1, "DL1ABC Mobil", now - 600, 49.45, 11.08)))
+                os.write(m, frame(contact(b"\x33" * 32, 3, "DO1GMT Room", now - 60, 49.123, 10.456)))
                 os.write(m, frame(bytes([4]) + (1001).to_bytes(4, "little")))
             elif c == 0x0A:
                 os.write(m, frame(queue.pop(0) if queue else bytes([10])))

@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.8.50 – 2026-11-24
+
+- **Notice board of your room server, live:** with a companion and the room server both on USB, the Pi logs the
+  companion in to the room server (guest password read from the server's console – never shown or logged; again
+  after a server restart and every 6 h; if the companion does not know the server yet, the server sends an advert
+  first). Posts pushed by the server are recognised (signed text with the author's key prefix), stored with author
+  and shown in the server's box under *Notice board*; the card refreshes every 15 s. *Post as the server* writes into
+  the room (`room.post`, newer firmware; older firmware is told so).
+- **Alerts:** new watchlist event *Mesh: new post on the notice board (room server)* – mail, push or Telegram like
+  every watchlist rule; *Mesh keyword* and *Mesh node (name)* also cover posts.
+- **Room server administration** (box → *Administration*, over the USB console): name, position (approximate from
+  the locator or none), owner info, guest password (set or remove, never displayed – only "set"/"none"),
+  "read-only guests", send advert, access list (with "this Pi (companion)"), restart. Repeaters get the same
+  administration without the room parts. Log `mesh_room_login`, `mesh_room_login_failed`, `mesh_server_set` (without
+  values – passwords never go into the log).
+- The main message list no longer repeats the board posts; direct messages are now de-duplicated like channel
+  messages.
+- Self-test section 110 (simulated companion logs in to the simulated room server and receives a post).
+
 ## 1.8.49 – 2026-11-24
 
 - **Repeater or room server on USB:** these MeshCore firmwares speak a text console instead of the companion

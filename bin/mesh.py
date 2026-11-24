@@ -42,6 +42,7 @@ KEEP_DAYS = 90                                   # Nachrichten älter als das we
 
 STATUS = {"state": "off", "port": "", "error": "", "since": None, "self": {}, "device": {}, "channels": {},
           "last_rx": None, "nodes_known": 0, "stats": {}, "clock": {}}
+ROOMS = {}                                       # Schlüssel eines Room-Servers → Anmeldung (name, logged_in, pending …)
 _CMDS = queue.Queue()                            # Aufträge aus dem Dashboard an den Lesefaden (command())
 CLOCK_MAX_DRIFT = 10                             # s – darüber stellt der Pi die Uhr des Knotens
 _RX = deque(maxlen=20000)                        # (Zeit, Pakettyp) der letzten Stunde
@@ -223,13 +224,15 @@ def parse_msg(f):
     txt_type = f[p + 1]
     ts = _u32(f[p + 2:p + 6])
     p += 6
-    if kind == "dm" and txt_type == 2:
-        p += 4                                               # Signatur
+    author = None
+    if kind == "dm" and txt_type == 2:                       # „signiert“: bei Room-Servern die ersten 4 Byte des Autors
+        author = f[p:p + 4].hex()
+        p += 4
     text = f[p:].rstrip(b"\0").decode("utf-8", "replace")
     if kind == "chan" and ": " in text[:40]:                 # Kanal: „Name: Text“
         sender, text = text.split(": ", 1)
-    return {"kind": kind, "channel": chan, "sender": sender, "text": text, "sender_ts": ts, "snr": snr,
-            "hops": hops, "txt_type": txt_type}
+    return {"kind": kind, "channel": chan if kind == "chan" else -1, "sender": sender, "text": text, "sender_ts": ts,
+            "snr": snr, "hops": hops, "txt_type": txt_type, "author": author}
 
 
 # ---------- Ablauf ----------
@@ -324,6 +327,27 @@ class Session:
         st["time"] = _iso()
         STATUS["stats"] = st
 
+    def room_logins(self):
+        """Am eigenen Room-Server (am USB, Text-Konsole) anmelden, damit er seine Beiträge an diesen Knoten schickt –
+        mit dem Gast-Passwort aus seiner Konsole (wird nie angezeigt). Beim ersten Mal, nach einem Neustart des
+        Servers und alle 6 h; kennt der Companion den Server noch nicht, sendet der Server eine Ankündigung."""
+        for port, sv in list(SERVERS.items()):
+            key = sv.get("_key")
+            if sv.get("role_id") != "room_server" or not key:
+                continue
+            r = ROOMS.setdefault(key, {"name": sv.get("name"), "own": True})
+            r["name"] = sv.get("name")
+            fresh = r.get("logged_in") and r.get("server_since") == sv.get("since") and time.time() - r.get("tried", 0) < 6 * 3600
+            if fresh or r.get("pending") or time.time() - r.get("tried", 0) < 120:
+                continue
+            r.update(tried=time.time(), server_since=sv.get("since"))
+            res = self.request(b"\x1a" + bytes.fromhex(key) + (sv.get("_pw") or "").encode("utf-8"), (6, 1), timeout=4)
+            if res and res[0] == 6:
+                r.update(pending=True, failed=False)
+            else:                                            # Kontakt fehlt: Server soll sich ankündigen
+                r.update(pending=False, failed=False, no_contact=True, logged_in=None)
+                sv["_advert"] = True
+
     def refresh_self(self):
         f = self.request(b"\x01\x03      hesperos", (5,), timeout=5)
         if f:
@@ -397,6 +421,12 @@ class Session:
                 break
             m = parse_msg(f)
             m["channel_name"] = STATUS["channels"].get(m["channel"], "") if m["kind"] == "chan" else ""
+            if m["kind"] == "dm":
+                room = _node_by_prefix(m["sender"])
+                if room and room["type"] == 3 and m["author"]:   # Beitrag vom schwarzen Brett eines Room-Servers
+                    a = _node_by_prefix(m["author"])
+                    m.update(kind="room", channel=-2, channel_name=room["name"] or m["sender"],
+                             sender=(a["name"] if a and a["name"] else "?" + m["author"]))
             if store_msg(m):
                 _emit("msg", dict(m, sender=_dm_name(m["sender"]) if m["kind"] == "dm" else m["sender"]))
                 self.log("DEBUG", "mesh", "mesh_msg", kind=m["kind"], channel=m["channel_name"] or m["channel"],
@@ -407,6 +437,14 @@ class Session:
         c = f[0]
         if c == 0x83:                                        # Nachrichten warten
             self.waiting = True
+        elif c in (0x85, 0x86):                              # Anmeldung an einem Room-Server: ja / nein
+            pre = f[2:8].hex() if len(f) >= 8 else ""
+            for k, r in ROOMS.items():
+                if k.startswith(pre) and r.get("pending"):
+                    r.update(pending=False, logged_in=_iso() if c == 0x85 else None, failed=c == 0x86,
+                             admin=bool(c == 0x85 and len(f) > 1 and f[1] & 1), tried=time.time())
+                    self.log("INFO" if c == 0x85 else "WARN", "mesh", "mesh_room_login" if c == 0x85 else "mesh_room_login_failed",
+                             room=r.get("name"))
         elif c == 0x8A:                                      # neue Ankündigung (ganzer Kontakt)
             store_nodes([parse_contact(f)])
         elif c == 0x80:                                      # bekannter Knoten hat sich gemeldet
@@ -439,6 +477,7 @@ class Session:
             if time.time() - t_stats > 60:
                 self.stats()
                 t_stats = time.time()
+            self.room_logins()                               # eigener Room-Server: anmelden (gedrosselt)
             if time.time() - t_clock > 86400:
                 self.clock()
                 t_clock = time.time()
@@ -524,6 +563,19 @@ def _node_out(n):
             "lat": n.get("lat"), "lon": n.get("lon")}
 
 
+def _node_by_prefix(prefix):
+    """Knoten aus der Liste über die ersten Byte seines Schlüssels (6 bei Direktnachrichten, 4 bei Room-Beiträgen)."""
+    if not prefix:
+        return None
+    db = _db()
+    try:
+        ensure_tables(db)
+        r = db.execute("SELECT key, name, type FROM mesh_node WHERE key LIKE ? LIMIT 1", (prefix.lower() + "%",)).fetchone()
+    finally:
+        db.close()
+    return {"key": r[0], "name": r[1], "type": r[2]} if r else None
+
+
 def _dm_name(prefix):
     """Absender einer Direktnachricht: Name aus der Knotenliste statt der ersten 6 Byte des Schlüssels."""
     if not prefix:
@@ -558,20 +610,30 @@ def status():
     s["packet_types"] = {PAYLOAD_TYPES[p] if p < len(PAYLOAD_TYPES) else str(p): recent.count(p) for p in set(recent)}
     s["channels"] = {str(k): v for k, v in (s.get("channels") or {}).items()}
     s["candidates"] = [p for p, _, _ in candidates()]
-    s["servers"] = [dict(v) for v in list(SERVERS.values())]
+    s["servers"] = [{k: v for k, v in sv.items() if not k.startswith("_")} for sv in list(SERVERS.values())]
+    s["rooms"] = [dict(r, key=k[:12]) for k, r in list(ROOMS.items())]
     return s
 
 
-def messages(limit=100, before=None):
+def messages(limit=100, before=None, kind=None, not_kind=None):
     db = _db()
     try:
         ensure_tables(db)
-        q, a = "SELECT id, time, kind, channel, channel_name, sender, text, snr, hops FROM mesh_msg", []
+        q, a, w = "SELECT id, time, kind, channel, channel_name, sender, text, snr, hops FROM mesh_msg", [], []
         if before:
-            q += " WHERE id < ?"
+            w.append("id < ?")
             a.append(int(before))
+        if kind:
+            w.append("kind = ?")
+            a.append(kind)
+        if not_kind:
+            w.append("kind != ?")
+            a.append(not_kind)
+        if w:
+            q += " WHERE " + " AND ".join(w)
         rows = db.execute(q + " ORDER BY id DESC LIMIT ?", a + [int(limit)]).fetchall()
-        total = db.execute("SELECT COUNT(*) FROM mesh_msg").fetchone()[0]
+        tw = (" WHERE kind = ?", [kind]) if kind else (" WHERE kind != ?", [not_kind]) if not_kind else ("", [])
+        total = db.execute("SELECT COUNT(*) FROM mesh_msg" + tw[0], tw[1]).fetchone()[0]
         names = dict(db.execute("SELECT substr(key,1,12), name FROM mesh_node"))
     finally:
         db.close()
@@ -604,6 +666,7 @@ def nodes():
 # wiederholt die Zeichen und antwortet mit „  -> Antwort“. Gelesen wird nur (ver, get …, stats-*, clock); geschrieben
 # wird allein die Uhr (time <epoch>, nur vorwärts – so will es die Firmware).
 SERVERS = {}                                     # Anschluss → Zustand eines Repeaters/Room-Servers am USB
+_SCMDS = {}                                      # Anschluss → Auftragsschlange (Verwaltung aus dem Dashboard)
 ROLES = {"room_server": "Room-Server", "repeater": "Repeater", "sensor": "Sensor"}
 
 
@@ -661,9 +724,99 @@ class CliSession:
         except ValueError:
             pass
         SERVERS[self.port] = st
+        self.read_admin()
         self.clock()
         self.stats()
         return True
+
+    def read_admin(self):
+        """Einstellungen für die Verwaltung. Das Gast-Passwort bleibt intern (_pw, für die Anmeldung des Companion)
+        – angezeigt wird nur, ob eines gesetzt ist."""
+        st = SERVERS[self.port]
+        key = self.get("public.key") or ""
+        st["_key"] = key.lower() if len(key) == 64 else ""
+        st["key"] = st["_key"][:12]
+        pw = self.get("guest.password")
+        st["_pw"] = pw or ""
+        st["guest_password_set"] = bool(pw)
+        st["read_only"] = (self.get("allow.read.only") or "") == "on"
+        st["owner_info"] = (self.get("owner.info") or "").replace("|", "\n")
+        st["name"] = self.get("name") or st.get("name", "")
+        try:
+            la, lo = float(self.get("lat") or 0), float(self.get("lon") or 0)
+            st.update(lat=la if (la or lo) else None, lon=lo if (la or lo) else None)
+        except ValueError:
+            pass
+
+    def raw_lines(self, text, wait=1.5):
+        """Befehl, dessen Ausgabe als eigene Zeilen kommt (get acl) – alles einsammeln, was in wait s eintrifft."""
+        self.buf = b""
+        os.write(self.l.fd, text.encode("utf-8") + b"\r")
+        end = time.time() + wait
+        while time.time() < end:
+            self._read(max(0.05, end - time.time()))
+        return [x.decode("utf-8", "replace").strip("\r ") for x in self.buf.split(b"\n")]
+
+    def acl(self):
+        perm = {0: "Gast (nur lesen)", 1: "Admin", 2: "Lesen und schreiben", 3: "Admin"}
+        out = []
+        for line in self.raw_lines("get acl"):
+            m = __import__("re").match(r"^([0-9A-Fa-f]{2}) ([0-9A-Fa-f]{64})$", line)
+            if m:
+                p, k = int(m[1], 16), m[2].lower()
+                n = _node_by_prefix(k[:12])
+                me = (STATUS.get("self") or {}).get("key", "")[:12] == k[:12]
+                out.append({"key": k[:12], "name": n["name"] if n else "", "me": me, "perm": perm.get(p & 3, str(p)),
+                            "admin": bool(p & 1)})
+        return out
+
+    def run_command(self, name, kw):
+        ok = lambda r: bool(r) and (r.startswith("OK") or r.startswith("> "))
+        if name == "name":
+            n = str(kw.get("name", "")).strip()
+            if not 0 < len(n.encode("utf-8")) <= 31:
+                return {"ok": False, "error": "Name: 1 bis 31 Zeichen"}
+            r = self.cmd("set name " + n)
+        elif name == "position":
+            lat, lon = kw.get("lat"), kw.get("lon")
+            r1 = self.cmd(f"set lat {0 if lat is None else round(float(lat), 5)}")
+            r = self.cmd(f"set lon {0 if lon is None else round(float(lon), 5)}") if ok(r1) else r1
+        elif name == "owner_info":
+            t = str(kw.get("text", "")).replace("\n", "|").strip()
+            if len(t) > 119:
+                return {"ok": False, "error": "Höchstens 119 Zeichen"}
+            r = self.cmd("set owner.info " + t)
+        elif name == "guest_password":
+            pw = str(kw.get("password", ""))
+            if len(pw) > 15 or " " in pw:
+                return {"ok": False, "error": "Gast-Passwort: höchstens 15 Zeichen, ohne Leerzeichen"}
+            r = self.cmd("set guest.password " + pw)
+        elif name == "read_only":
+            r = self.cmd("set allow.read.only " + ("on" if kw.get("on") else "off"))
+        elif name == "advert":
+            r = self.cmd("advert")
+        elif name == "post":
+            t = str(kw.get("text", "")).strip()
+            if not 0 < len(t.encode("utf-8")) <= 140:
+                return {"ok": False, "error": "Beitrag: 1 bis 140 Zeichen"}
+            r = self.cmd("room.post " + t)
+            if r and r.startswith("Unknown"):
+                return {"ok": False, "error": "Diese Firmware kann noch keine Beiträge vom Server (room.post) – MeshCore aktualisieren"}
+        elif name == "acl":
+            return {"ok": True, "acl": self.acl()}
+        elif name == "reboot":
+            os.write(self.l.fd, b"reboot\r")                 # antwortet nicht; die Verbindung kommt danach neu
+            return {"ok": True}
+        else:
+            return {"ok": False, "error": "unbekannter Auftrag"}
+        if name in ("name", "position", "owner_info", "guest_password", "read_only"):
+            self.read_admin()
+            for k, rr in ROOMS.items():                       # neues Passwort/Name: Companion meldet sich neu an
+                if k == SERVERS[self.port].get("_key"):
+                    rr.update(tried=0, logged_in=None)
+        if ok(r) or (name == "advert" and r is not None and not r.startswith(("ERR", "Err", "Unknown"))):
+            return {"ok": True, "reply": (r or "")[:160]}
+        return {"ok": False, "error": (r or "keine Antwort")[:160]}
 
     def clock(self):
         """Uhr lesen („21:28 - 24/11/2026 UTC“, minutengenau) und stellen, wenn sie mehr als 90 s nachgeht."""
@@ -702,7 +855,18 @@ class CliSession:
 
     def loop(self, stop):
         t_stats, t_clock = time.time(), time.time()
+        q = _SCMDS.setdefault(self.port, queue.Queue())
         while not stop():
+            try:
+                name, kw, box, done = q.get_nowait()
+                try:
+                    box.update(self.run_command(name, kw))
+                finally:
+                    done.set()
+            except queue.Empty:
+                pass
+            if SERVERS[self.port].pop("_advert", False):     # der Companion kennt diesen Server noch nicht
+                self.cmd("advert")
             self._read(1.0)                                  # Ausgaben des Geräts zwischendurch verwerfen
             self.buf = self.buf[-4096:]
             if time.time() - t_stats > 60:
@@ -772,6 +936,7 @@ def _worker(p, log, notice, stop, failed):
         link.close()
         _ACTIVE.pop(p, None)
         SERVERS.pop(p, None)
+        _SCMDS.pop(p, None)
         if kind == "companion":
             STATUS.update(state="searching")
 
@@ -808,6 +973,18 @@ def run(get_port, log, notice=None, stop=lambda: False, rescan=30):
         if "companion" not in _ACTIVE.values() and "probing" not in _ACTIVE.values() and STATUS.get("state") != "error":
             STATUS.update(state="searching", port="")
         time.sleep(2 if any(v == "probing" for v in _ACTIVE.values()) else min(rescan, 10))
+
+
+def server_command(key, cmd, timeout=15, **kw):
+    """Auftrag an einen Repeater/Room-Server am USB (key = die ersten 12 Zeichen seines Schlüssels)."""
+    port = next((p for p, sv in SERVERS.items() if sv.get("key") == key), None)
+    if not port or port not in _SCMDS:
+        return {"ok": False, "error": "Server nicht verbunden"}
+    box, done = {}, threading.Event()
+    _SCMDS[port].put((cmd, kw, box, done))
+    if not done.wait(timeout):
+        return {"ok": False, "error": "Server antwortet nicht"}
+    return box
 
 
 def command(cmd, timeout=15, **kw):

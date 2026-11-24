@@ -1351,9 +1351,10 @@ def mesh_alert(kind, data):
 
 
 def mesh_overview(limit=100, before=None):
-    out = {"status": MESH.status(), "port_setting": mesh_port(), "nodes": MESH.nodes()}
-    out.update(MESH.messages(limit, before))
-    loc = load_settings().get("my_locator", "")
+    out = {"status": MESH.status(), "port_setting": mesh_port(), "nodes": MESH.nodes(),
+           "board": MESH.messages(50, kind="room")["messages"]}          # schwarzes Brett (Room-Server)
+    out.update(MESH.messages(limit, before, not_kind="room"))
+    loc = read_json(SETTINGS, {}).get("my_locator", "")          # leicht: wird alle 15 s gefragt
     try:
         import satellites as SAT
         out["home"] = [round(x, 3) for x in SAT.locator_to_latlon(loc)] if loc else None
@@ -3272,6 +3273,32 @@ class Handler(BaseHTTPRequestHandler):
                 APPLOG.log("INFO" if res.get("ok") else "WARN", "mesh", "mesh_set" if res.get("ok") else "mesh_set_failed",
                            what=cmd, **{k: v for k, v in data.items() if k in ("name", "where", "index")},
                            **({"error": res.get("error")} if not res.get("ok") else {}))
+                return self.send_json(dict(res, status=MESH.status()), 200 if res.get("ok") else 400)
+            if path == "/api/mesh/server":                      # Repeater/Room-Server am USB verwalten
+                key, cmd = str(data.get("key", "")), str(data.get("cmd", ""))
+                kw = {}
+                if cmd == "position":
+                    if data.get("where") == "locator":
+                        try:
+                            import satellites as SAT
+                            la, lo = SAT.locator_to_latlon((load_settings().get("my_locator") or "").strip()[:6])
+                        except Exception:
+                            return self.send_json({"ok": False, "error": "Erst den eigenen Locator eintragen (Einstellungen → Station)"}, 400)
+                        kw = {"lat": round(la, 5), "lon": round(lo, 5)}
+                    else:
+                        kw = {"lat": None, "lon": None}
+                elif cmd in ("name", "owner_info", "post"):
+                    kw = {"name": str(data.get("name", ""))} if cmd == "name" else {"text": str(data.get("text", ""))}
+                elif cmd == "guest_password":
+                    kw = {"password": str(data.get("password", ""))}
+                elif cmd == "read_only":
+                    kw = {"on": bool(data.get("on"))}
+                elif cmd not in ("advert", "acl", "reboot"):
+                    return self.send_json({"ok": False, "error": "unbekannter Befehl"}, 400)
+                res = MESH.server_command(key, cmd, **kw)
+                if cmd != "acl":                                 # Passwörter nie ins Protokoll
+                    APPLOG.log("INFO" if res.get("ok") else "WARN", "mesh", "mesh_server_set" if res.get("ok") else "mesh_server_set_failed",
+                               what=cmd, **({"error": res.get("error")} if not res.get("ok") else {}))
                 return self.send_json(dict(res, status=MESH.status()), 200 if res.get("ok") else 400)
             if path == "/api/mesh/port":
                 port = str(data.get("port", "auto")).strip() or "auto"

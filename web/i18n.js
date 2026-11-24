@@ -334,6 +334,14 @@
     'Passwort zu kurz (mindestens 8 Zeichen)': 'Password too short (at least 8 characters)',
     'Anmeldung': 'Login', 'Abgemeldet': 'Logged out', 'Anmeldung fehlgeschlagen': 'Login failed', 'Anmeldung gesperrt': 'Login blocked',
     'Passwort gesetzt': 'Password set', 'Zugangsschutz ausgeschaltet': 'Access protection switched off',
+    // 1.8.50: schwarzes Brett, Room-Server verwalten
+    'Mesh: am Room-Server angemeldet': 'Mesh: logged in to the room server', 'Mesh: Anmeldung am Room-Server abgelehnt': 'Mesh: room server login refused',
+    'Mesh: Server eingestellt': 'Mesh: server set', 'Mesh: Server ließ sich nicht einstellen': 'Mesh: server could not be set',
+    'Mesh: neuer Beitrag am schwarzen Brett (Room-Server)': 'Mesh: new post on the notice board (room server)',
+    'Server nicht verbunden': 'Server not connected', 'Server antwortet nicht': 'Server does not answer', 'Höchstens 119 Zeichen': 'At most 119 characters',
+    'Gast-Passwort: höchstens 15 Zeichen, ohne Leerzeichen': 'Guest password: at most 15 characters, no spaces', 'Beitrag: 1 bis 140 Zeichen': 'Post: 1 to 140 characters',
+    'Diese Firmware kann noch keine Beiträge vom Server (room.post) – MeshCore aktualisieren': 'This firmware cannot post as the server yet (room.post) – update MeshCore',
+    'Gast (nur lesen)': 'Guest (read only)', 'Lesen und schreiben': 'Read and write', 'keine Antwort': 'no answer',
     // 1.8.49: Repeater/Room-Server am USB
     'Mesh: Repeater/Room-Server verbunden': 'Mesh: repeater/room server connected',
     'Ein Repeater oder Room-Server mit MeshCore-Firmware am USB (auch zusätzlich zum Companion) erscheint oben mit Firmware, Funkdaten, Akku, Laufzeit, Rauschen, Sendezeit und Paketzählern; seine Uhr stellt der Pi, wenn sie nachgeht.': 'A repeater or room server with MeshCore firmware on USB (also in addition to the companion) appears above with firmware, radio settings, battery, uptime, noise, airtime and packet counters; the Pi sets its clock when it is slow.',

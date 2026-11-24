@@ -4130,7 +4130,7 @@ for _ in range(40):
         break
 stop[0] = True
 nodes = [d for k, d in ev if k == "node"]; msgs = [d for k, d in ev if k == "msg"]
-assert {n["name"] for n in nodes} == {"DB0FRK Repeater", "DL1ABC Mobil"}, nodes
+assert {"DB0FRK Repeater", "DL1ABC Mobil"} <= {n["name"] for n in nodes}, nodes
 assert any(m["kind"] == "dm" and m["sender"] == "DL1ABC Mobil" for m in msgs), msgs   # Name statt Schlüssel
 rules = [{"id": "a", "type": "mesh_node", "value": "db0frk*", "enabled": True},
          {"id": "b", "type": "mesh_text", "value": "FRANKEN", "enabled": True},
@@ -4234,8 +4234,48 @@ assert sv["stats"]["battery_mv"] == 4980 and sv["stats"]["noise_floor"] == -110 
 assert sv["clock"]["set"] and abs(sv["clock"]["drift_s"] + 10800) <= 60
 assert "mesh_server_connected" in logs and "mesh_connected" in logs
 src = Path(sys.argv[1]); js = (src / "web" / "app.js").read_text(); html = (src / "web" / "index.html").read_text()
-assert 'id="meshServers"' in html and "$('meshServers').innerHTML = servers.map" in js and "'mesh_server_connected':" in js
+assert 'id="meshServers"' in html and "renderMeshServers(servers, st, d.board || [])" in js and "'mesh_server_connected':" in js
 assert "localStorage.setItem('log.per', e.target.value)" in js and "'log.per'," in (src / "web" / "prefs.js").read_text()
+PY
+pkill -f "mesh_fake.py $MF" 2>/dev/null; rm -rf "$MF"
+
+echo "== 110 Schwarzes Brett: Companion meldet sich am eigenen Room-Server an, Beiträge kommen an und melden sich; Room-Server verwalten"
+MF=$(mktemp -d); (python3 "$SRC/devtools/mesh_fake.py" "$MF" > "$MF/o1" 2>&1 &); (python3 "$SRC/devtools/mesh_fake.py" "$MF" room > "$MF/o2" 2>&1 &); sleep 1
+(cd bin && HSP_MESH_DEV_GLOB="$MF/by-id/*" HSP_MESH_SYS_TTY="$MF/sys" timeout 80 python3 - "$SRC" <<'PY') && ok "Anmeldung mit dem Gast-Passwort aus der Konsole (nie angezeigt), Beitrag mit Autor am Brett gespeichert und als Ereignis gemeldet, Brett-Regel greift; Verwalten: Zugriffsliste mit „dieser Pi“, Betreiber-Angaben, Gast-Passwort, nur-lesen, Ankündigung, Beitrag als Server; Passwort nicht im Zustand" || bad "Schwarzes Brett / Room-Server verwalten"
+import sys, time, threading, tempfile, json
+from pathlib import Path
+import mesh as M, stations as ST
+M.DB = Path(tempfile.mkdtemp()) / "t.db"
+logs, ev, stop = [], [], [False]
+M.ON_EVENT[0] = lambda k, d: ev.append((k, d))
+threading.Thread(target=M.run, args=(lambda: "auto", lambda *a, **k: logs.append(a[2]), None, lambda: stop[0], 2), daemon=True).start()
+for _ in range(120):
+    time.sleep(0.5)
+    if M.messages(kind="room")["total"]:
+        break
+s = M.status()
+room = s["rooms"][0]; sv = s["servers"][0]
+assert room["logged_in"] and room["own"] and "mesh_room_login" in logs
+assert "geheim" not in json.dumps(s) and sv["guest_password_set"] and "_pw" not in sv and "_key" not in sv
+b = M.messages(kind="room")["messages"][0]
+assert b["sender"] == "DL1ABC Mobil" and b["channel_name"] == "DO1GMT Room" and "Treffen Samstag" in b["text"]
+assert M.messages(not_kind="room")["total"] == M.messages()["total"] - 1
+d = next(d for k, d in ev if k == "msg" and d["kind"] == "room")
+assert [r["id"] for r, *_ in ST.mesh_rules("msg", d, [{"id": "r", "type": "event", "value": "mesh_room"}, {"id": "t", "type": "mesh_text", "value": "samstag"}])] == ["r", "t"]
+assert ST.mesh_rules("msg", d, [{"id": "r", "type": "event", "value": "mesh_room"}])[0][1].startswith("Brett DO1GMT Room · DL1ABC Mobil: ")
+k = sv["key"]
+acl = M.server_command(k, "acl")["acl"]
+assert acl[0]["me"] and acl[0]["admin"] and acl[1]["name"] == "DL1ABC Mobil" and acl[1]["perm"] == "Lesen und schreiben"
+assert M.server_command(k, "owner_info", text="Tom\nDO1GMT")["ok"] and M.status()["servers"][0]["owner_info"] == "Tom\nDO1GMT"
+assert M.server_command(k, "read_only", on=True)["ok"] and M.status()["servers"][0]["read_only"]
+assert not M.server_command(k, "guest_password", password="viel zu lang mit leer")["ok"]
+assert M.server_command(k, "advert")["ok"] and M.server_command(k, "post", text="Hallo vom Pi")["ok"]
+assert not M.server_command(k, "post", text="")["ok"] and M.server_command("000000000000", "advert")["error"] == "Server nicht verbunden"
+stop[0] = True
+src = Path(sys.argv[1]); wa = (src / "bin" / "webapp.py").read_text(); js = (src / "web" / "app.js").read_text()
+assert 'if path == "/api/mesh/server":' in wa and "Passwörter nie ins Protokoll" in wa and '"board": MESH.messages(50, kind="room")' in wa
+assert "function renderMeshServers(" in js and "post('/api/mesh/server', body)" in js
+assert "mesh_room" in ST.EVENTS
 PY
 pkill -f "mesh_fake.py $MF" 2>/dev/null; rm -rf "$MF"
 
