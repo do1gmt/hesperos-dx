@@ -410,14 +410,16 @@ def log_send_due():
         _log_fail(e, "log_send_failed")
 
 
-def notify_watch(rule_id, label, detail, quiet_min=30, image=None):
-    """Meldung für einen Treffer der Beobachtungsliste – höchstens eine je Regel und quiet_min."""
+def notify_watch(rule_id, label, detail, quiet_min=30, image=None, source="scan"):
+    """Meldung für einen Treffer der Beobachtungsliste – höchstens eine je Regel und quiet_min.
+    source="live": gehört im Live-Empfang (steht dann in der Stationsliste, nicht unter Treffer)."""
     c = cfg()
     if not (c.get("enabled") or push_on(c)):
         return
     if quiet_min and _throttled(f"watch_{rule_id}", float(quiet_min)):
         return
-    send_all(f"Beobachtet: {label}", f"{label}\n{detail}\n\nIm Dashboard unter Treffer (🔔).\n", c, image=image, priority="high")
+    where = "Gehört im Live-Empfang – im Dashboard unter Stationen." if source == "live" else "Im Dashboard unter Treffer (🔔)."
+    send_all(f"Beobachtet: {label}", f"{label}\n{detail}\n\n{where}\n", c, image=image, priority="high")
 
 
 def notify_scan_done(run_id):

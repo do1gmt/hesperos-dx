@@ -65,7 +65,9 @@ shortwave.
 - *Stations* tab: every transmitting callsign from FT8/FT4, APRS, CW and RTTY with locator, distance,
   bearing and last heard – exportable as an ADIF SWL log.
 - Watchlist: alerts for a frequency, a callsign (`DL*`), DX beyond N km or events such as SSTV from
-  the ISS – in the log, on the hit card, by mail or as push to your phone (ntfy, Telegram).
+  the ISS – in the log, on the hit card, by mail or as push to your phone (ntfy, Telegram). **Callsign alert:**
+  callsign and distance rules also check what Live decodes (FT8, FT4, APRS …) and report at once, e.g.
+  "DL1ABC · 40m 7.0760 MHz FT8 · −12 dB · JO62 312 km"; a station calling every slot is reported once per quiet time.
 - Map of heard stations (per callsign or per locator square, fine zoom), overview per station,
   activity overview by band and hour, optional reporting of FT8/FT4 spots to [PSK Reporter](https://pskreporter.info).
 - FT8/FT4 decodes on the network in the **WSJT-X UDP format** – for OpenHamClock, GridTracker, JTAlert & co.

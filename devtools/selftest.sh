@@ -3500,5 +3500,53 @@ assert st and st.startswith("warte_auf_stick") and "<module>" in st, st
 assert "Scan hängt" in stall.read_text()
 PY
 
+echo "== 89 Rufzeichen-Alarm: Live-Dekodierungen sofort, Meldetext mit Band, Frequenz, SNR, Entfernung"
+(cd bin && timeout 90 python3 - <<'PY') && ok "Live meldet DL1ABC sofort (einmal je Ruhezeit), Text mit 40m 7.0760 MHz FT8, −12 dB, JO62, km" || bad "Rufzeichen-Alarm"
+import sqlite3, time, threading
+import stations as ST, live_decode as LD, webapp as W
+rules = [{"id": "r1", "type": "call", "value": "DL1*", "enabled": True, "mail": True, "quiet_min": 30},
+         {"id": "r2", "type": "freq", "value": "7.076", "enabled": True}]
+calls = [{"call": "DL1ABC", "grid": "JO62", "mode": "FT8", "snr": -12, "f": 7076000.0},
+         {"call": "OK1XYZ", "grid": "JO70", "mode": "FT8", "snr": -3, "f": 7075500.0}]
+h = ST.live_call_rules(calls, "40m", rules, "JO50")
+assert len(h) == 1 and h[0][0]["id"] == "r1", h
+d = h[0][1]
+assert d.startswith("DL1ABC · 40m 7.0760 MHz FT8 · −12 dB · JO62 ") and d.endswith(" km"), d
+# Webserver: Rückruf ist gesetzt, Meldung geht raus, Wiederholung im nächsten Takt nicht
+W.ensure_schema(); db = sqlite3.connect(W.DB); ST.ensure_tables(db); db.commit(); db.close()
+assert LD.ON_CALLS[0] is None or callable(LD.ON_CALLS[0])
+sent, logs = [], []
+W.load_settings = lambda: {"watchlist": rules, "my_locator": "JO50"}
+_orig_watch = W.NOTIFY.notify_watch
+W.NOTIFY.notify_watch = lambda *a, **k: sent.append((a, k))
+W.APPLOG.log = lambda *a, **k: logs.append((a, k))
+db = sqlite3.connect(W.DB)
+db.execute("""CREATE TABLE IF NOT EXISTS watch_hit (id INTEGER PRIMARY KEY, peak_id INTEGER, rule_id TEXT, label TEXT,
+              time TEXT, detail TEXT, UNIQUE(peak_id, rule_id))"""); db.commit(); db.close()
+t0 = time.time()
+W.live_call_alert(calls, "40m", t0)
+W.live_call_alert(calls, "40m", t0 + 15)
+for _ in range(50):
+    if sent: break
+    time.sleep(0.1)
+time.sleep(0.5)
+assert len(sent) == 1 and sent[0][1].get("source") == "live" and "DL1ABC" in sent[0][0][2], sent
+assert [a[2] for a, k in logs] == ["watch_hit"] and logs[0][1].get("source") == "live", logs
+# Live-Dekoder ruft den Rückruf nur für neu eingetragene Rufzeichen
+got = []
+LD.ON_CALLS[0] = lambda c, band, t: got.append((c, band))
+dec = object.__new__(LD.LiveDecoders); dec.freq_hz = 7074000; dec.antenna = None
+rows = [("DL1ABC", "JO62", -12, "CQ DL1ABC JO62", "FT8", 7076000)]
+dec._heard(rows, 1795500000); dec._heard(rows, 1795500000)
+assert len(got) == 1 and got[0][0][0]["call"] == "DL1ABC" and got[0][1] == "40m", got
+# Text der Meldung aus Live verweist auf die Stationsliste
+import notify as N
+out = []
+N.cfg = lambda: {"push": "ntfy"}; N.push_on = lambda c: True; N._throttled = lambda k, m: False
+N.send_all = lambda subj, body, c, image=None, priority=None: out.append(body)
+_orig_watch("r1", "DL1*", d, 30, source="live")
+assert "Live-Empfang" in out[0] and "Trefferkarte" not in out[0]
+PY
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

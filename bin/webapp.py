@@ -1398,6 +1398,43 @@ def live_traffic_check(st):
                 NOTIFY.notify_watch(rule["id"], label, m.get("text") or "", int(rule.get("quiet_min", 30)))
 
 
+_live_alert_seen = {}                      # (Regel, Rufzeichen) -> Zeit der letzten Meldung aus Live
+
+
+def live_call_alert(calls, band, t):
+    """Rufzeichen-Alarm aus Live (Rückruf von live_decode, 1.8.30): neu gehörte Rufzeichen sofort gegen die
+    Beobachtungsliste prüfen und melden – nicht erst nach dem nächsten Scan. Ein Rufzeichen, das jeden Takt ruft,
+    steht je Regel höchstens einmal in quiet_min im Protokoll; die Meldung selbst begrenzt notify wie bisher.
+    Läuft in eigenem Faden, damit der Dekoder nie auf Netz oder Datenbank wartet."""
+    def run():
+        try:
+            st = load_settings()
+            hits = ST.live_call_rules(calls, band, st.get("watchlist"), st.get("my_locator", ""), t)
+            if not hits:
+                return
+            ts = datetime.fromtimestamp(t, timezone.utc).isoformat(timespec="seconds")
+            db = db_connect()
+            try:
+                for rule, detail in hits:
+                    quiet = int(rule.get("quiet_min", 30))
+                    key = (rule["id"], detail.split(" · ", 1)[0])
+                    if time.time() - _live_alert_seen.get(key, 0) < quiet * 60:
+                        continue
+                    _live_alert_seen[key] = time.time()
+                    label = rule.get("label") or f"{rule['type']} {rule['value']}"
+                    db.execute("INSERT OR IGNORE INTO watch_hit (peak_id, rule_id, label, time, detail) VALUES (?,?,?,?,?)",
+                               (-int(t), rule["id"], label, ts, detail))
+                    db.commit()
+                    APPLOG.log("INFO", "watch", "watch_hit", rule=label, detail=detail, source="live")
+                    if rule.get("mail", True):
+                        NOTIFY.notify_watch(rule["id"], label, detail, quiet, source="live")
+            finally:
+                db.close()
+        except Exception as e:
+            APPLOG.log("WARN", "watch", "live_alert_failed", error=f"{type(e).__name__}: {e}")
+    threading.Thread(target=run, daemon=True).start()
+
+
 def watch_and_stations_cycle():
     """Neue Treffer: Rufzeichen eintragen, Beobachtungsliste prüfen, melden."""
     if scan_running():                     # erst nach dem Scan: APRS/RDS/FT8 werden am Ende dekodiert
@@ -3594,6 +3631,11 @@ def main():
     threading.Thread(target=stall_loop, args=(port,), daemon=True).start()
     threading.Thread(target=trim_loop, daemon=True).start()
     threading.Thread(target=db_keeper_loop, daemon=True).start()
+    try:                                                     # Rufzeichen-Alarm auch für Live (sofort)
+        import live_decode as _LDC
+        _LDC.ON_CALLS[0] = live_call_alert
+    except Exception as e:
+        APPLOG.log("WARN", "watch", "live_alert_failed", error=f"{type(e).__name__}: {e}")
     try:                                                     # wer schreibt welche Datei? (Diagnose: io_files.txt)
         import writewatch
         writewatch.start()

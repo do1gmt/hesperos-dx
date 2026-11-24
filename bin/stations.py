@@ -307,7 +307,7 @@ def ingest(db, limit=2000):
                                                                 s if s is not None else snr, text[:200], antenna))   # SNR: FT8 je Nachricht, sonst Treffer
                 if cur.rowcount == 1:
                     upsert_station(db, call, t, band, typ, grid, s if s is not None else snr)
-                calls.append({"call": call, "grid": grid, "mode": typ})
+                calls.append({"call": call, "grid": grid, "mode": typ, "snr": s if s is not None else snr, "f": f or rf})
         for d in (dec or {}).get("decoders", []):
             if d.get("type") == "RDS" and d.get("rds"):
                 upsert_fm(db, pid, rf, t, snr, d["rds"])
@@ -474,6 +474,38 @@ def watch_skip_until(db):
     return int(row[0]) if row else 0
 
 
+def call_detail(c, band, rf_hz=None, my_locator=""):
+    """Meldetext für ein gehörtes Rufzeichen: „DL1ABC · 40m 7.0760 MHz FT8 · −12 dB · JO62 312 km“ (1.8.30)."""
+    parts = [c["call"]]
+    f = c.get("f") or rf_hz
+    parts.append(" ".join(x for x in (band, f"{float(f) / 1e6:.4f} MHz" if f else "", c.get("mode") or "") if x))
+    if c.get("snr") is not None:
+        try:
+            parts.append(f"{float(c['snr']):+.0f} dB".replace("-", "−"))
+        except (TypeError, ValueError):
+            pass
+    if c.get("grid"):
+        d = None
+        if my_locator:
+            try:
+                d, _b = distance_bearing(c["grid"], my_locator)
+            except Exception:
+                d = None
+        parts.append(f"{c['grid']} {d} km" if d else c["grid"])
+    return " · ".join(p for p in parts if p)
+
+
+def live_call_rules(calls, band, rules, my_locator="", t=None):
+    """Rufzeichen-Alarm für Live: neu gehörte Rufzeichen sofort gegen die Regeln „Rufzeichen“ und „DX ab km“
+    prüfen (vorher nur Scan-Treffer, einmal pro Minute nach dem Scan). Rückgabe [(rule, detail)]."""
+    rules = [r for r in rules or [] if r.get("type") in ("call", "dx")]
+    if not rules or not calls:
+        return []
+    p = {"id": None, "rf_hz": calls[0].get("f") or 0, "band": band, "calls": calls, "decode": {}, "segment_id": "",
+         "time": t}
+    return [(rule, detail) for rule, _p, detail in check_rules([p], rules, my_locator)]
+
+
 def check_rules(new_peaks, rules, my_locator=""):
     """Rückgabe Liste (rule, peak, detail) für jede passende Regel."""
     out = []
@@ -495,7 +527,7 @@ def check_rules(new_peaks, rules, my_locator=""):
                 pat = val.upper()
                 for c in p["calls"]:
                     if fnmatch.fnmatch(c["call"], pat) or fnmatch.fnmatch(c["call"].split("-")[0].split("/")[0], pat):
-                        detail = f"{c['call']} ({c['mode']}, {p['band']})"
+                        detail = call_detail(c, p["band"], p.get("rf_hz"), my_locator)
                         break
             elif typ == "dx":
                 try:
@@ -504,7 +536,7 @@ def check_rules(new_peaks, rules, my_locator=""):
                         if c.get("grid"):
                             d, b = distance_bearing(c["grid"], my_locator)
                             if d and d >= km:
-                                detail = f"{c['call']} {c['grid']}, {d} km ({c['mode']}, {p['band']})"
+                                detail = call_detail(c, p["band"], p.get("rf_hz"), my_locator)
                                 break
                 except ValueError:
                     pass

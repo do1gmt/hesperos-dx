@@ -215,6 +215,10 @@ class StreamResampler:
         return y[skip:skip + len(x) * self.up // self.down]
 
 
+ON_CALLS = [None]        # Rückruf (calls, band, t) für neu gehörte Rufzeichen – das Dashboard prüft damit sofort
+                         # den Rufzeichen-Alarm der Beobachtungsliste (1.8.30); calls: [{call, grid, mode, snr, f}]
+
+
 class LiveDecoders:
     def __init__(self):
         self.kind = "auto"                    # gewählt im Dashboard
@@ -463,12 +467,14 @@ class LiveDecoders:
                     mode TEXT, grid TEXT, snr REAL, info TEXT, UNIQUE(peak_id, call))""")   # wie stations.py
                 if "antenna" not in {r[1] for r in db.execute("PRAGMA table_info(heard)")}:
                     db.execute("ALTER TABLE heard ADD COLUMN antenna TEXT")
+                fresh = []
                 for call, grid, snr, text, typ, f in rows:
                     cur = db.execute("""INSERT OR IGNORE INTO heard (peak_id, time, call, band, freq_hz, mode, grid, snr, info, antenna)
                                   VALUES (?,?,?,?,?,?,?,?,?,?)""",
                                (-int(t), ts, call, band, float(f or self.freq_hz), typ, grid, snr,
                                 ("Live: " + str(text or ""))[:200], self.antenna))
                     if cur.rowcount == 1:
+                        fresh.append({"call": call, "grid": grid, "mode": typ, "snr": snr, "f": float(f or self.freq_hz)})
                         try:
                             import stations as ST
                             db.execute("CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT)")
@@ -482,6 +488,8 @@ class LiveDecoders:
                 db.commit()
             finally:
                 db.close()
+            if fresh and ON_CALLS[0]:
+                ON_CALLS[0](fresh, band, t)
         except Exception as e:
             try:
                 from applog import log

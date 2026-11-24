@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.8.30 – 2026-11-24
+
+- **Callsign alert also for Live, at once.** Watchlist rules "callsign" (`DL1ABC`, `DL*`) and "distance from"
+  were only checked against scan hits, once a minute and only after the scan had finished. Now every callsign
+  newly heard in Live (FT8, FT4, APRS …, also the unattended watch) is checked immediately and reported by mail/push
+  ("heard in Live – see Stations"). A station that calls every slot appears in the log at most once per rule within
+  the quiet time; the notification limit per rule stays as before.
+- Alert text with everything at a glance: callsign · band, frequency, mode · SNR · locator and distance – for
+  scan hits as well.
+- Log: `live_alert_failed` ("Callsign alert (Live): error").
+- Self-test section 89.
+
 ## 1.8.29 – 2026-11-24
 
 - **Fix: scans hung for hours on short wave with the RTL stick.** On the dev Pi, from about 01 to 08 UTC every scan
