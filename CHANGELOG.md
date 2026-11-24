@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.8.36 – 2026-11-24
+
+- **Swapping sticks without settings** (step 3 of 3). If only one RTL stick is plugged in and it is not set to
+  *ignore*, it is used – even brand new and without a role. Before, a swapped or newly plugged stick was only used
+  after giving it a role in the stick card, and until then nothing scanned. Order: main stick > exactly one spare >
+  the only plugged-in stick. With several sticks the roles decide as before; a new second stick never steps in.
+  The stick card shows "in use (only stick)", the notice says "Other stick in use: …" instead of "New stick waits for
+  assignment" / "Main stick missing"; log `stick_single_used`.
+- **No more duplicate sticks:** if the serial number is not read once (right after plugging in), the stick is now
+  recognised by its USB port instead of getting a second entry `port:…`; existing duplicates are merged the next
+  time the serial number is read (log `stick_merged`) – the entry with the serial number keeps its settings.
+- **Slimmer stick card:** name, serial number, state and shortwave; the role (with a single stick), ppm and gain
+  moved under *Advanced* (open when a value is set). Texts no longer say a new stick is never used.
+- Self-test: section 50 for the new behaviour, new section 95.
+
 ## 1.8.35 – 2026-11-24
 
 - **Antenna per schedule** (step 2 of 3). Every schedule can bring its own antenna: *as in the scan box* (default –

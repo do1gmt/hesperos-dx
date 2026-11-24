@@ -1494,9 +1494,16 @@ r = STK.main_device()[0]
 assert r["serial"] == "HSP24686" and r["failover"] and r["replaces_serial"] == "27244444" and r["gain"] == 33
 assert STK.effective_main()["serial"] == "HSP24686" and STK.overview()["failover"]["serial"] == "HSP24686"
 assert STK.rtl_params({})["gain"] in (33, 33.0)
-STK.update(ks, role=None)                                    # neuer, nicht festgelegter Stick springt nicht ein
+STK.update(ks, role=None)                                    # einziger Stick, noch nicht festgelegt: wird benutzt (1.8.36)
 reg = STK.load(); reg["sticks"][ks]["role"] = None; STK._save(reg)
+r = STK.main_device()[0]
+assert r["serial"] == "HSP24686" and r["single"] and r["replaces_serial"] == "27244444"
+third = dict(big, port="1-1.5", serial="SN3")
+cur[0] = [small, third]; STK.sync(notify=False)               # zwei nicht festgelegte: unklar, keiner
 assert STK.main_device() is None
+STK.update(ks, role="ignore"); cur[0] = [small]               # „ignorieren“ bleibt ignoriert
+assert STK.main_device() is None
+STK.update(ks, role=None)
 cur[0] = [big]; assert STK.main_device()[0]["serial"] == "27244444"
 # Sicherung eines anderen Pi: Haupt-Stick fehlt, genau ein anderer steckt -> übernommen
 cur[0] = [small]
@@ -3753,6 +3760,47 @@ web = Path(sys.argv[1]) / "web"
 js, html = (web / "app.js").read_text(), (web / "index.html").read_text()
 assert 'id="scAnt"' in html and 'id="antSched"' in html and "data-sant" in js and "antenna: $('scAnt').value" in js
 assert "var antData" in js                                          # Zeitpläne lesen sie schon beim ersten Zeichnen
+PY
+
+echo "== 95 Stickwechsel: einziger Stick läuft ohne Einstellen, doppelte Einträge zusammengeführt, Karte schlank"
+(cd bin && timeout 90 python3 - "$SRC" <<'PY') && ok "getauschter Stick scannt sofort (Hinweis statt „wartet auf Zuordnung“), Stick ohne gelesene Seriennummer kein zweiter Eintrag, alter Doppel-Eintrag verschwindet" || bad "Stickwechsel"
+import json, sys, tempfile
+from pathlib import Path
+import sticks as STK
+d = Path(tempfile.mkdtemp()); STK.REG = d / "sticks.json"; STK.REG_LOCK = d / "sticks.lock"
+nesdr = {"port": "1-1.4", "vid": "0bda", "pid": "2838", "kind": "rtl", "manufacturer": "Nooelec", "product": "NESDR SMArt v5", "serial": "HSP24686", "node": None}
+cur = [[nesdr]]
+STK.usb_scan = lambda: list(cur[0])
+STK.sync(notify=False)
+k = STK.key_of(nesdr)
+STK.update(k, gain=30)
+# derselbe Stick, Seriennummer einmal nicht gelesen: kein neuer Eintrag, Einstellungen bleiben
+cur[0] = [dict(nesdr, serial="")]
+reg, present, new = STK.sync(notify=False)
+assert new == [] and list(reg["sticks"]) == [k] and STK.main_device()[0]["gain"] == 30, reg
+# alter Doppel-Eintrag (bis 1.8.35 entstanden) wird beim nächsten Lesen mit Nummer zusammengeführt
+reg = STK.load(); reg["sticks"]["port:1-1.4"] = {"key": "port:1-1.4", "kind": "rtl", "vid": "0bda", "pid": "2838", "serial": "", "role": "spare", "antenna": "Discone"}
+STK._save(reg)
+cur[0] = [nesdr]
+reg, _, _ = STK.sync(notify=False)
+assert list(reg["sticks"]) == [k] and reg["sticks"][k]["gain"] == 30, list(reg["sticks"])
+# getauschter Stick (neu, ohne Rolle): wird sofort benutzt; Hinweise passen dazu
+import health as H, notices as NT
+NT.FILE = d / "n.json"; NT.LOCK = d / "n.lock"
+STK.update(k, role="main")
+other = dict(nesdr, port="1-1.2", serial="27244444")
+cur[0] = [other]
+STK.sync(notify=False)
+ov = STK.overview()
+used = next(r for r in ov["sticks"] if r["in_use"])
+assert used["serial"] == "27244444" and used["single"] and ov["pending"] == 0 and ov["failover"]["single"]
+H.check_sticks({})
+act = {r["key"] if r["kind"] == "event" else r["id"]: r for r in NT.listing()["items"] if r["active"]}
+assert "stick_pending" not in act and "stick_main_missing" not in act and "stick_failover" in act, list(act)
+assert act["stick_failover"]["title"].startswith("Anderer Stick wird benutzt"), act["stick_failover"]["title"]
+web = Path(sys.argv[1]) / "web"
+js = (web / "app.js").read_text()
+assert 'class="stick-more"' in js and "const manySticks" in js and "EINZIGER STICK" in js
 PY
 
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt

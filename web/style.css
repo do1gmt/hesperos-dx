@@ -847,3 +847,8 @@ body.dragging-card, body.dragging-card * { user-select: none; -webkit-user-selec
 @media (max-width: 640px) { .panel-tools button { width: 2.2rem; height: 2.2rem; } .panel.has-tools > h2 { padding-right: 5.2rem; } }
 .sched-ant { display: inline-flex; align-items: center; gap: .35rem; margin-top: .25rem; font-size: .85rem; }
 .sched-ant select { width: auto; min-height: 32px; padding: .15rem .4rem; font-size: .85rem; }
+/* Stickkarte (1.8.36): ppm/Verstärkung unter „Erweitert“ */
+.stick-more { margin: .35rem 0; grid-column: 1 / -1; }
+.stick-more-grid .field { flex: 1 1 150px; margin: 0; }
+.stick-more > summary { cursor: pointer; color: var(--muted); font-size: .9rem; padding: .2rem 0; }
+.stick-more-grid { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .35rem; }

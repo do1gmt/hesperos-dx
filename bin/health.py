@@ -139,8 +139,8 @@ def check_sticks(st):
                 continue
             NT.event("stick", "info", "hardware", f"Stick angesteckt: {r['label']}",
                      f"{r['label']}, Seriennummer {r.get('serial') or 'ohne'}, an {r.get('port') or '?'}"
-                     + ("" if r.get("role") else " – noch ohne Rolle, wird nicht benutzt."),
-                     fix="" if r.get("role") else "Unter System → Geräte festlegen: Haupt-Stick, Reserve oder ignorieren.")
+                     + ("" if r.get("role") else (" – einziger Stick, wird benutzt." if r.get("in_use") else " – noch ohne Rolle, wird nicht benutzt.")),
+                     fix="" if r.get("role") or r.get("in_use") else "Unter System → Geräte festlegen: Haupt-Stick, Reserve oder ignorieren.")
         for k in before - now_present.keys():
             reg = next((r for r in ov["sticks"] if r["key"] == k), {})
             ev = NT.event("stick", "warn" if reg.get("role") == "main" else "info", "hardware",
@@ -165,12 +165,15 @@ def check_sticks(st):
     if main and not main.get("present") and fo:
         # Reserve springt ein: weiterarbeiten, nur Bescheid geben
         NT.clear("stick_main_missing")
-        NT.raise_("stick_failover", "info", "hardware", f"Reserve-Stick springt ein: {fo['label']} {fo.get('serial') or ''}".strip(),
+        what = "Der angesteckte Stick" if fo.get("single") else "Die Reserve"
+        NT.raise_("stick_failover", "info", "hardware",
+                  (f"Anderer Stick wird benutzt: {fo['label']} {fo.get('serial') or ''}" if fo.get("single")
+                   else f"Reserve-Stick springt ein: {fo['label']} {fo.get('serial') or ''}").strip(),
                   f"Der Haupt-Stick {main['label']} (Seriennummer {main.get('serial') or 'ohne'}) steckt nicht – Scan, "
-                  f"Satelliten und Live laufen solange mit der Reserve (Seriennummer {fo.get('serial') or 'ohne'}, mit "
-                  "deren Verstärkung, ppm, Antenne und Kurzwellen-Einstellung). Steckt der Haupt-Stick wieder, wird er "
+                  f"Satelliten und Live laufen solange mit {fo['label']} (Seriennummer {fo.get('serial') or 'ohne'}, mit "
+                  "dessen Verstärkung, ppm und Kurzwellen-Einstellung). Steckt der Haupt-Stick wieder, wird er "
                   "wieder benutzt.",
-                  fix="Soll die Reserve dauerhaft Haupt-Stick sein: unter System → Geräte als Haupt-Stick festlegen.",
+                  fix=f"{what} soll dauerhaft Haupt-Stick sein? Unter System → Geräte als Haupt-Stick festlegen.",
                   key="stick")
     else:
         NT.clear("stick_failover")
@@ -190,7 +193,7 @@ def check_sticks(st):
                   fix="Unter System → Geräte „Seriennummer schreiben“ (vorher andere Sticks abziehen).", notify=False)
     else:
         NT.clear("stick_generic_serial")
-    pend = [r for r in now_present.values() if r.get("role") is None]
+    pend = [r for r in now_present.values() if r.get("role") is None and not r.get("in_use")]   # der einzige Stick läuft schon
     if pend:
         NT.raise_("stick_pending", "info", "hardware", "Neuer Stick wartet auf Zuordnung",
                   ", ".join(f"{r['label']} ({r.get('serial') or 'ohne'})" for r in pend),

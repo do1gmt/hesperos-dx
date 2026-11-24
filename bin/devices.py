@@ -879,7 +879,8 @@ def _detect_hardware():
             rtl.update(present=hit is not None, port=hit[1]["port"] if hit else "", label=STK._label(hit[0]) if hit else None,
                        others=sum(1 for d in present if d["kind"] == "rtl") - (1 if hit else 0),
                        pending=sum(1 for d in present if d["kind"] == "rtl"
-                                   and (reg["sticks"].get(STK.key_of(d)) or {}).get("role") is None))
+                                   and (reg["sticks"].get(STK.reg_key(d, reg)) or {}).get("role") is None
+                                   and not (hit and STK.reg_key(d, reg) == hit[0]["key"])))
         except Exception:
             pass
     return {

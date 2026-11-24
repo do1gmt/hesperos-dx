@@ -219,7 +219,12 @@ default 10°): lower passes stay greyed out in the list ("too low") and are not 
 
 **Spare stick and restoring on other hardware:** a stick with the role *spare* steps in when the main stick is
 missing (only if exactly one spare is plugged in) – with its own gain, ppm and shortwave setting; a notice
-says so, and the main stick is used again as soon as it is back. New, not yet assigned sticks never step in.
+says so, and the main stick is used again as soon as it is back. **Swapping sticks needs no settings:** if only
+one stick is plugged in and it is not set to *ignore*, it is used – even brand new and without a role (the stick card
+says "in use (only stick)", a notice names the missing main stick). With several sticks the roles decide; a new
+second stick never steps in on its own. A stick whose serial number is once not read right after plugging in is
+recognised by its USB port and no longer appears twice in the list (old duplicates are merged). The stick card
+shows name, serial number, state and shortwave; role (with only one stick), ppm and gain are under *Advanced*.
 Restoring a backup from another Pi: if the main stick of the backup is not plugged in but exactly one other stick is,
 that one becomes the main stick (the old one stays registered as spare).
 
@@ -381,7 +386,8 @@ hotplug – plug in the PMSDR and it is ready (see [docs/pmsdr.md](docs/pmsdr.md
 not resolve `.local` – use the IP there; `hostname -I` on the Pi shows it). Then, all in the dashboard:
 - *Settings → Station*: locator, callsign, language, country/band plan;
 - *Settings → Access protection*: a password (recommended – without it everyone in your network can use it);
-- *System → Devices*: make the stick the **main stick** (it is recognised by its serial number);
+- *System → Devices*: with a single stick nothing to do (it is used right away); with several, make one the
+  **main stick** (it is recognised by its serial number);
 - *Settings → Notifications*: mail or push, if wanted;
 - choose bands and satellites on the *Scan* page and start a scan.
 

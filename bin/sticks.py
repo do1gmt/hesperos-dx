@@ -6,10 +6,12 @@ Erkennung: aus /sys/bus/usb/devices (Hersteller, Produkt, Seriennummer, Port) �
 also auch während eines Scans. Den Tuner-Typ fragt der Zeitplaner einmal pro Stick im Leerlauf ab
 (rtl_test unter der Scan-Sperre).
 
-Register: data/sticks.json (bleibt bei Updates erhalten). Je Stick: Rolle, ppm, Verstärkung, Antennen-Notiz.
+Register: data/sticks.json (bleibt bei Updates erhalten). Je Stick: Rolle, ppm, Verstärkung, Kurzwelle (die
+Antenne gehört seit 1.8.33 zum Vorgang, siehe antennas.py).
   Rollen: "main" = Haupt-Stick (VHF/UHF, Satelliten, Live) · "spare" = Reserve · "ignore" = nicht benutzen ·
           None = neu, noch nicht festgelegt (wird nie benutzt, bis du entscheidest).
-  Der allererste RTL-Stick wird automatisch Haupt-Stick (bestehende Installation: der NESDR).
+  Der allererste RTL-Stick wird automatisch Haupt-Stick (bestehende Installation: der NESDR). Steckt nur EIN
+  RTL-Stick (und er ist nicht auf „ignorieren“), wird er benutzt – auch ohne Rolle (Stickwechsel ohne Einstellen).
 
 Benutzt wird nur der Haupt-Stick, angesprochen über seine Seriennummer (rtl_sdr -d <Seriennummer>), damit die
 USB-Reihenfolge keine Rolle spielt. Haben zwei angesteckte Sticks dieselbe Seriennummer (bei Billigsticks
@@ -85,6 +87,18 @@ def key_of(dev):
     return f"sn:{dev['vid']}:{dev['pid']}:{dev['serial']}" if dev["serial"] else f"port:{dev['port']}"
 
 
+def reg_key(dev, reg):
+    """Schlüssel im Register für ein angestecktes Gerät. Wird die Seriennummer einmal nicht gelesen (kurz nach dem
+    Anstecken), ist es der Stick mit Seriennummer, der zuletzt an diesem Anschluss steckte – nicht ein neuer
+    Eintrag „port:…“ (1.8.36; vorher stand derselbe Stick dann doppelt im Register)."""
+    k = key_of(dev)
+    if dev["serial"]:
+        return k
+    hit = [r["key"] for r in reg["sticks"].values()
+           if r.get("serial") and r.get("port") == dev["port"] and r.get("vid") == dev["vid"] and r.get("pid") == dev["pid"]]
+    return hit[0] if len(hit) == 1 else k
+
+
 def _as_index(serial):
     """Wie librtlsdr (strtol, Basis 0) die Seriennummer als Gerätenummer lesen würde – oder None.
     rtl_sdr -d prüft zuerst auf eine Nummer: „00000001“ (oktal 1) öffnet bei zwei Sticks Gerät 1."""
@@ -154,13 +168,21 @@ def sync(now=None, notify=True):
     Schreibt nur bei Änderungen. Rückgabe: (register, angesteckte Geräte, neu eingetragene Schlüssel)."""
     now = now or time.time()
     present = usb_scan()
-    new = []
+    new, merged = [], []
     with _locked():
         reg = load()
         st = reg["sticks"]
         changed = False
         for dev in present:
-            k = key_of(dev)
+            k = reg_key(dev, reg)
+            ghost = f"port:{dev['port']}"
+            if dev["serial"] and ghost in st and not st[ghost].get("serial") \
+                    and (st[ghost].get("vid"), st[ghost].get("pid")) == (dev["vid"], dev["pid"]):
+                g = st.pop(ghost)                            # derselbe Stick, einmal ohne Seriennummer gelesen
+                if k not in st:                              # noch kein Eintrag mit Nummer: Einstellungen übernehmen
+                    st[k] = dict(g, key=k, serial=dev["serial"], manufacturer=dev["manufacturer"], product=dev["product"])
+                merged.append((g.get("role"), k))
+                changed = True
             r = st.get(k)
             if r is None:
                 rtl_known = any(x.get("kind") == "rtl" for x in st.values())
@@ -179,14 +201,22 @@ def sync(now=None, notify=True):
                 changed = True
         if changed:
             _save(reg)
+    if merged:
+        try:
+            from applog import log
+            for role, k in merged:
+                log("INFO", "devices", "stick_merged", stick=_label(reg["sticks"][k]), serial=reg["sticks"][k].get("serial"))
+        except Exception:
+            pass
     if new and notify:
         for k in new:
-            _announce(reg["sticks"][k])
+            _announce(reg["sticks"][k], single=len(_rtl_present(present)) == 1)
     return reg, present, new
 
 
-def _announce(r):
-    """Neuer Stick: Protokoll und (falls eingerichtet) Mail/Push – im Hintergrund, der Aufrufer wartet nicht."""
+def _announce(r, single=False):
+    """Neuer Stick: Protokoll und (falls eingerichtet) Mail/Push – im Hintergrund, der Aufrufer wartet nicht.
+    single: er ist der einzige angesteckte RTL-Stick – dann wird er ohnehin benutzt (main_device), kein Aufheben."""
     label = _label(r)
     sn = r.get("serial") or "ohne"
     try:
@@ -195,12 +225,14 @@ def _announce(r):
             log("INFO", "devices", "stick_unsupported", stick=label, serial=sn)
         elif r.get("auto"):
             log("INFO", "devices", "stick_main_auto", stick=label, serial=sn)
+        elif single:
+            log("INFO", "devices", "stick_single_used", stick=label, serial=sn)
         else:
             log("WARN", "devices", "stick_new", stick=label, serial=sn)
     except Exception:
         pass
-    if r.get("auto"):
-        return                                               # erster Stick der Installation: kein Aufheben machen
+    if r.get("auto") or (single and r["kind"] == "rtl"):
+        return                                               # erster oder einziger Stick: kein Aufheben machen
     if r["kind"] == "other":
         title, text = f"SDR erkannt: {label}", (f"{label} (Seriennummer {sn}) steckt am Pi. Hesperos DX unterstützt "
                                                 "dieses Gerät nicht und benutzt es nicht.")
@@ -297,7 +329,8 @@ def update(key, **fields):
 
 
 def forget(key):
-    present = {key_of(d) for d in usb_scan()}
+    reg0 = load()
+    present = {reg_key(d, reg0) for d in usb_scan()}
     if key in present:
         raise ValueError("Der Stick steckt noch – erst abstecken, dann vergessen")
     with _locked():
@@ -318,22 +351,29 @@ def _rtl_present(present=None):
 
 def main_device(present=None, reg=None):
     """(Register-Eintrag, Gerät, Index unter den angesteckten RTL-Sticks) des Sticks, mit dem gearbeitet wird, oder None.
-    Das ist der Haupt-Stick – fehlt er und steckt genau EIN Stick mit der Rolle „Reserve“, springt dieser ein (der
-    Eintrag trägt dann failover=True und den Namen des fehlenden Haupt-Sticks). Neue, noch nicht festgelegte Sticks
-    springen nie ein: bei denen ist nicht klar, ob sie überhaupt benutzt werden sollen."""
+    Reihenfolge: der Haupt-Stick – fehlt er, genau EINE steckende Reserve (failover=True, mit dem Namen des fehlenden
+    Haupt-Sticks) – sonst, ab 1.8.36, der EINZIGE steckende RTL-Stick, solange er nicht „ignorieren“ hat, auch ganz neu
+    und ohne Rolle (single=True). Vorher wurde ein getauschter oder neu gesteckter Stick erst benutzt, wenn man ihm
+    eine Rolle gab – bis dahin lief kein Scan. Mehrere neue Sticks: keiner, dann ist unklar, welcher gemeint ist."""
     rtl = _rtl_present(present)
     reg = reg or load()
-    spares = []
+    spares, usable = [], []
     for i, d in enumerate(rtl):
-        r = reg["sticks"].get(key_of(d))
+        r = reg["sticks"].get(reg_key(d, reg))
         if r and r.get("role") == "main":
             return r, d, i
         if r and r.get("role") == "spare":
             spares.append((r, d, i))
+        if r and r.get("role") != "ignore":
+            usable.append((r, d, i))
+    main = next((x for x in reg["sticks"].values() if x.get("role") == "main"), None)
     if len(spares) == 1:
-        main = next((x for x in reg["sticks"].values() if x.get("role") == "main"), None)
         r, d, i = spares[0]
         return dict(r, failover=True, replaces=_label(main) if main else None,
+                    replaces_serial=(main or {}).get("serial")), d, i
+    if len(usable) == 1 and len(rtl) == 1:
+        r, d, i = usable[0]
+        return dict(r, single=True, failover=bool(main), replaces=_label(main) if main else None,
                     replaces_serial=(main or {}).get("serial")), d, i
     return None
 
@@ -359,7 +399,7 @@ def adopt_after_restore():
     rtl = _rtl_present(present)
     reg = load()
     main = next((r for r in reg["sticks"].values() if r.get("role") == "main"), None)
-    keys = [key_of(d) for d in rtl]
+    keys = [reg_key(d, reg) for d in rtl]
     if not rtl or (main and main["key"] in keys) or len(rtl) != 1:
         return None
     sync(notify=False)
@@ -404,7 +444,7 @@ def probe_tuners(max_tries=3):
     reg, present, _ = sync(notify=False)
     rtl = _rtl_present(present)
     for i, d in enumerate(rtl):
-        r = reg["sticks"].get(key_of(d))
+        r = reg["sticks"].get(reg_key(d, reg))
         if not r or r.get("tuner") or r.get("tuner_tries", 0) >= max_tries:
             continue
         arg = d["serial"] if _by_serial_ok(d, rtl) else str(i)
@@ -420,7 +460,7 @@ def probe_tuners(max_tries=3):
             pass
         with _locked():
             reg = load()
-            r = reg["sticks"].get(key_of(d))
+            r = reg["sticks"].get(reg_key(d, reg))
             if r:
                 r["tuner_tries"] = r.get("tuner_tries", 0) + 1
                 if tuner:
@@ -472,7 +512,7 @@ def write_serial(key, serial):
 def overview():
     """Für den Reiter System → Geräte."""
     reg, present, _ = sync()
-    pk = {key_of(d): d for d in present}
+    pk = {reg_key(d, reg): d for d in present}
     rtl = _rtl_present(present)
     out = []
     for k, r in reg["sticks"].items():
@@ -496,9 +536,11 @@ def overview():
     use_key = main[0]["key"] if main else None
     for r in out:
         r["in_use"] = r["key"] == use_key
+        r["single"] = r["in_use"] and bool(main[0].get("single"))
     return {"sticks": out, "main_present": main is not None, "rtl_present": len(rtl),
             "failover": ({"key": use_key, "label": main[0].get("product") or _label(main[0]), "serial": main[0].get("serial"),
-                          "replaces": main[0].get("replaces"), "replaces_serial": main[0].get("replaces_serial")}
+                          "replaces": main[0].get("replaces"), "replaces_serial": main[0].get("replaces_serial"),
+                          "single": bool(main[0].get("single"))}
                          if main and main[0].get("failover") else None),
-            "pending": sum(1 for r in out if r["present"] and r["kind"] == "rtl" and r.get("role") is None),
+            "pending": sum(1 for r in out if r["present"] and r["kind"] == "rtl" and r.get("role") is None and not r["in_use"]),
             "eeprom": bool(shutil.which("rtl_eeprom"))}
