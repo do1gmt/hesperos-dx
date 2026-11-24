@@ -7,7 +7,7 @@
  */
 (function () {
   'use strict';
-  var EXACT = ['layout.v1', 'theme', 'lang', 'view', 'dnr', 'practice', 'runs.per', 'histHours', 'mapMode', 'mapH',
+  var EXACT = ['layout.v1', 'theme', 'lang', 'view', 'dnr', 'practice', 'runs.per', 'hits.per', 'histHours', 'mapMode', 'mapH',
                'satCollapsed', 'satShowPast', 'satShowAll', 'liveVol', 'liveGain'];
   function synced(k) { k = String(k); return EXACT.indexOf(k) >= 0 || k.indexOf('f.') === 0; }
   var LS = null;

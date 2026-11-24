@@ -736,11 +736,22 @@
 
   // ---------- Treffer ----------
   let hitsTimer;
+  // Treffer seitenweise (1.8.31): „pro Seite“ steht im Ansicht-Profil auf dem Pi (hits.per), die Filter (f.*) ebenso;
+  // ändert sich ein Filter, geht es auf Seite 1 zurück
+  const hitsPage = { offset: 0, per: [25, 50, 100, 200].includes(Number(localStorage.getItem('hits.per'))) ? Number(localStorage.getItem('hits.per')) : 50, sig: '', total: 0 };
   async function loadHits() {
-    const qs = new URLSearchParams({ band: filter.band, mode: filter.mode, sort: filter.sort, q: filter.q, protected: filter.protected ? '1' : '0', audio: filter.audio ? '1' : '0', interference: filter.interf ? '1' : '0', limit: '400' });
+    const qs = new URLSearchParams({ band: filter.band, mode: filter.mode, sort: filter.sort, q: filter.q, protected: filter.protected ? '1' : '0', audio: filter.audio ? '1' : '0', interference: filter.interf ? '1' : '0' });
     if (filter.id) qs.set('id', filter.id);
     if (filter.last) qs.set('last', '1');
+    const sig = qs.toString();
+    if (sig !== hitsPage.sig) { hitsPage.sig = sig; hitsPage.offset = 0; }
+    qs.set('limit', String(filter.id ? 1 : hitsPage.per)); qs.set('offset', String(filter.id ? 0 : hitsPage.offset));
     const d = await api('/api/hits?' + qs);
+    hitsPage.total = d.total || 0;
+    if (!filter.id && hitsPage.offset > 0 && hitsPage.offset >= hitsPage.total) {   // Seite leer (gelöscht, weniger Treffer)
+      hitsPage.offset = Math.max(0, Math.floor((hitsPage.total - 1) / hitsPage.per) * hitsPage.per);
+      return loadHits();
+    }
     const root = $('hits');
     root.querySelectorAll('.hits-day').forEach(x => x.remove());      // Tagesüberschriften neu setzen (s. u.)
     const seen = new Set();
@@ -767,7 +778,17 @@
         root.insertBefore(div, cards.get(h.id));
       }
     }
-    $('hitCount').textContent = `${d.hits.length} Treffer${d.hits.length >= 400 ? ' (erste 400)' : ''}`;
+    const hA = hitsPage.total ? hitsPage.offset + 1 : 0, hB = hitsPage.offset + d.hits.length;
+    const pos = hitsPage.total > hitsPage.per ? (EN ? `${hA}–${hB} of ${hitsPage.total}` : `${hA}–${hB} von ${hitsPage.total}`) : '';
+    $('hitCount').textContent = pos ? (EN ? `${pos} hits` : `${pos} Treffern`) : (EN ? `${hitsPage.total} ${hitsPage.total === 1 ? 'hit' : 'hits'}` : `${hitsPage.total} Treffer`);
+    $('hitsPos').textContent = pos;
+    document.querySelectorAll('[data-hits-pager]').forEach(pg => {
+      // oben nur ◀ ▶, wenn es mehr als eine Seite gibt; unten zusätzlich „pro Seite“, sobald mehr als 25 Treffer da sind
+      const bottom = !!pg.querySelector('#hitsPerPage');
+      pg.hidden = !!filter.id || (bottom ? hitsPage.total <= 25 : hitsPage.total <= hitsPage.per);
+      pg.querySelector('[data-hp=prev]').disabled = hitsPage.offset === 0;
+      pg.querySelector('[data-hp=next]').disabled = hB >= hitsPage.total;
+    });
     if (filter.id) {                                  // nur ein Treffer (aus der Stationsübersicht): Rückweg anbieten
       $('hitCount').innerHTML = `Treffer #${filter.id} <button type="button" class="btn btn-small" id="hitIdClear">alle Treffer zeigen</button>`;
       $('hitIdClear').addEventListener('click', () => { filter.id = null; root.innerHTML = ''; loadHits(); });
@@ -775,12 +796,19 @@
     }
     if (filter.last && !filter.id) {                  // nur der letzte Lauf: Zeitraum nennen, Rückweg anbieten
       const L = d.last_run, hm = t => t ? tfmt(t, { date: false, label: false }) : '…';
-      $('hitCount').innerHTML = `${d.hits.length} ${EN ? 'hits of the last run' : 'Treffer im letzten Lauf'}${L ? ` (${hm(L.from)}–${hm(L.to)} ${tzLabel()})` : ''} <button type="button" class="btn btn-small" id="hitLastClear">${EN ? 'show all hits' : 'alle Treffer zeigen'}</button>`;
+      $('hitCount').innerHTML = `${pos || hitsPage.total} ${EN ? 'hits of the last run' : 'Treffer im letzten Lauf'}${L ? ` (${hm(L.from)}–${hm(L.to)} ${tzLabel()})` : ''} <button type="button" class="btn btn-small" id="hitLastClear">${EN ? 'show all hits' : 'alle Treffer zeigen'}</button>`;
       $('hitLastClear').addEventListener('click', () => setLastFilter(false));
     }
     $('statNew').closest('.stat').classList.toggle('active', !!filter.last);
     $('hitsEmpty').hidden = d.hits.length > 0;
   }
+  $('hitsPerPage').value = String(hitsPage.per);
+  $('hitsPerPage').addEventListener('change', e => { hitsPage.per = Number(e.target.value); hitsPage.offset = 0; localStorage.setItem('hits.per', String(hitsPage.per)); loadHits(); });
+  document.querySelectorAll('[data-hits-pager] [data-hp]').forEach(b => b.addEventListener('click', async () => {
+    hitsPage.offset = b.dataset.hp === 'prev' ? Math.max(0, hitsPage.offset - hitsPage.per) : hitsPage.offset + hitsPage.per;
+    await loadHits();
+    if (b.closest('.hits-pager')) $('panel-hits-2').scrollIntoView({ block: 'start', behavior: 'smooth' });   // unten geblättert: nach oben
+  }));
   function setLastFilter(on) { filter.last = on; $('hits').innerHTML = ''; cards.clear(); loadHits(); }
   $('statNew').closest('.stat').addEventListener('click', () => setLastFilter(!filter.last));
 

@@ -62,10 +62,17 @@
       <label class="check"><input type="checkbox" id="filterProtected"> nur ★</label>
       <label class="check"><input type="checkbox" id="practiceMode"> Übungsmodus</label><button type="button" class="info-btn" data-info="Übungsmodus: Betriebsart, Dekodierungen, Bandplan-Hinweise und Spektrum bleiben verdeckt. Erst hören, Betriebsart und Abstimmung selbst finden, festlegen – dann „Auflösen“ drücken.">ⓘ</button>
     </div>
-    <div class="result-count" id="hitCount" aria-live="polite"></div>
+    <div class="row pager-row hits-pager-top"><div class="result-count" id="hitCount" aria-live="polite"></div>
+      <span class="pager-btns" data-hits-pager><button type="button" class="btn btn-small" data-hp="prev" aria-label="vorige Seite">◀</button><button type="button" class="btn btn-small" data-hp="next" aria-label="nächste Seite">▶</button></span></div>
   </section>
   <div id="hits" class="hits"></div>
   <div class="empty" id="hitsEmpty" hidden>Keine Treffer für diese Auswahl.</div>
+  <div class="row pager-row hits-pager" data-hits-pager>
+    <label class="field"><span>Pro Seite</span><select id="hitsPerPage"><option>25</option><option selected>50</option><option>100</option><option>200</option></select></label>
+    <button type="button" class="btn btn-small" data-hp="prev" aria-label="vorige Seite">◀</button>
+    <span class="hint" id="hitsPos"></span>
+    <button type="button" class="btn btn-small" data-hp="next" aria-label="nächste Seite">▶</button>
+  </div>
 </section>
 
 

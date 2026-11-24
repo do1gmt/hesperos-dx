@@ -744,7 +744,8 @@ def last_run_window():
         db.close()
 
 
-def list_hits(params):
+def list_hits(params, with_total=False):
+    """Treffer nach Filter. limit/offset blättern seitenweise (1.8.31); with_total: (Liste, Anzahl insgesamt)."""
     band = params.get("band", "")
     mode = params.get("mode", "")
     q = params.get("q", "")
@@ -806,14 +807,23 @@ def list_hits(params):
     order = {"time": "s.time DESC, p.id DESC", "time_asc": "s.time ASC, p.id ASC",
              "freq": "p.rf_hz ASC", "snr": "p.snr_db DESC",
              "audio": "CASE p.audio WHEN 'ton' THEN 0 WHEN 'traeger' THEN 2 ELSE 1 END, COALESCE(p.audio_score,-99) DESC, s.time DESC"}.get(sort, "s.time DESC, p.id DESC")
-    sql += f" ORDER BY {order} LIMIT ?"
-    args.append(limit)
+    try:
+        offset = max(0, int(params.get("offset", 0) or 0))
+    except (TypeError, ValueError):
+        offset = 0
+    where_sql, where_args = sql, list(args)
+    sql += f" ORDER BY {order} LIMIT ? OFFSET ?"
+    args += [limit, offset]
 
     db = db_connect()
     # Antenne je Scanfenster gibt es erst ab 1.7.18 (Spalte legt der Scanner an) – ältere Treffer: leer
     has_ant = "antenna" in {c[1] for c in db.execute("PRAGMA table_info(scan)")}
     sql = sql.replace("{ant}", "s.antenna" if has_ant else "NULL")
     rows = db.execute(sql, args).fetchall()
+    total = None
+    if with_total:
+        cnt = "SELECT COUNT(*) FROM peak p JOIN scan s ON s.id = p.scan_id WHERE 1=1" + where_sql.split("WHERE 1=1", 1)[1]
+        total = db.execute(cnt, where_args).fetchone()[0]
     db.close()
     out = []
     pub = None                                  # Webseite: Zustand je SSTV-Bild (einmal je Abruf gelesen)
@@ -852,7 +862,7 @@ def list_hits(params):
             "antenna": r["antenna"] or "",
             "pub": pst,
         })
-    return out
+    return (out, total) if with_total else out
 
 
 _KIND = {"fm": "FM-Kanal (Sprache, Daten)", "linear": "Linear-Transponder (SSB/CW)", "probe": "Prüfsatellit (nur Pegel)"}
@@ -2551,7 +2561,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json(hit_sat_info(qs.get("peak_id", 0)))
             if path == "/api/hits":
                 lf, lt, lr = last_run_window()
-                return self.send_json({"hits": list_hits(qs), "server_time": now_iso(),
+                hits, total = list_hits(qs, with_total=True)
+                return self.send_json({"hits": hits, "total": total, "server_time": now_iso(),
                                        "last_run": {"from": lf, "to": lt if lt != "9999" else None,
                                                     "status": (lr or {}).get("status")} if lf else None})
             if path == "/api/runs":

@@ -95,7 +95,8 @@ shortwave.
 - Scan history with paging, a readable event log, scan duration estimate, adjustable scan raster,
   satellite priorities, mail and push notifications (also when the Pi gets a new IP address or network).
 - Hits: "new in last run" counts the hits of the last completed run; tapping it (or the number on the *Hits*
-  tab) shows only those, "show all hits" goes back.
+  tab) shows only those, "show all hits" goes back. The list is shown page by page (*Per page* 25–200 below the
+  list, ◀ ▶ above and below); the page size is kept in the view profile.
 - Antenna profiles, automatic backups, a rescue page and a diagnostics package for when something goes wrong.
 - **View profiles on the Pi (PC and phone):** card layout and folded cards, design, language, hit filters, last
   tab, Live volume and gain, map and history view are stored on the Pi – the same in every browser and in every

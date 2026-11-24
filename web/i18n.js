@@ -103,7 +103,7 @@
     'Unter „Bänder & Betriebsarten“ das Band „Satelliten“ einschalten – dann nimmt der RTL-SDR jeden Überflug automatisch auf (Doppler-Korrektur, SSTV und APRS werden dekodiert). Die mit „SSTV ·“ markierten Bildsatelliten senden nur gelegentlich; sie werden nur aufgenommen, wenn der Stick frei ist.':
       'Switch on the band "Satelliten" under "Bands & modes" – the RTL-SDR then records every pass automatically (Doppler correction, SSTV and APRS are decoded). The image satellites marked "SSTV ·" transmit only occasionally; they are only recorded when the stick is free.',
     'Scan-Verlauf': 'Scan history', 'Start (UTC)': 'Start (UTC)', 'Bänder': 'Bands', 'Status': 'Status', 'Treffer / verworfen': 'Hits / rejected',
-    'Abstimmungen': 'Tunings', 'Abst.': 'Tun.', 'Pro Seite': 'Per page', 'noch kein Lauf': 'no run yet', 'ok': 'ok', 'Fehler': 'Error',
+    'Abstimmungen': 'Tunings', 'Abst.': 'Tun.', 'Pro Seite': 'Per page', 'vorige Seite': 'previous page', 'nächste Seite': 'next page', 'noch kein Lauf': 'no run yet', 'ok': 'ok', 'Fehler': 'Error',
     'abgebrochen': 'aborted', 'vom Benutzer oder für einen Überflug abgebrochen': 'cancelled by the user or for a satellite pass',
     // Live
     'Live hören': 'Listen live', 'Frequenz (MHz)': 'Frequency (MHz)', 'Demodulator': 'Demodulator', 'FM schmal': 'FM narrow', 'FM breit': 'FM wide',

@@ -3548,5 +3548,33 @@ _orig_watch("r1", "DL1*", d, 30, source="live")
 assert "Live-Empfang" in out[0] and "Trefferkarte" not in out[0]
 PY
 
+echo "== 90 Treffer seitenweise: limit/offset, Anzahl insgesamt, pro Seite im Ansicht-Profil"
+(cd bin && timeout 90 python3 - "$SRC" <<'PY') && ok "Treffer blättern (50 je Seite, letzte Seite 30), Gesamtzahl mit Filter, hits.per auf dem Pi" || bad "Treffer-Seiten"
+import sqlite3
+from pathlib import Path
+import webapp as W
+W.ensure_schema()
+db = sqlite3.connect(W.DB)
+for i in range(130):
+    t = f"2031-02-03T{8 + i // 60:02d}:{i % 60:02d}:00+00:00"
+    cur = db.execute("INSERT INTO scan (time, band, center_hz, noise_db, rms_i, rms_q) VALUES (?,?,?,?,?,?)", (t, "40m", 7074000, -90, .1, .1))
+    db.execute("INSERT INTO peak (scan_id, rf_hz, offset_hz, level_db, snr_db, mode, audio) VALUES (?,?,?,?,?,?,?)",
+               (cur.lastrowid, 7074000 + i, 0, -60, 10, "ft8", "ton" if i < 7 else None))
+db.commit(); db.close()
+q = {"q": "7.074", "interference": "1"}
+a, n = W.list_hits(dict(q, limit="50", offset="0"), with_total=True)
+b, _ = W.list_hits(dict(q, limit="50", offset="100"), with_total=True)
+assert n == 130 and len(a) == 50 and len(b) == 30, (n, len(a), len(b))
+assert not {x["id"] for x in a} & {x["id"] for x in b}
+c, m = W.list_hits(dict(q, audio="1", limit="50"), with_total=True)
+assert m == 7 and len(c) == 7, m
+assert isinstance(W.list_hits({"limit": "5"}), list)            # bisherige Aufrufe unverändert
+import sys
+web = Path(sys.argv[1]) / "web"
+js = (web / "app.js").read_text(); html = (web / "index.html").read_text(); pr = (web / "prefs.js").read_text()
+assert "localStorage.setItem('hits.per'" in js and "if (sig !== hitsPage.sig)" in js and "'hits.per'" in pr
+assert 'id="hitsPerPage"' in html and html.count("data-hits-pager") == 2 and "limit: '400'" not in js
+PY
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

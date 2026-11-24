@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.8.31 – 2026-11-24
+
+- **Hits page by page** instead of one endless list (up to 400 cards at once – heavy on the Pi and the phone):
+  *Per page* 25 / 50 / 100 / 200 below the list, ◀ ▶ above and below, "51–100 of 734 hits". Any change of a filter,
+  the sort order or the search goes back to page 1; paging at the bottom scrolls back up to the filters.
+- The page size is stored on the Pi in the view profile (PC / phone, like the filters), so every browser keeps it.
+- `/api/hits` takes `offset` and returns `total`.
+- Self-test section 90.
+
 ## 1.8.30 – 2026-11-24
 
 - **Callsign alert also for Live, at once.** Watchlist rules "callsign" (`DL1ABC`, `DL*`) and "distance from"

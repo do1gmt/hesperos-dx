@@ -332,6 +332,11 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .pager-row .field { flex: 0 0 auto; }
 .pager-row select { width: auto; }
 .pager-row .btn:disabled { opacity: .4; cursor: default; }
+.hits-pager-top { justify-content: space-between; align-items: center; margin-top: .25rem; }
+.hits-pager-top .result-count { margin: 0; }
+.pager-btns { display: flex; gap: .4rem; }
+.hits-pager { justify-content: center; align-items: center; margin: .75rem 0 1rem; }
+@media (pointer: coarse) { .hits-pager .btn, .pager-btns .btn { min-width: 44px; min-height: 40px; } }
 .sat-table td, .runs-table td { vertical-align: top; }
 .sat-table small, .runs-table small { font-size: .75rem; }
 #satPasses tr.sat-past td { opacity: .65; }
