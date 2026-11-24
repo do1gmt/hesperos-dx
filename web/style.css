@@ -881,3 +881,7 @@ body.dragging-card, body.dragging-card * { user-select: none; -webkit-user-selec
 @media (max-width: 599px) { .mesh-table th:nth-child(2), .mesh-table td:nth-child(2), .mesh-table th:nth-child(6), .mesh-table td:nth-child(6),
   .mesh-nodes th:nth-child(4), .mesh-nodes td:nth-child(4) { display: none; } .mesh-table, .mesh-nodes { font-size: .8rem; }
   .mesh-table td.wrap { min-width: 9em; } .mesh-table td:first-child, .mesh-nodes td:last-child { white-space: normal; } }
+.mesh-setup { margin-top: .8rem; } .mesh-setup > summary { cursor: pointer; font-weight: 600; }
+.mesh-set-row { display: flex; flex-wrap: wrap; gap: .5rem; align-items: flex-end; margin: .5rem 0; }
+.mesh-set-row .field { flex: 1 1 14rem; max-width: 22rem; margin: 0; }
+.mesh-chan { display: inline-flex; align-items: center; gap: .3rem; margin: 0 .4rem .3rem 0; padding: .15rem .5rem; border: 1px solid var(--line, #334155); border-radius: 999px; }

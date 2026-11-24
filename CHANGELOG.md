@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.8.48 – 2026-11-24
+
+- **Mesh (MeshCore), step 3 – node settings** (Stations → Mesh → *Node settings*), sent to the node over the same
+  USB connection and effective at once:
+  - **name** of the node,
+  - **position**: approximately from your locator (centre of the 6-character square, about 5 × 2.5 km – not your
+    house) or none,
+  - **public #channels**: add (`#franken` – the key comes from the name, as in the MeshCore apps) and remove;
+    *Public* stays. The Pi then reads those channels too.
+- **Clock:** the Pi compares the node's clock when connecting and daily and sets it if it is more than 10 s off
+  (the Pi has NTP; MeshCore nodes have no clock of their own after a restart). Shown as "clock: set (was 5 min
+  slow)".
+- **Node statistics** in the status line: battery voltage, uptime, noise floor, airtime TX/RX (firmware with
+  `GET_STATS`; older firmware: just not shown). Radio settings incl. TX power are shown, not changed.
+- Commands go through the connection's reading thread one at a time; log `mesh_set`, `mesh_set_failed`,
+  `mesh_clock_set`, `mesh_clock_failed`. English UI.
+- **Heard stations page by page with a choice:** 25 (default, was 100), 50, 100 or 250 per page; the choice is kept
+  in the view profile (PC/phone) like for the hits.
+- Self-test sections 107 (simulated node extended accordingly) and 108.
+
 ## 1.8.47 – 2026-11-24
 
 - **Mesh (MeshCore), step 2 – alerts:** new watchlist rules *Mesh node (name)* (a node announces itself or writes

@@ -334,6 +334,17 @@
     'Passwort zu kurz (mindestens 8 Zeichen)': 'Password too short (at least 8 characters)',
     'Anmeldung': 'Login', 'Abgemeldet': 'Logged out', 'Anmeldung fehlgeschlagen': 'Login failed', 'Anmeldung gesperrt': 'Login blocked',
     'Passwort gesetzt': 'Password set', 'Zugangsschutz ausgeschaltet': 'Access protection switched off',
+    // 1.8.48: Mesh-Knoten einstellen
+    'Knoten einstellen': 'Node settings', 'Name des Knotens': 'Name of the node', 'Name speichern': 'Save name', 'Position aus dem Locator (ungefähr)': 'Position from the locator (approximate)',
+    'Mitte des 6-stelligen Locator-Felds aus Einstellungen → Station – etwa 5 × 2,5 km genau, nicht dein Haus': 'Centre of the 6-character locator square from Settings → Station – about 5 × 2.5 km, not your house',
+    'Keine Position': 'No position', 'Kanäle': 'Channels', '#Kanal hinzufügen': 'Add #channel', 'Mesh: Anschluss gewählt': 'Mesh: port chosen',
+    'Mesh-Knoten ließ sich nicht einstellen': 'Mesh node could not be set', 'Mesh: Uhr des Knotens gestellt': 'Mesh: node clock set', 'Mesh: Uhr ließ sich nicht stellen': 'Mesh: clock could not be set',
+    'Name: 1 bis 31 Zeichen': 'Name: 1 to 31 characters', 'Kanal: #name ohne Leerzeichen, höchstens 30 Zeichen': 'Channel: #name without spaces, at most 30 characters',
+    'Kanal ist schon eingetragen': 'Channel is already there', 'Kein Kanalplatz mehr frei': 'No free channel slot left', 'Diesen Kanal gibt es nicht (Public bleibt)': 'No such channel (Public stays)',
+    'Kein Knoten verbunden': 'No node connected', 'Knoten antwortet nicht': 'Node does not answer', 'Verbindung war weg – bitte nochmal': 'Connection was lost – please try again',
+    'Erst den eigenen Locator eintragen (Einstellungen → Station)': 'Enter your own locator first (Settings → Station)',
+    'Wirkt sofort im Knoten (wie in der MeshCore-App). Die Uhr des Knotens stellt der Pi selbst – beim Verbinden und täglich, wenn sie mehr als 10 s danebenliegt. Position: Andere sehen deinen Knoten damit auf ihrer Karte; „ungefähr“ nimmt die Mitte deines Locator-Felds. Öffentliche #Kanäle haben ihren Schlüssel im Namen – wer den Namen kennt, liest mit. Die Funkdaten (Frequenz, SF, Bandbreite) bleiben, wie sie im Knoten eingestellt sind.':
+      'Takes effect in the node at once (as in the MeshCore app). The Pi sets the node\'s clock itself – when connecting and daily, if it is more than 10 s off. Position: others see your node on their map; "approximate" takes the centre of your locator square. Public #channels have their key in the name – whoever knows the name can read along. The radio settings (frequency, SF, bandwidth) stay as set in the node.',
     // 1.8.47: Beobachtungsliste für Mesh
     'Mesh-Knoten (Name)': 'Mesh node (name)', 'Mesh-Stichwort': 'Mesh keyword', 'Mesh-Knoten': 'Mesh node', 'DB0FRK* oder Tom*': 'DB0FRK* or Tom*', 'z. B. QRV': 'e.g. QRV',
     'Mesh: Direktnachricht an meinen Knoten': 'Mesh: direct message to my node', 'Mesh-Warnung ließ sich nicht melden': 'Mesh alert could not be sent',
@@ -342,8 +353,8 @@
     // 1.8.45: Mesh (MeshCore)
     'Von': 'From', 'Weiterleitungen über Repeater': 'Forwarded via repeaters', 'Gehörte Knoten': 'Heard nodes', 'Letzte Ankündigung (': 'Last advert (',
     'Zuletzt gehört (': 'Last heard (', 'Knoten am USB': 'Node on USB', 'automatisch erkennen': 'detect automatically', 'MeshCore-Knoten mit Position:': 'MeshCore nodes with a position:',
-    'Ein MeshCore-Knoten mit der Firmware „Companion Radio (USB)“ (z. B. Heltec V3/V4, RAK) am USB des Pi: Hesperos DX liest mit, was er empfängt – Nachrichten in seinen Kanälen, Direktnachrichten an ihn und die Knoten in Reichweite. Gesendet und am Knoten verstellt wird nichts. Nachrichten bleiben 90 Tage, Positionen zeigt die Karte oben unter „Mesh“.':
-      'A MeshCore node with the "Companion Radio (USB)" firmware (e.g. Heltec V3/V4, RAK) on the Pi\'s USB: Hesperos DX reads what it receives – messages in its channels, direct messages to it and the nodes in range. Nothing is sent and nothing is changed on the node. Messages are kept for 90 days; positions are on the map above under "Mesh".',
+    'Ein MeshCore-Knoten mit der Firmware „Companion Radio (USB)“ (z. B. Heltec V3/V4, RAK) am USB des Pi: Hesperos DX liest mit, was er empfängt – Nachrichten in seinen Kanälen, Direktnachrichten an ihn und die Knoten in Reichweite. Ins Mesh gesendet wird nichts; am Knoten geändert wird nur, was du unter „Knoten einstellen“ wählst, und die Uhr. Nachrichten bleiben 90 Tage, Positionen zeigt die Karte oben unter „Mesh“.':
+      'A MeshCore node with the "Companion Radio (USB)" firmware (e.g. Heltec V3/V4, RAK) on the Pi\'s USB: Hesperos DX reads what it receives – messages in its channels, direct messages to it and the nodes in range. Nothing is sent into the mesh; on the node only what you choose under "Node settings" is changed, and the clock. Messages are kept for 90 days; positions are on the map above under "Mesh".',
     'Mesh: verbunden': 'Mesh: connected', 'Mesh: Verbindung weg': 'Mesh: connection lost', 'Mesh: kein Zugriff auf den Knoten': 'Mesh: no access to the node',
     'Mesh: Gerät antwortet nicht': 'Mesh: device does not answer', 'Mesh: beendet': 'Mesh: stopped', 'Mesh-Nachricht': 'Mesh message',
     'Mesh: Gerät ließ sich nicht öffnen': 'Mesh: device could not be opened', 'Mesh ließ sich nicht starten': 'Mesh could not be started', 'Mesh-Knoten eingestellt': 'Mesh node set',

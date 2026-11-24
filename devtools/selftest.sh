@@ -4162,5 +4162,53 @@ for bad in ({"type": "mesh_node", "value": "x" * 40}, {"type": "mesh_text", "val
         pass
 PY
 
+echo "== 107 Mesh-Knoten einstellen: Uhr, Statistik, Name, Position, #Kanäle (nachgebildeter Knoten)"
+MF=$(mktemp -d); (python3 "$SRC/devtools/mesh_fake.py" "$MF" > "$MF/out" 2>&1 &); sleep 1
+(cd bin && HSP_MESH_DEV_GLOB="$MF/by-id/*" HSP_MESH_SYS_TTY="$MF/sys" timeout 60 python3 - "$SRC" <<'PY') && ok "Uhr gestellt (5 min nach), Akku/Laufzeit/Rauschen/Sendezeit gelesen, Name und Position gesetzt und gelöscht, #Kanal mit Schlüssel aus dem Namen angelegt und entfernt, Public bleibt; Dashboard-Weg vorhanden" || bad "Mesh-Knoten einstellen"
+import sys, time, threading, tempfile, hashlib
+from pathlib import Path
+import mesh as M
+M.DB = Path(tempfile.mkdtemp()) / "t.db"
+logs, stop = [], [False]
+threading.Thread(target=M.run, args=(lambda: "auto", lambda *a, **k: logs.append(a[2]), None, lambda: stop[0], 2), daemon=True).start()
+for _ in range(40):
+    time.sleep(0.5)
+    if M.status()["state"] == "connected":
+        break
+s = M.status()
+assert s["clock"]["drift_s"] in (-300, -301, -299) and s["clock"]["set"] and "mesh_clock_set" in logs
+assert s["stats"]["battery_mv"] == 4150 and s["stats"]["noise_floor"] == -112 and s["stats"]["tx_air_s"] == 12 and s["stats"]["uptime_s"] == 7200
+assert s["self"]["tx_power"] == 22 and s.get("free_channel") == 2
+assert M.command("name", name="Tom Pi")["ok"] and M.status()["self"]["name"] == "Tom Pi"
+assert not M.command("name", name="")["ok"]
+assert M.command("position", lat=49.48, lon=11.04)["ok"] and M.status()["self"]["lat"] == 49.48
+assert M.command("position", lat=None, lon=None)["ok"] and M.status()["self"]["lat"] == 0
+r = M.command("channel_add", name="bayern")
+assert r["ok"] and r["index"] == 2 and M.status()["channels"]["2"] == "#bayern"
+assert M.command("channel_add", name="#BAYERN")["error"] == "Kanal ist schon eingetragen"
+assert not M.command("channel_add", name="#zwei worte")["ok"]
+assert M.command("channel_delete", index=2)["ok"] and "2" not in M.status()["channels"]
+assert not M.command("channel_delete", index=0)["ok"] and M.status()["channels"]["0"] == "Public"
+stop[0] = True
+time.sleep(1.5)
+assert M.command("name", name="x")["error"] in ("Kein Knoten verbunden", "Knoten antwortet nicht")
+assert hashlib.sha256(b"#bayern").digest()[:16] and "hashlib.sha256(n.encode(\"utf-8\")).digest()[:16]" in (Path(sys.argv[1]) / "bin" / "mesh.py").read_text()
+src = Path(sys.argv[1]); wa = (src / "bin" / "webapp.py").read_text(); html = (src / "web" / "index.html").read_text(); js = (src / "web" / "app.js").read_text()
+assert 'if path == "/api/mesh/cmd":' in wa and 'where == "locator"' in wa and "[:6]" in wa
+assert 'id="meshSetup"' in html and 'id="meshChanAdd"' in html and "post('/api/mesh/cmd', body)" in js and "'mesh_clock_set': 'Mesh: Uhr des Knotens gestellt'" in js
+PY
+pkill -f "mesh_fake.py $MF" 2>/dev/null; rm -rf "$MF"
+
+echo "== 108 Gehörte Stationen: „pro Seite“ wählbar, Vorgabe 25, im Ansicht-Profil"
+(timeout 30 python3 - "$SRC" <<'PY') && ok "Stationsliste mit 25/50/100/250 pro Seite, Vorgabe 25, Wahl im Ansicht-Profil (stations.per)" || bad "Stationen pro Seite"
+import sys
+from pathlib import Path
+w = Path(sys.argv[1]) / "web"
+html, js, pr = (w / "index.html").read_text(), (w / "app.js").read_text(), (w / "prefs.js").read_text()
+assert '<select id="stPerPage"><option selected>25</option><option>50</option><option>100</option><option>250</option></select>' in html
+assert "Number(localStorage.getItem('stations.per')) : 25 }" in js and "localStorage.setItem('stations.per'" in js and "'stations.per'," in pr
+assert "const stPage = { offset: 0, per: 100 }" not in js
+PY
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

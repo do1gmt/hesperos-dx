@@ -617,8 +617,11 @@ makers are tried; GPS receivers and other serial devices are left alone) and sho
   itself or writes in a channel (`*` as wildcard, e.g. `DB0FRK*`); *Mesh keyword* – a word in a message;
   *Event → Mesh: direct message to my node*.
 
-It only listens: nothing is sent and nothing is changed on the node; the node decodes, the Pi just reads a few
-bytes. Messages are kept for 90 days. The card stays hidden on a Pi without a node. If the Pi may not open the
+Nothing is sent into the mesh; the node decodes, the Pi just reads a few bytes. *Node settings* in the card
+changes the node's name, its position (approximately from your locator – the centre of the 6-character square –
+or none) and the public #channels it listens to; the Pi keeps the node's clock right (when connecting and daily,
+if it is more than 10 s off). The radio settings stay as they are. Battery, uptime, noise floor and airtime of
+the node are shown in the card's status line. Messages are kept for 90 days. The card stays hidden on a Pi without a node. If the Pi may not open the
 serial port, a notice says which command fixes it (`sudo usermod -aG dialout <user>`, then restart). *Node on USB*
 in the card switches detection off or picks a port.
 

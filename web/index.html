@@ -237,6 +237,7 @@
       <thead><tr><th>Rufzeichen</th><th>Locator</th><th>Entfernung</th><th>Bänder</th><th>Betriebsart</th><th>Zuletzt (<span class="tzl">UTC</span>)</th><th title="Anzahl Aussendungen">×</th><th>SNR</th></tr></thead>
       <tbody id="stTable"></tbody></table></div>
     <div class="row pager-row">
+      <label class="field"><span>Pro Seite</span><select id="stPerPage"><option selected>25</option><option>50</option><option>100</option><option>250</option></select></label>
       <button type="button" class="btn btn-small" id="stPrev">◀</button><span class="hint" id="stPos"></span><button type="button" class="btn btn-small" id="stNext">▶</button>
     </div>
     <p class="hint">ADIF ist das Austauschformat der Logbuchprogramme. Der Export ist ein SWL-Log (jede gehörte Aussendung ein Eintrag, SWL=Y) – mit deinem Rufzeichen und Locator aus den Einstellungen.</p>
@@ -255,9 +256,29 @@
     <div class="table-wrap"><table class="table mesh-nodes">
       <thead><tr><th>Name</th><th>Art</th><th>Entfernung</th><th>Letzte Ankündigung (<span class="tzl">UTC</span>)</th><th>Zuletzt gehört (<span class="tzl">UTC</span>)</th></tr></thead>
       <tbody id="meshNodes"></tbody></table></div>
+    <details class="mesh-setup" id="meshSetup"><summary>Knoten einstellen</summary>
+      <p class="hint" id="meshRadio">–</p>
+      <div class="mesh-set-row">
+        <label class="field"><span>Name des Knotens</span><input id="meshName" type="text" maxlength="31" autocomplete="off"></label>
+        <button type="button" class="btn" id="meshNameSave">Name speichern</button>
+      </div>
+      <div class="mesh-set-row">
+        <span class="hint" id="meshPosText">–</span>
+        <button type="button" class="btn" id="meshPosLoc" title="Mitte des 6-stelligen Locator-Felds aus Einstellungen → Station – etwa 5 × 2,5 km genau, nicht dein Haus">Position aus dem Locator (ungefähr)</button>
+        <button type="button" class="btn" id="meshPosNone">Keine Position</button>
+      </div>
+      <h4 class="sub">Kanäle</h4>
+      <div id="meshChannels"></div>
+      <div class="mesh-set-row">
+        <label class="field"><span>#Kanal hinzufügen</span><input id="meshChanNew" type="text" maxlength="30" placeholder="#franken" autocomplete="off"></label>
+        <button type="button" class="btn" id="meshChanAdd">Hinzufügen</button>
+      </div>
+      <div class="save-note" id="meshSetNote" aria-live="polite"></div>
+      <p class="hint">Wirkt sofort im Knoten (wie in der MeshCore-App). Die Uhr des Knotens stellt der Pi selbst – beim Verbinden und täglich, wenn sie mehr als 10 s danebenliegt. Position: Andere sehen deinen Knoten damit auf ihrer Karte; „ungefähr“ nimmt die Mitte deines Locator-Felds. Öffentliche #Kanäle haben ihren Schlüssel im Namen – wer den Namen kennt, liest mit. Die Funkdaten (Frequenz, SF, Bandbreite) bleiben, wie sie im Knoten eingestellt sind.</p>
+    </details>
     <label class="field mesh-port"><span>Knoten am USB</span><select id="meshPort"><option value="auto">automatisch erkennen</option><option value="off">aus</option></select></label>
     <div class="save-note" id="meshNote" aria-live="polite"></div>
-    <p class="hint">Ein MeshCore-Knoten mit der Firmware „Companion Radio (USB)“ (z. B. Heltec V3/V4, RAK) am USB des Pi: Hesperos DX liest mit, was er empfängt – Nachrichten in seinen Kanälen, Direktnachrichten an ihn und die Knoten in Reichweite. Gesendet und am Knoten verstellt wird nichts. Nachrichten bleiben 90 Tage, Positionen zeigt die Karte oben unter „Mesh“.</p>
+    <p class="hint">Ein MeshCore-Knoten mit der Firmware „Companion Radio (USB)“ (z. B. Heltec V3/V4, RAK) am USB des Pi: Hesperos DX liest mit, was er empfängt – Nachrichten in seinen Kanälen, Direktnachrichten an ihn und die Knoten in Reichweite. Ins Mesh gesendet wird nichts; am Knoten geändert wird nur, was du unter „Knoten einstellen“ wählst, und die Uhr. Nachrichten bleiben 90 Tage, Positionen zeigt die Karte oben unter „Mesh“.</p>
   </section>
   <section class="panel" id="panel-stations-2">
     <h2>Störlinien</h2>

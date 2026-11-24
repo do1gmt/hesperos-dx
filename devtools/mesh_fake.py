@@ -43,6 +43,9 @@ def main(d):
         bytes([16, 0xF4, 0, 0]) + bytes.fromhex("aabbccddeeff") + bytes([1, 0]) + (now - 5).to_bytes(4, "little") + "Direkt an dich".encode(),
     ]
     buf, pushed = b"", False
+    me = {"name": "DO1GMT Pi", "lat": 49.8, "lon": 9.9}
+    chans = {0: "Public", 1: "#franken"}
+    offset = -300                                            # Uhr des Knotens geht 5 min nach
     t0 = time.time()
     while True:
         r, _, _ = select.select([m], [], [], 0.5)
@@ -65,19 +68,43 @@ def main(d):
             p, buf = buf[3:3 + n], buf[3 + n:]
             c = p[0]
             if c == 1:
-                os.write(m, frame(bytes([5, 1, 22, 22]) + b"\x11" * 32 + int(49.8e6).to_bytes(4, "little", signed=True)
-                                  + int(9.9e6).to_bytes(4, "little", signed=True) + bytes([0, 0, 0, 0])
+                os.write(m, frame(bytes([5, 1, 22, 22]) + b"\x11" * 32 + int(me["lat"] * 1e6).to_bytes(4, "little", signed=True)
+                                  + int(me["lon"] * 1e6).to_bytes(4, "little", signed=True) + bytes([0, 0, 0, 0])
                                   + (869525).to_bytes(4, "little") + (250000).to_bytes(4, "little") + bytes([11, 5])
-                                  + "DO1GMT Pi".encode()))
+                                  + me["name"].encode()))
             elif c == 0x16:
-                os.write(m, frame(bytes([13, 9, 50, 8]) + bytes(4) + b"23 Oct 2026".ljust(12, b"\0")
+                os.write(m, frame(bytes([13, 9, 50, 4]) + bytes(4) + b"23 Oct 2026".ljust(12, b"\0")
                                   + b"Heltec V4".ljust(40, b"\0") + b"v1.9.1".ljust(20, b"\0") + bytes([0])))
             elif c == 0x1F:
                 i = p[1]
-                if i < 2:
-                    os.write(m, frame(bytes([18, i]) + ("Public" if i == 0 else "#franken").encode().ljust(32, b"\0") + bytes(16)))
+                if i < 4:
+                    os.write(m, frame(bytes([18, i]) + chans.get(i, "").encode().ljust(32, b"\0") + bytes(16)))
                 else:
                     os.write(m, frame(bytes([1, 2])))
+            elif c == 0x20:                                  # Kanal setzen / löschen (leerer Name)
+                n = p[2:34].split(b"\0")[0].decode()
+                if n:
+                    chans[p[1]] = n
+                else:
+                    chans.pop(p[1], None)
+                os.write(m, frame(bytes([0])))
+            elif c == 0x05:
+                os.write(m, frame(bytes([9]) + (int(time.time()) + offset).to_bytes(4, "little")))
+            elif c == 0x06:
+                offset = int.from_bytes(p[1:5], "little") - int(time.time())
+                os.write(m, frame(bytes([0])))
+            elif c == 0x08:
+                me["name"] = p[1:].decode()
+                os.write(m, frame(bytes([0])))
+            elif c == 0x0E:
+                me["lat"], me["lon"] = int.from_bytes(p[1:5], "little", signed=True) / 1e6, int.from_bytes(p[5:9], "little", signed=True) / 1e6
+                os.write(m, frame(bytes([0])))
+            elif c == 56:
+                sub = p[1]
+                body = {0: (4150).to_bytes(2, "little") + (7200).to_bytes(4, "little") + bytes(3),
+                        1: (-112).to_bytes(2, "little", signed=True) + bytes([0xA6, 28]) + (12).to_bytes(4, "little") + (340).to_bytes(4, "little"),
+                        2: b"".join(x.to_bytes(4, "little") for x in (500, 7, 3, 4, 400, 100))}[sub]
+                os.write(m, frame(bytes([24, sub]) + body))
             elif c == 4:
                 os.write(m, frame(bytes([2]) + (1).to_bytes(4, "little")))
                 os.write(m, frame(contact(b"\xaa\xbb\xcc\xdd\xee\xff" + b"\x01" * 26, 1, "DL1ABC Mobil", now - 600, 49.45, 11.08)))

@@ -6,14 +6,19 @@ spricht mit ihm über das Companion-Protokoll (seriell, 115200 Bd) und liest:
   • Nachrichten aus den Kanälen des Knotens (öffentlicher Kanal u. a.) und Direktnachrichten an den Knoten,
   • die Knoten, die er gehört hat (Name, Art, Position, letzte Ankündigung),
   • eine Zählung aller empfangenen Pakete (SNR/RSSI des letzten) – nur im Speicher.
-Der Knoten dekodiert selbst; der Pi liest nur ein paar Bytes. Am Knoten wird nichts verstellt und nichts gesendet.
+Der Knoten dekodiert selbst; der Pi liest nur ein paar Bytes. Ins Mesh gesendet wird nichts.
+Einstellen (Schritt 3, 1.8.48): Uhr stellt der Pi selbst (beim Verbinden und täglich, nur bei mehr als 10 s
+Abweichung); Name, Position und #Kanäle nur auf Knopfdruck im Dashboard (command()); Funkdaten bleiben, wie sie sind.
+Statistik (Akku, Laufzeit, Rauschen, Sendezeit) jede Minute aus dem Knoten, nur im Speicher.
 
 Ohne Zusatzpakete (nur Standardbibliothek): Rahmen vom Pi an den Knoten beginnen mit „<“, vom Knoten mit „>“,
 danach 2 Byte Länge (little endian) und die Nutzdaten; Aufbau wie in der MeshCore-Doku (Companion Radio Protocol).
 Gespeichert wird in scanner.db (mesh_node, mesh_msg) – nur bei neuen Nachrichten und geänderten Knoten.
 """
 import glob
+import hashlib
 import os
+import queue
 import select
 import sqlite3
 import termios
@@ -36,7 +41,9 @@ PAYLOAD_TYPES = ["REQ", "RESPONSE", "TEXT_MSG", "ACK", "ADVERT", "GRP_TXT", "GRP
 KEEP_DAYS = 90                                   # Nachrichten älter als das werden einmal am Tag gelöscht
 
 STATUS = {"state": "off", "port": "", "error": "", "since": None, "self": {}, "device": {}, "channels": {},
-          "last_rx": None, "nodes_known": 0}
+          "last_rx": None, "nodes_known": 0, "stats": {}, "clock": {}}
+_CMDS = queue.Queue()                            # Aufträge aus dem Dashboard an den Lesefaden (command())
+CLOCK_MAX_DRIFT = 10                             # s – darüber stellt der Pi die Uhr des Knotens
 _RX = deque(maxlen=20000)                        # (Zeit, Pakettyp) der letzten Stunde
 _LOCK = threading.Lock()
 _started = [False]
@@ -181,7 +188,7 @@ def _str(b):
 
 
 def parse_self(f):
-    return {"type": f[1], "key": f[4:36].hex(), "lat": _i32(f[36:40]) / 1e6, "lon": _i32(f[40:44]) / 1e6,
+    return {"type": f[1], "tx_power": f[2], "max_tx_power": f[3], "key": f[4:36].hex(), "lat": _i32(f[36:40]) / 1e6, "lon": _i32(f[40:44]) / 1e6,
             "freq_mhz": _u32(f[48:52]) / 1000, "bw_khz": _u32(f[52:56]) / 1000, "sf": f[56], "cr": f[57],
             "name": f[58:].decode("utf-8", "replace").strip("\0 ")}
 
@@ -189,7 +196,7 @@ def parse_self(f):
 def parse_device(f):
     d = {"fw": f[1]}
     if f[1] >= 3 and len(f) >= 80:
-        d.update(build=_str(f[8:20]), model=_str(f[20:60]), version=_str(f[60:80]))
+        d.update(max_channels=f[3], build=_str(f[8:20]), model=_str(f[20:60]), version=_str(f[60:80]))
     return d
 
 
@@ -232,6 +239,13 @@ class Session:
         self.l, self.log = link, log
         self.waiting = True
         self.contacts_mod = 0
+        while True:                                          # Aufträge aus einer früheren Verbindung verwerfen
+            try:
+                _n, _k, box, done = _CMDS.get_nowait()
+                box.update(ok=False, error="Verbindung war weg – bitte nochmal")
+                done.set()
+            except queue.Empty:
+                break
 
     def request(self, payload, want, timeout=4):
         self.l.send(payload)
@@ -254,8 +268,15 @@ class Session:
         d = self.request(b"\x16\x03", (13, 1))
         if d and d[0] == 13:
             STATUS["device"] = parse_device(d)
-        chans = {}
-        for i in range(16):
+        self.read_channels()
+        self.clock()
+        self.stats()
+        self.contacts()
+        return True
+
+    def read_channels(self):
+        chans, n = {}, int(STATUS["device"].get("max_channels") or 16)
+        for i in range(min(n, 40)):
             c = self.request(b"\x1f" + bytes([i]), (18, 1), timeout=2)
             if not c or c[0] != 18:
                 break
@@ -263,8 +284,91 @@ class Session:
             if name:
                 chans[i] = name
         STATUS["channels"] = chans
-        self.contacts()
-        return True
+        STATUS["free_channel"] = next((i for i in range(1, min(n, 40)) if i not in chans), None)
+
+    def clock(self):
+        """Uhr des Knotens mit der des Pi vergleichen und bei mehr als CLOCK_MAX_DRIFT s stellen (der Pi hat NTP)."""
+        f = self.request(b"\x05", (9, 1), timeout=3)
+        if not f or f[0] != 9 or len(f) < 5:
+            return
+        drift = _u32(f[1:5]) - int(time.time())
+        c = {"drift_s": drift, "checked": _iso()}
+        if abs(drift) > CLOCK_MAX_DRIFT:
+            r = self.request(b"\x06" + int(time.time()).to_bytes(4, "little"), (0, 1), timeout=3)
+            c["set"] = bool(r and r[0] == 0)
+            self.log("INFO" if c["set"] else "WARN", "mesh", "mesh_clock_set" if c["set"] else "mesh_clock_failed",
+                     drift_s=drift)
+        STATUS["clock"] = c
+
+    def stats(self):
+        """Akku, Laufzeit, Rauschen, Sende-/Empfangszeit und Paketzähler (ältere Firmware: kennt das nicht)."""
+        if STATUS["stats"].get("unsupported"):
+            return
+        st = {}
+        for sub in (0, 1, 2):
+            f = self.request(bytes([56, sub]), (24, 1), timeout=3)
+            if not f or f[0] != 24:
+                if sub == 0:
+                    STATUS["stats"] = {"unsupported": True}
+                    return
+                continue
+            if sub == 0 and len(f) >= 11:
+                st.update(battery_mv=int.from_bytes(f[2:4], "little"), uptime_s=_u32(f[4:8]))
+            elif sub == 1 and len(f) >= 14:
+                st.update(noise_floor=int.from_bytes(f[2:4], "little", signed=True), tx_air_s=_u32(f[6:10]),
+                          rx_air_s=_u32(f[10:14]))
+            elif sub == 2 and len(f) >= 26:
+                st.update(recv=_u32(f[2:6]), sent=_u32(f[6:10]))
+        st["time"] = _iso()
+        STATUS["stats"] = st
+
+    def refresh_self(self):
+        f = self.request(b"\x01\x03      hesperos", (5,), timeout=5)
+        if f:
+            with _LOCK:
+                STATUS["self"] = parse_self(f)
+
+    def run_command(self, name, kw):
+        """Ein Auftrag aus dem Dashboard. Rückgabe dict(ok, error?)."""
+        ok = lambda r: bool(r and r[0] == 0)
+        if name == "name":
+            n = str(kw.get("name", "")).strip()
+            if not 0 < len(n.encode("utf-8")) <= 31:
+                return {"ok": False, "error": "Name: 1 bis 31 Zeichen"}
+            r = self.request(b"\x08" + n.encode("utf-8"), (0, 1))
+            self.refresh_self()
+            return {"ok": ok(r)}
+        if name == "position":
+            lat, lon = kw.get("lat"), kw.get("lon")
+            if lat is None or lon is None:
+                lat = lon = 0.0                              # 0/0 = keine Position
+            r = self.request(b"\x0e" + int(float(lat) * 1e6).to_bytes(4, "little", signed=True)
+                             + int(float(lon) * 1e6).to_bytes(4, "little", signed=True) + bytes(4), (0, 1))
+            self.refresh_self()
+            return {"ok": ok(r)}
+        if name == "channel_add":
+            n = str(kw.get("name", "")).strip()
+            if not n.startswith("#"):
+                n = "#" + n
+            if not 1 < len(n.encode("utf-8")) <= 31 or " " in n:
+                return {"ok": False, "error": "Kanal: #name ohne Leerzeichen, höchstens 30 Zeichen"}
+            if n.lower() in (v.lower() for v in STATUS["channels"].values()):
+                return {"ok": False, "error": "Kanal ist schon eingetragen"}
+            idx = STATUS.get("free_channel")
+            if idx is None:
+                return {"ok": False, "error": "Kein Kanalplatz mehr frei"}
+            secret = hashlib.sha256(n.encode("utf-8")).digest()[:16]   # öffentlicher #Kanal: Schlüssel aus dem Namen
+            r = self.request(b"\x20" + bytes([idx]) + n.encode("utf-8").ljust(32, b"\0") + secret, (0, 1))
+            self.read_channels()
+            return {"ok": ok(r), "index": idx}
+        if name == "channel_delete":
+            idx = int(kw.get("index", -1))
+            if idx <= 0 or idx not in STATUS["channels"]:
+                return {"ok": False, "error": "Diesen Kanal gibt es nicht (Public bleibt)"}
+            r = self.request(b"\x20" + bytes([idx]) + bytes(32) + bytes(16), (0, 1))
+            self.read_channels()
+            return {"ok": ok(r)}
+        return {"ok": False, "error": "unbekannter Auftrag"}
 
     def contacts(self):
         self.l.send(b"\x04" + (self.contacts_mod.to_bytes(4, "little") if self.contacts_mod else b""))
@@ -314,11 +418,28 @@ class Session:
                                      "type": PAYLOAD_TYPES[pt] if pt < len(PAYLOAD_TYPES) else str(pt)}
 
     def loop(self, stop):
-        t_sync, t_contacts = 0, time.time()
+        t_sync, t_contacts, t_stats, t_clock = 0, time.time(), time.time(), time.time()
         while not stop():
+            try:
+                name, kw, box, done = _CMDS.get_nowait()
+                try:
+                    box.update(self.run_command(name, kw))
+                except (OSError, EOFError):
+                    box.update(ok=False, error="Verbindung weg")
+                    raise
+                finally:
+                    done.set()
+            except queue.Empty:
+                pass
             if self.waiting or time.time() - t_sync > 60:
                 self.sync()
                 t_sync = time.time()
+            if time.time() - t_stats > 60:
+                self.stats()
+                t_stats = time.time()
+            if time.time() - t_clock > 86400:
+                self.clock()
+                t_clock = time.time()
             if time.time() - t_contacts > 600:
                 self.contacts()
                 t_contacts = time.time()
@@ -539,6 +660,17 @@ def run(get_port, log, notice=None, stop=lambda: False, rescan=30):
                 link.close()
             break
         time.sleep(2)
+
+
+def command(cmd, timeout=15, **kw):
+    """Auftrag ans verbundene Gerät (aus dem Dashboard): wartet auf das Ergebnis. dict(ok, error?, …)."""
+    if STATUS.get("state") != "connected":
+        return {"ok": False, "error": "Kein Knoten verbunden"}
+    box, done = {}, threading.Event()
+    _CMDS.put((cmd, kw, box, done))
+    if not done.wait(timeout):
+        return {"ok": False, "error": "Knoten antwortet nicht"}
+    return box
 
 
 def start(get_port, log, notice=None):

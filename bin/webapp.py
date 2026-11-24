@@ -3245,6 +3245,34 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/auth/trusted":
                 AUTH.set_trusted(AUTH.parse_networks(data.get("networks", "")))
                 return self.send_json({"ok": True, "auth": AUTH.status()})
+            if path == "/api/mesh/cmd":
+                cmd = str(data.get("cmd", ""))
+                if cmd == "name":
+                    res = MESH.command("name", name=str(data.get("name", "")))
+                elif cmd == "position":
+                    where = str(data.get("where", ""))
+                    if where == "locator":                       # ungefähr: Mitte des 6-stelligen Locator-Felds
+                        loc = (load_settings().get("my_locator") or "").strip()[:6]
+                        try:
+                            import satellites as SAT
+                            la, lo = SAT.locator_to_latlon(loc)
+                        except Exception:
+                            return self.send_json({"ok": False, "error": "Erst den eigenen Locator eintragen (Einstellungen → Station)"}, 400)
+                        res = MESH.command("position", lat=round(la, 5), lon=round(lo, 5))
+                    elif where == "none":
+                        res = MESH.command("position", lat=None, lon=None)
+                    else:
+                        return self.send_json({"ok": False, "error": "unbekannte Position"}, 400)
+                elif cmd == "channel_add":
+                    res = MESH.command("channel_add", name=str(data.get("name", "")))
+                elif cmd == "channel_delete":
+                    res = MESH.command("channel_delete", index=int(data.get("index", -1)))
+                else:
+                    return self.send_json({"ok": False, "error": "unbekannter Befehl"}, 400)
+                APPLOG.log("INFO" if res.get("ok") else "WARN", "mesh", "mesh_set" if res.get("ok") else "mesh_set_failed",
+                           what=cmd, **{k: v for k, v in data.items() if k in ("name", "where", "index")},
+                           **({"error": res.get("error")} if not res.get("ok") else {}))
+                return self.send_json(dict(res, status=MESH.status()), 200 if res.get("ok") else 400)
             if path == "/api/mesh/port":
                 port = str(data.get("port", "auto")).strip() or "auto"
                 if port not in ("auto", "off") and not port.startswith("/dev/"):

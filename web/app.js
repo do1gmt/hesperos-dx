@@ -1569,7 +1569,7 @@
   // ---------- Protokoll ----------
   const EVENT_TEXT = {
     // 1.8.42: Ereignisse ohne Beschreibung (sonst stand im Protokoll der Rohname)
-    'mesh_connected': 'Mesh: verbunden', 'mesh_lost': 'Mesh: Verbindung weg', 'mesh_no_access': 'Mesh: kein Zugriff auf den Knoten', 'mesh_no_answer': 'Mesh: Gerät antwortet nicht', 'mesh_stopped': 'Mesh: beendet', 'mesh_msg': 'Mesh-Nachricht', 'mesh_open_failed': 'Mesh: Gerät ließ sich nicht öffnen', 'mesh_start_failed': 'Mesh ließ sich nicht starten', 'mesh_port_set': 'Mesh-Knoten eingestellt', 'mesh_alert_failed': 'Mesh-Warnung ließ sich nicht melden',
+    'mesh_connected': 'Mesh: verbunden', 'mesh_lost': 'Mesh: Verbindung weg', 'mesh_no_access': 'Mesh: kein Zugriff auf den Knoten', 'mesh_no_answer': 'Mesh: Gerät antwortet nicht', 'mesh_stopped': 'Mesh: beendet', 'mesh_msg': 'Mesh-Nachricht', 'mesh_open_failed': 'Mesh: Gerät ließ sich nicht öffnen', 'mesh_start_failed': 'Mesh ließ sich nicht starten', 'mesh_port_set': 'Mesh: Anschluss gewählt', 'mesh_alert_failed': 'Mesh-Warnung ließ sich nicht melden', 'mesh_set': 'Mesh-Knoten eingestellt', 'mesh_set_failed': 'Mesh-Knoten ließ sich nicht einstellen', 'mesh_clock_set': 'Mesh: Uhr des Knotens gestellt', 'mesh_clock_failed': 'Mesh: Uhr ließ sich nicht stellen',
     'analysis_skipped': 'Auswertung übersprungen', 'auto_backup': 'Automatische Sicherung', 'backup_now': 'Sicherung von Hand', 'decode_skipped': 'Dekodieren übersprungen', 'stick_main_auto': 'Stick automatisch Haupt-Stick', 'stick_new': 'Neuer Stick erkannt', 'stick_serial_written': 'Seriennummer geschrieben', 'stick_unsupported': 'Gerät nicht unterstützt', 'check_failed': 'Prüfung fehlgeschlagen', 'internet_back': 'Internet wieder da', 'network_changed': 'Netz gewechselt', 'live_gap': 'Live: Lücke im Empfang', 'live_heard_failed': 'Live: Gehörte nicht gespeichert', 'live_recorded': 'Live: Aufnahme gespeichert', 'live.start_failed': 'Live ließ sich nicht starten', 'watch_loop_failed': 'Dauerwache: Fehler', 'watch_off': 'Dauerwache aus', 'watch_on': 'Dauerwache an', 'watch_restarted': 'Dauerwache neu gestartet', 'outbox_sent': 'Nachgeholte Nachrichten verschickt', 'test_mail_sent': 'Test-Mail verschickt', 'test_push_sent': 'Test-Push verschickt', 'sstv_upload_failed': 'SSTV-Bild: Upload fehlgeschlagen', 'sstv_uploaded': 'SSTV-Bild hochgeladen', 'rds_decoded': 'RDS dekodiert', 'rds_failed': 'RDS: Fehler', 'rundir_recreated': 'Arbeitsordner neu angelegt', 'pass_stick_restart': 'Überflug: Stick neu gestartet', 'publish_prepare_failed': 'Überflug: Webseiten-Upload nicht vorbereitet', 'waterfall_failed': 'Wasserfall ließ sich nicht erzeugen', 'band_summary_failed': 'Bandübersicht: Fehler', 'fm_watch_failed': 'UKW-Beobachtung: Fehler', 'pmsdr_fifo_reconnect': 'PMSDR: Datenstrom neu verbunden', 'pmsdr_input_set': 'PMSDR: Eingang umgestellt', 'rtl_orphans_killed': 'Verwaiste RTL-Prozesse beendet', 'run_exception': 'Scan: unerwarteter Fehler', 'scan_yielded': 'Scan gibt den Stick frei', 'health_failed': 'Selbstprüfung: Fehler', 'publish_failed': 'Webseiten-Upload: Fehler', 'restore_done': 'Sicherung eingespielt', 'restore_failed': 'Einspielen fehlgeschlagen', 'restore_stick_adopt_failed': 'Einspielen: Stick nicht übernommen', 'restore_stick_adopted': 'Einspielen: Stick übernommen', 'satellite_arming': 'Satelliten werden scharfgeschaltet', 'satellite_watchdog': 'Überflug hängt – beendet', 'scan_yield_requested': 'Scan soll den Stick freigeben', 'settings_unreadable': 'Einstellungen nicht lesbar', 'sticks_failed': 'Sticks: Fehler', 'sysmon_failed': 'Systemwerte: Fehler', 'reboot_requested': 'Neustart angefordert', 'restart_requested': 'Dienst-Neustart angefordert', 'dir_move_failed': 'Programmordner nicht umgezogen', 'dir_move_skipped': 'Programmordner-Umzug ausgelassen', 'dir_moved': 'Programmordner umgezogen', 'hostname_change_failed': 'Rechnername nicht geändert', 'hostname_changed': 'Rechnername geändert', 'hostname_notice_failed': 'Rechnername: Hinweis fehlgeschlagen', 'services_rename_failed': 'Dienste nicht umbenannt', 'services_renamed': 'Dienste umbenannt', 'backup_dir_move_failed': 'Sicherungsordner nicht umgezogen', 'backup_dir_rename_failed': 'Sicherungsordner nicht umbenannt', 'backup_dir_renamed': 'Sicherungsordner umbenannt', 'update_failed': 'Update fehlgeschlagen', 'auto_backup_set': 'Automatische Sicherung eingestellt', 'backup_downloaded': 'Sicherung heruntergeladen', 'backup_from_target': 'Sicherung vom Ziel eingespielt', 'backup_target_nas': 'Sicherungsziel: Netzwerkfreigabe', 'backup_target_nas_removed': 'Netzwerkfreigabe entfernt', 'backup_target_usb': 'Sicherungsziel: USB-Stick', 'backup_uploaded': 'Sicherung hochgeladen', 'backup_usb_ejected': 'USB-Stick ausgeworfen', 'diagnose_downloaded': 'Diagnose heruntergeladen', 'eibi_refresh_failed': 'EiBi: Herunterladen fehlgeschlagen', 'eibi_uploaded': 'EiBi-Liste hochgeladen', 'follow_updated': 'Satelliten-Nachführung eingestellt', 'hf_device_updated': 'Kurzwellengerät eingestellt', 'interference_changed': 'Störlinie geändert', 'live_favorites_saved': 'Live-Favoriten gespeichert', 'location_confirmed': 'Standort bestätigt', 'publish_set': 'Webseiten-Upload eingestellt', 'restore_requested': 'Einspielen angefordert', 'satellites_armed_now': 'Satelliten sofort scharf', 'satellites_arming': 'Satelliten in 1 Minute scharf', 'scan_stop_requested': 'Scan-Abbruch angefordert', 'scheduler_dead_fallback': 'Zeitplaner antwortet nicht – Scan direkt gestartet', 'sstv_event_added': 'SSTV-Termin eingetragen', 'sstv_event_deleted': 'SSTV-Termin gelöscht', 'sstv_events_failed': 'SSTV-Termine: Abruf fehlgeschlagen', 'sstv_manual_queued': 'SSTV-Bild für die Webseite vorgemerkt', 'stick_updated': 'Stick-Einstellungen gespeichert', 'time_mode_set': 'Zeitangaben umgestellt', 'ui_prefs_failed': 'Ansicht-Profil: Fehler', 'update_started': 'Update gestartet', 'watchdog_ping_failed': 'Watchdog-Meldung fehlgeschlagen', 'webapp_stall': 'Dashboard hing kurz', 'webapp_stall_probe_failed': 'Dashboard-Hänger: Prüfung fehlgeschlagen', 'wifi_fallback_added': 'Ersatz-WLAN eingetragen', 'wifi_fallback_removed': 'Ersatz-WLAN entfernt', 'wsjtx_udp_set': 'Weitergabe im Netz (WSJT-X) eingestellt',
     'notice_raised': 'Hinweis gemeldet', 'notice_resolved': 'Hinweis behoben', 'notice_event': 'Ereignis gemeldet', 'update_done': 'Update fertig', 'rescue.start': 'Notfallseite gestartet', 'sysupdate_checked': 'Systemupdates geprüft', 'sysupgrade_requested': 'Systemupdate angefordert', 'sysupgrade_started': 'Systemupdate gestartet', 'sysupgrade_done': 'Systemupdate fertig', 'sysupgrade_failed': 'Systemupdate fehlgeschlagen', 'sysupgrade_waiting': 'Systemupdate wartet auf eine freie Minute', 'sysupgrade_cancelled': 'Systemupdate nicht mehr angefordert', 'sysupgrade_start_failed': 'Systemupdate ließ sich nicht starten', 'reboot_after_update': 'Neustart nach Systemupdate', 'reboot_postponed': 'Neustart verschoben', 'reboot_done': 'Neustart nach Systemupdate erledigt', 'sysupdate_settings': 'Systemupdates eingestellt', 'sysupdate_failed': 'Systemupdates: Fehler', 'foreign_request_blocked': 'Anfrage einer fremden Webseite abgewiesen', 'backup_key_set': 'Passwort der Zugangsdaten gesetzt', 'backup_key_cleared': 'Passwort der Zugangsdaten gelöscht', 'live_image_keep': 'Bild aus Live behalten (★)', 'live_image_unkeep': 'Bild aus Live nicht mehr behalten', 'live_image_delete': 'Bild aus Live gelöscht', 'live_image_publish': 'Bild aus Live für die Webseite vorgemerkt', 'ui_prefs_replaced': 'Ansicht-Profil übernommen', 'ui_prefs_copied': 'Ansicht-Profil kopiert', 'backup_dir_moved': 'Sicherungsordner umgezogen', 'writewatch_failed': 'Schreib-Zählung: Fehler', 'db_keeper_failed': 'Ruhende Datenbank-Verbindung: Fehler', 'live_yield': 'Live hält kurz an', 'live_resumed': 'Live läuft weiter', 'auth_none': 'Dashboard ohne Passwort', 'live_thumb_failed': 'Vorschaubild ließ sich nicht erzeugen',
     run_start: 'Scan gestartet', run_done: 'Scan fertig', run_failed: 'Scan fehlgeschlagen', run_cancelled: 'Scan abgebrochen',
@@ -2469,7 +2469,10 @@
   });
 
   // ---------- Gehörte Stationen ----------
-  const stPage = { offset: 0, per: 100 };
+  // Gehörte Stationen seitenweise: „pro Seite“ im Ansicht-Profil (stations.per), Vorgabe 25 (1.8.48)
+  const stPage = { offset: 0, per: [25, 50, 100, 250].includes(Number(localStorage.getItem('stations.per'))) ? Number(localStorage.getItem('stations.per')) : 25 };
+  $('stPerPage').value = String(stPage.per);
+  $('stPerPage').addEventListener('change', e => { stPage.per = Number(e.target.value); stPage.offset = 0; localStorage.setItem('stations.per', String(stPage.per)); loadStations(); });
   function stParams() { return new URLSearchParams({ q: $('stQuery').value.trim(), band: $('stBand').value, hours: $('stDays').value }); }
   async function loadStations() {
     let d; try { d = await api(`/api/stations?${stParams()}&limit=${stPage.per}&offset=${stPage.offset}`); } catch (e) { return; }
@@ -2709,6 +2712,9 @@
   // ---------- Mesh (MeshCore-Knoten am USB, bin/mesh.py) ----------
   const meshType = t => EN ? t : ({ Companion: 'Companion', Repeater: 'Repeater', Room: 'Raum', Sensor: 'Sensor' }[t] || t);
   const meshPage = { before: null, rows: [], total: 0, end: true };
+  // Abweichung der Knoten-Uhr lesbar: −300 → „5 min nach“ / „5 min slow“
+  const meshDrift = d => { const a = Math.abs(d), v = a >= 7200 ? `${Math.round(a / 3600)} h` : a >= 120 ? `${Math.round(a / 60)} min` : `${a} s`;
+    return EN ? `${v} ${d < 0 ? 'slow' : 'fast'}` : `${v} ${d < 0 ? 'nach' : 'vor'}`; };
   let meshPortTouched = 0;
   async function loadMesh(more) {
     let d; try { d = await api('/api/mesh?limit=100' + (more && meshPage.before ? '&before=' + meshPage.before : '')); } catch (e) { return; }
@@ -2730,6 +2736,33 @@
       off: EN ? 'Switched off.' : 'Ausgeschaltet.',
     };
     $('meshState').textContent = S[st.state] || st.state;
+    // Statistik des Knotens (falls die Firmware sie kennt) an die Zustandszeile hängen
+    const sx = st.stats || {};
+    if (st.state === 'connected' && sx.uptime_s != null) {
+      const up = sx.uptime_s >= 86400 ? `${Math.floor(sx.uptime_s / 86400)} d` : sx.uptime_s >= 3600 ? `${Math.floor(sx.uptime_s / 3600)} h` : `${Math.floor(sx.uptime_s / 60)} min`;
+      $('meshState').textContent += ' · ' + [sx.battery_mv ? `${(sx.battery_mv / 1000).toFixed(2).replace('.', DS)} V` : '',
+        (EN ? 'up ' : 'läuft seit ') + up, sx.noise_floor != null ? (EN ? 'noise ' : 'Rauschen ') + sx.noise_floor + ' dBm' : '',
+        sx.tx_air_s != null ? (EN ? `airtime TX ${sx.tx_air_s} s / RX ${sx.rx_air_s} s` : `Sendezeit ${sx.tx_air_s} s / Empfang ${sx.rx_air_s} s`) : ''].filter(Boolean).join(' · ');
+    }
+    // Knoten einstellen
+    const on = st.state === 'connected';
+    $('meshSetup').hidden = !on;
+    if (on) {
+      const ck = st.clock || {};
+      $('meshRadio').textContent = (EN ? 'Radio: ' : 'Funk: ') + [radio, me.sf ? `CR ${me.cr}` : '', me.tx_power != null ? `${me.tx_power} dBm (max ${me.max_tx_power})` : ''].filter(Boolean).join(' · ')
+        + (ck.drift_s != null ? ' · ' + (EN ? 'clock: ' : 'Uhr: ') + (ck.set ? (EN ? `set (was ${meshDrift(ck.drift_s)})` : `gestellt (ging ${meshDrift(ck.drift_s)})`)
+          : Math.abs(ck.drift_s) <= 10 ? (EN ? 'right' : 'stimmt') : (EN ? `${meshDrift(ck.drift_s)} – could not be set` : `geht ${meshDrift(ck.drift_s)} – ließ sich nicht stellen`)) : '');
+      if (document.activeElement !== $('meshName')) $('meshName').value = me.name || '';
+      $('meshPosText').textContent = me.lat || me.lon ? (EN ? `Position: ${me.lat.toFixed(3)}, ${me.lon.toFixed(3)}` : `Position: ${me.lat.toFixed(3).replace('.', DS)}, ${me.lon.toFixed(3).replace('.', DS)}`)
+        : (EN ? 'Position: none' : 'Position: keine');
+      $('meshChannels').innerHTML = Object.entries(st.channels || {}).map(([i, n]) => `<span class="mesh-chan"><b class="no-i18n">${esc(n)}</b>`
+        + (i === '0' ? '' : `<button type="button" class="btn btn-small btn-danger" data-mch="${i}" title="${EN ? 'remove' : 'entfernen'}">✕</button>`) + '</span>').join('')
+        || `<span class="muted">${EN ? 'none' : 'keine'}</span>`;
+      $('meshChannels').querySelectorAll('[data-mch]').forEach(b => b.addEventListener('click', () => {
+        const n = (st.channels || {})[b.dataset.mch];
+        if (confirm(EN ? `Remove channel ${n} from the node?` : `Kanal ${n} aus dem Knoten entfernen?`)) meshCmd({ cmd: 'channel_delete', index: Number(b.dataset.mch) });
+      }));
+    }
     $('meshState').classList.toggle('warn-text', st.state === 'error');
     cardStatus('panel-mesh', st.state === 'connected' ? (EN ? `connected · ${st.packets_hour} packets/h · ${d.total} messages` : `verbunden · ${st.packets_hour} Pakete/h · ${d.total} Nachrichten`)
       : st.state === 'off' ? (EN ? 'off' : 'aus') : (EN ? 'no node' : 'kein Knoten'), st.state === 'error');
@@ -2775,6 +2808,16 @@
   }
   $('meshChan').addEventListener('change', renderMeshMsgs);
   $('meshMore').addEventListener('click', () => loadMesh(true));
+  async function meshCmd(body, okText) {
+    note($('meshSetNote'), EN ? 'sending to the node …' : 'an den Knoten …');
+    try { await post('/api/mesh/cmd', body); note($('meshSetNote'), okText || (EN ? '✓ done' : '✓ erledigt')); }
+    catch (e) { note($('meshSetNote'), (EN ? 'Error: ' : 'Fehler: ') + I18N.t(e.message), true); }
+    loadMesh();
+  }
+  $('meshNameSave').addEventListener('click', () => meshCmd({ cmd: 'name', name: $('meshName').value.trim() }, EN ? '✓ name saved in the node' : '✓ Name im Knoten gespeichert'));
+  $('meshPosLoc').addEventListener('click', () => meshCmd({ cmd: 'position', where: 'locator' }, EN ? '✓ position set (approximate)' : '✓ Position gesetzt (ungefähr)'));
+  $('meshPosNone').addEventListener('click', () => meshCmd({ cmd: 'position', where: 'none' }, EN ? '✓ position removed' : '✓ Position entfernt'));
+  $('meshChanAdd').addEventListener('click', async () => { await meshCmd({ cmd: 'channel_add', name: $('meshChanNew').value.trim() }, EN ? '✓ channel added' : '✓ Kanal hinzugefügt'); $('meshChanNew').value = ''; });
   $('meshPort').addEventListener('change', async () => {
     meshPortTouched = Date.now();
     try { await post('/api/mesh/port', { port: $('meshPort').value }); note($('meshNote'), EN ? '✓ saved – takes effect within 30 s' : '✓ gespeichert – wirkt innerhalb von 30 s'); }
