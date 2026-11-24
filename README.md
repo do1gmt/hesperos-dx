@@ -281,7 +281,10 @@ processes hold the scan locks, and the settings without credentials into one fil
 practically nothing) – and `webapp_mem.txt`, what the web server holds in memory (by library, loaded packages,
 Python objects). To spare the SD card, the system history is collected in RAM and written to `data/sysmon.db`
 every 10 minutes, the health check's "alive" stamp is saved every 10 minutes (instead of every minute), and
-unchanged notices are not rewritten.
+unchanged notices are not rewritten. Since 1.8.28 files are written only when their content changes (driver
+cache `data/sdr_tools.json`, mDNS and health state, scan progress), the WSJT-X output state lives in RAM, the
+stall watch writes only on a real stall, and the web server keeps one idle connection to `data/scanner.db` open,
+so SQLite no longer creates and deletes `scanner.db-wal`/`-shm` with every short query.
 If a requested scan cannot start because the receiver or a run is still busy, the scan box says so with the
 process holding the lock (`scan_start_rejected` in the log; `python3 bin/lockinfo.py` shows it any time); a
 request that has not started after 3 minutes is reset, so the dashboard never stays at "Scan requested 0 %".

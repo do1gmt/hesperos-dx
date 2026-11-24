@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.8.28 – 2026-11-24
+
+- **Less SD card wear in idle.** The diagnostics of the dev Pi showed ~1.7 MB/min written to the card while idle,
+  although the files themselves changed by only ~0.7 MB per hour – the rest was file system journal for files
+  created, deleted or rewritten many times a minute. Now:
+  - `data/sdr_tools.json` (driver spelling for direct sampling) is written only when it changes – it was rewritten
+    with every dashboard query (~6,500 times per hour);
+  - the web server keeps one idle connection to `data/scanner.db`, so `scanner.db-wal` and `-shm` stay in place
+    instead of being created and deleted with every short query (~2,000 times per hour); it holds no read lock and
+    switches to the new file after a backup was restored (`db_keeper_failed` in the log if it cannot open it);
+  - the stall watch keeps `log/webapp_stall.txt` open and writes only on a real stall (was: write and remove a
+    marker line every 10 s); old marker lines are removed once at start;
+  - health state: the kernel log position and the Wi-Fi level series alone no longer trigger a write each minute
+    (saved with the 10-minute alive stamp); mDNS state only when it changes (was every 30 s);
+  - WSJT-X output state in the RAM folder (was every 10 s on the card); scan progress only when it changes,
+    at least once a minute (was every 2 s).
+- Self-test section 87 checks all of this.
+
 ## 1.8.27 – 2026-11-17
 
 - **Fix: SSTV events "Fetch now", "Add" and delete failed** with "cannot access local variable 'data'" (since

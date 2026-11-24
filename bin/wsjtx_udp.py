@@ -14,7 +14,7 @@ OpenHamClock auf Port 2237, oder eine Multicast-Gruppe (224.0.0.1:2237), die meh
 Ohne Netz: Senden passiert in einem eigenen Faden mit Warteschlange – Scan und Live warten nie darauf. Namen werden
 mit Zeitgrenze aufgelöst und zwischengespeichert. Klappt ein Ziel nicht (kein Netz, Rechner aus), wird das einmal
 protokolliert, die Dekodierungen der letzten 2 Minuten werden aufgehoben und nachgeschickt, sobald es wieder geht
-(ältere sind für eine Live-Anzeige wertlos und werden verworfen). Zustand: data/wsjtx_udp_state.json.
+(ältere sind für eine Live-Anzeige wertlos und werden verworfen). Zustand: wsjtx_udp_state.json im RAM-Ordner (rundir, ab 1.8.28 – vorher alle 10 s auf die Karte).
 """
 import json
 import queue
@@ -26,7 +26,11 @@ from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
 SETTINGS = BASE / "config" / "web_settings.json"
-STATE = BASE / "data" / "wsjtx_udp_state.json"
+try:                                                   # laufend wechselnder Zustand: im Arbeitsspeicher
+    import rundir as _RD
+    STATE = _RD.path("wsjtx_udp_state.json")
+except Exception:
+    STATE = BASE / "data" / "wsjtx_udp_state.json"
 
 MAGIC = 0xADBCCBDA
 SCHEMA = 2

@@ -101,6 +101,36 @@ def db_connect():
     return db
 
 
+def db_keeper_loop(every=60, rounds=None):
+    """Eine ruhende Verbindung zu scanner.db offen halten (1.8.28). Schließt die letzte Verbindung, löscht SQLite
+    scanner.db-wal und -shm; die nächste legt sie neu an – bei den vielen kurzen Abfragen des Dashboards gut
+    2000-mal pro Stunde, jedes Mal Verzeichnis- und Journal-Schreiben auf der Karte. Mit dieser einen offenen
+    Verbindung bleiben beide Dateien stehen. Sie hält keine Lesesperre (Abfrage sofort beendet), Checkpoints
+    laufen also normal. Wird die Datei ersetzt (Sicherung eingespielt), öffnet sie die neue."""
+    held, ino, n = None, None, 0
+    while rounds is None or n < rounds:
+        n += 1
+        try:
+            cur = os.stat(DB).st_ino if DB.exists() else None
+            if held is not None and cur != ino:
+                held.close()
+                held = None
+            if held is None and cur is not None:
+                held = sqlite3.connect(DB, timeout=10, check_same_thread=False)
+                held.execute("SELECT 1 FROM sqlite_master LIMIT 1").close()
+                ino = cur
+        except Exception as e:
+            APPLOG.log("WARN", "webapp", "db_keeper_failed", error=f"{type(e).__name__}: {e}")
+            try:
+                if held is not None:
+                    held.close()
+            except Exception:
+                pass
+            held = None
+        time.sleep(every)
+    return held
+
+
 def ensure_schema():
     db = sqlite3.connect(DB, timeout=10)
     # frische Installation: Tabellen anlegen wie scanner.py, damit die Spalten unten greifen
@@ -1886,50 +1916,60 @@ def stall_loop(port, first_wait=60, limit=15, every=10, rounds=None):
     """Aussetzer des Dashboards festhalten: alle 10 s eine Anfrage an sich selbst. Davor wird faulthandler scharf
     gemacht – er läuft ohne Python-Sperre (GIL) in eigenem C-Faden: antwortet der Server 15 s lang nicht (egal ob
     eine Berechnung die GIL hält, Fäden auf Schreiben/Platte warten oder etwas sich gegenseitig blockiert), schreibt
-    er, was JEDER Faden gerade tut, nach log/webapp_stall.txt. Die Datei kommt ins Diagnose-Paket."""
+    er, was JEDER Faden gerade tut, nach log/webapp_stall.txt. Die Datei kommt ins Diagnose-Paket.
+    Ab 1.8.28 bleibt die Datei offen und wird nur bei einem echten Aussetzer beschrieben (vorher: Markierungszeile
+    alle 10 s schreiben und wieder löschen – gut 700 Schreibvorgänge pro Stunde auf der Karte)."""
     import faulthandler
     import urllib.request
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     time.sleep(first_wait)
+    _trim_stall_file()
+    STALL_FILE.parent.mkdir(parents=True, exist_ok=True)
+    fh = open(STALL_FILE, "a", encoding="utf-8")
     n = 0
     while rounds is None or n < rounds:
         n += 1
         t0 = time.time()
         try:
-            STALL_FILE.parent.mkdir(parents=True, exist_ok=True)
-            with open(STALL_FILE, "a", encoding="utf-8") as fh:
-                fh.write(f"\n===== {datetime.now(timezone.utc).isoformat(timespec='seconds')} Wache scharf (Dump, falls {limit} s keine Antwort)\n")
-                fh.flush()
-                faulthandler.dump_traceback_later(limit, repeat=False, file=fh)
-                try:
-                    with opener.open(f"http://127.0.0.1:{port}/api/ping", timeout=40) as r:
-                        r.read()
-                finally:
-                    faulthandler.cancel_dump_traceback_later()
+            faulthandler.dump_traceback_later(limit, repeat=False, file=fh)
+            try:
+                with opener.open(f"http://127.0.0.1:{port}/api/ping", timeout=40) as r:
+                    r.read()
+            finally:
+                faulthandler.cancel_dump_traceback_later()
             dt = time.time() - t0
+            if dt >= limit:                              # Abbild steht schon in der Datei: Zeitpunkt dazu
+                fh.write(f"===== {datetime.now(timezone.utc).isoformat(timespec='seconds')} Dashboard antwortete "
+                         f"{dt:.0f} s nicht – Abbild aller Fäden steht direkt darüber\n\n")
+                fh.flush()
             if dt > min(5, limit):
                 APPLOG.log("WARN", "webapp", "webapp_stall", seconds=round(dt, 1),
                            dumped=dt >= limit, file="log/webapp_stall.txt" if dt >= limit else None)
-            else:                                        # unauffällig: die Markierungszeile wieder entfernen
-                _trim_stall_file()
         except Exception as e:
             APPLOG.log("WARN", "webapp", "webapp_stall_probe_failed", error=f"{type(e).__name__}: {e}",
                        seconds=round(time.time() - t0, 1))
         time.sleep(every)
+    fh.close()
 
 
 def _trim_stall_file():
-    """Nur echte Aussetzer behalten (die letzte „scharf“-Zeile ohne Dump löschen), höchstens 2 MB."""
+    """Beim Start: alte Markierungszeilen ohne Abbild (bis 1.8.27) entfernen, höchstens 2 MB behalten.
+    Schreibt nur, wenn sich etwas ändert."""
     try:
-        txt = STALL_FILE.read_text(encoding="utf-8", errors="replace")
-        k = txt.rfind("\n===== ")
-        if k >= 0 and "Thread 0x" not in txt[k:] and "Current thread" not in txt[k:]:
-            txt = txt[:k]
-        if len(txt) > 2_000_000:
-            txt = txt[-1_500_000:]
-        STALL_FILE.write_text(txt, encoding="utf-8")
+        old = STALL_FILE.read_text(encoding="utf-8", errors="replace")
     except OSError:
-        pass
+        return
+    blocks = old.split("\n===== ")
+    keep = [blocks[0]] + [b for b in blocks[1:] if "Wache scharf" not in b.split("\n", 1)[0]
+                          or "Thread 0x" in b or "Current thread" in b]
+    txt = "\n===== ".join(keep)
+    if len(txt) > 2_000_000:
+        txt = txt[-1_500_000:]
+    if txt != old:
+        try:
+            STALL_FILE.write_text(txt, encoding="utf-8")
+        except OSError:
+            pass
 
 
 def watchdog_loop(port):
@@ -3553,6 +3593,7 @@ def main():
     threading.Thread(target=watchdog_loop, args=(port,), daemon=True).start()
     threading.Thread(target=stall_loop, args=(port,), daemon=True).start()
     threading.Thread(target=trim_loop, daemon=True).start()
+    threading.Thread(target=db_keeper_loop, daemon=True).start()
     try:                                                     # wer schreibt welche Datei? (Diagnose: io_files.txt)
         import writewatch
         writewatch.start()

@@ -683,8 +683,13 @@ ALIVE_SAVE_S = 600          # Lebenszeichen höchstens alle 10 min auf die Karte
 
 
 def _sig(st):
-    """Zustand ohne die laufend wechselnden Zeitstempel – ändert er sich, wird gleich geschrieben."""
-    return json.dumps({k: v for k, v in st.items() if k not in ("alive", "boot_time")}, sort_keys=True, default=str)
+    """Zustand ohne die laufend wechselnden Werte – ändert er sich, wird gleich geschrieben. Lebenszeichen, Lesestand
+    des Kernelprotokolls und die WLAN-Pegelreihe ändern sich jede Minute; sie kommen mit dem Lebenszeichen alle
+    10 min auf die Karte (1.8.28 – vorher machten sie jede Minute einen Schreibvorgang)."""
+    d = {k: v for k, v in st.items() if k not in ("alive", "boot_time", "kernel_since")}
+    if isinstance(d.get("wifi"), dict):
+        d["wifi"] = {k: v for k, v in d["wifi"].items() if k != "dbm"}
+    return json.dumps(d, sort_keys=True, default=str)
 
 
 def run_all():

@@ -221,11 +221,18 @@ SCANNER_PID=$!
             BAND="Scan"
         fi
 
-        write_status \
-            "running" \
-            "scan" \
-            "$PROGRESS" \
-            "$BAND scannt $DONE/$TOTAL_TUNES"
+        # nur bei Änderung schreiben, sonst höchstens jede Minute (1.8.28: vorher alle 2 s auf die Karte)
+        MSG="$BAND scannt $DONE/$TOTAL_TUNES"
+        NOW_S=$(date +%s)
+        if [ "$PROGRESS|$MSG" != "${LAST_STATUS:-}" ] || [ $((NOW_S - ${LAST_STATUS_T:-0})) -ge 60 ]; then
+            write_status \
+                "running" \
+                "scan" \
+                "$PROGRESS" \
+                "$MSG"
+            LAST_STATUS="$PROGRESS|$MSG"
+            LAST_STATUS_T=$NOW_S
+        fi
 
         sleep 2
     done

@@ -112,11 +112,14 @@ def tool_flags(refresh=False):
                     flag = ["-D", "2"] if re.search(r"mode|\(I\)|\(Q\)|0 \(", m.group(1)) else ["-D"]
         out[tool] = flag
     out["stamp"] = stamp
-    try:
-        CACHE.parent.mkdir(parents=True, exist_ok=True)
-        CACHE.write_text(json.dumps(out), encoding="utf-8")
-    except OSError:
-        pass
+    if out != cache:                       # nur bei Änderung schreiben (1.8.28: vorher bei jeder Abfrage, ~6500×/h)
+        try:
+            CACHE.parent.mkdir(parents=True, exist_ok=True)
+            tmp = CACHE.with_name(CACHE.name + ".tmp")
+            tmp.write_text(json.dumps(out), encoding="utf-8")
+            tmp.replace(CACHE)
+        except OSError:
+            pass
     return out
 
 

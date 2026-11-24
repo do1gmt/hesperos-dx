@@ -3340,5 +3340,82 @@ assert op.open(req, timeout=30).status == 200
 srv.shutdown()
 PY
 
+echo "== 87 Schreiblast: unveränderte Zustände nicht neu schreiben, Datenbank-Begleitdateien bleiben stehen"
+(cd bin && timeout 90 python3 - <<'PY') && ok "sdr_tools.json, Aussetzer-Wache, Gesundheit, mDNS nur bei Änderung; scanner.db-wal/-shm bleiben" || bad "Schreiblast"
+import os, sqlite3, tempfile, threading, time, json
+from pathlib import Path
+import sdrcaps as SC
+d = Path(tempfile.mkdtemp())
+SC.CACHE = d / "sdr_tools.json"
+SC._usage = lambda tool: (0, "[-D direct_sampling_mode, 0 (default/off), 1 (I), 2 (Q)]")
+SC.tool_flags()
+st0 = os.stat(SC.CACHE)
+for _ in range(5):
+    SC.tool_flags(); SC.hf_ok({"kind": "rtl", "product": "NESDR SMArt v5", "tuner": "Rafael Micro R820T"})
+st1 = os.stat(SC.CACHE)
+assert (st0.st_ino, st0.st_mtime_ns) == (st1.st_ino, st1.st_mtime_ns), "sdr_tools.json neu geschrieben"
+# Datenbank: mit der ruhenden Verbindung verschwinden -wal/-shm nach kurzen Abfragen nicht
+import webapp as W
+W.DB = d / "scanner.db"
+c = sqlite3.connect(W.DB); c.execute("PRAGMA journal_mode=WAL"); c.execute("CREATE TABLE t (x)"); c.commit(); c.close()
+assert not Path(str(W.DB) + "-wal").exists()
+logs = []
+W.APPLOG.log = lambda *a, **k: logs.append((a, k))
+holder = {}
+th = threading.Thread(target=lambda: holder.setdefault("h", W.db_keeper_loop(every=0.2, rounds=3)), daemon=True); th.start()
+time.sleep(0.1)
+for _ in range(3):
+    x = sqlite3.connect(W.DB); x.execute("SELECT count(*) FROM t").fetchone(); x.close()
+    assert Path(str(W.DB) + "-wal").exists() and Path(str(W.DB) + "-shm").exists(), "Begleitdateien gelöscht"
+w = sqlite3.connect(W.DB); w.execute("INSERT INTO t VALUES (1)"); w.commit(); w.close()
+# Datei ersetzt (wie beim Einspielen einer Sicherung): die ruhende Verbindung wechselt auf die neue
+new = d / ".scanner.db.restore"
+n = sqlite3.connect(new); n.execute("PRAGMA journal_mode=WAL"); n.execute("CREATE TABLE neu (y)"); n.commit(); n.close()
+for ext in ("-wal", "-shm"):
+    Path(str(W.DB) + ext).unlink(missing_ok=True)
+os.replace(new, W.DB)
+th.join(5)
+h = holder["h"]
+assert h is not None and h.execute("SELECT name FROM sqlite_master").fetchall() == [("neu",)], "nicht auf neue Datei gewechselt"
+h.close()
+assert not logs, logs
+# Aussetzer-Wache: unauffällige Runden schreiben nichts
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
+class H(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200); self.end_headers(); self.wfile.write(b"ok")
+    def log_message(self, *a): pass
+srv = ThreadingHTTPServer(("127.0.0.1", 0), H); threading.Thread(target=srv.serve_forever, daemon=True).start()
+W.STALL_FILE = d / "webapp_stall.txt"
+W.STALL_FILE.write_text("alt\n===== 2026-11-20T10:00:00+00:00 Wache scharf (Dump, falls 15 s keine Antwort)\n")
+W.stall_loop(srv.server_address[1], first_wait=0, limit=5, every=0, rounds=1)
+st0 = os.stat(W.STALL_FILE)
+assert "Wache scharf" not in W.STALL_FILE.read_text(), "alte Markierung nicht entfernt"
+W.stall_loop(srv.server_address[1], first_wait=0, limit=5, every=0, rounds=3)
+st1 = os.stat(W.STALL_FILE)
+assert st0.st_mtime_ns == st1.st_mtime_ns and st1.st_size == st0.st_size, "Aussetzer-Wache schreibt ohne Aussetzer"
+srv.shutdown()
+# Gesundheit: Lesestand Kernel und WLAN-Pegel allein lösen kein Schreiben aus
+import health as HL
+a = {"alive": 1, "kernel_since": 1, "wifi": {"dbm": [-50], "down_since": None}, "net": {"ip": "x"}}
+b = {"alive": 2, "kernel_since": 2, "wifi": {"dbm": [-50, -51], "down_since": None}, "net": {"ip": "x"}}
+assert HL._sig(a) == HL._sig(b)
+b["wifi"]["down_since"] = 5
+assert HL._sig(a) != HL._sig(b)
+# mDNS: gleicher Zustand -> keine zweite Schreibung
+import mdns_alias as MD
+saves = []
+MD._save = lambda st: saves.append(st)
+MD._ip = lambda: None
+MD._notice = lambda *a, **k: None
+MD.run(port=8080, rounds=3, every=0, host="testpi")
+assert len(saves) == 1, saves
+# WSJT-X-Zustand liegt im RAM-Ordner, Scan-Fortschritt nur bei Änderung
+import wsjtx_udp as WX, rundir as RD
+assert str(WX.STATE).startswith(str(RD.directory())), WX.STATE
+src = Path("run_cycle.sh").read_text()
+assert 'LAST_STATUS="$PROGRESS|$MSG"' in src
+PY
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

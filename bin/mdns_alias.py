@@ -70,7 +70,7 @@ def _custom_name():
 
 def run(port=8080, rounds=None, every=30, host=None, custom=None):
     fixed_host = host
-    proc, cur_ip, mode = None, None, None
+    proc, cur_ip, mode, saved = None, None, None, None
     n = 0
     while rounds is None or n < rounds:
         n += 1
@@ -116,8 +116,10 @@ def run(port=8080, rounds=None, every=30, host=None, custom=None):
             _notice(new_mode, host)
         mode = new_mode
         name = f"{NAME}.local" if mode == "alias" else f"{host}.local"
-        _save({"name": name, "host": host, "ip": ip, "mode": mode, "url": f"http://{name}:{port}",
-               "updated": time.time()})
+        cur = {"name": name, "host": host, "ip": ip, "mode": mode, "url": f"http://{name}:{port}"}
+        if cur != saved:                               # nur bei Änderung auf die Karte (1.8.28: vorher alle 30 s)
+            _save(dict(cur, updated=time.time()))
+            saved = cur
         if rounds is None or n < rounds:
             time.sleep(every)
     if proc and proc.poll() is None:
