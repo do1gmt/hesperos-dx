@@ -2341,10 +2341,13 @@
       const bad = ss.supported === false, on = !bad && act && (act.id ? act.id === r.id : act.name === r.name);
       return `<tr class="${on ? 'sched-now' : ''}${bad ? ' sched-bad' : ''}"><td><label class="check"><input type="checkbox" data-si="${i}" ${r.enabled ? 'checked' : ''}> <b>${esc(r.name)}</b>${on ? ' <span class="badge badge-new">aktiv</span>' : ''}${bad ? ` <span class="badge badge-off">${EN ? 'inactive' : 'inaktiv'}</span>` : ''}</label>
         <small class="muted">${esc(days)} · ${sh.from}–${sh.to} ${tzLabel()} · ${esc(r.bands.join(', '))}</small>
+        ${(antData && antData.profiles || []).length ? `<label class="sched-ant"><span class="muted">${EN ? 'Antenna' : 'Antenne'}</span> <select data-sant="${i}">${schedAntOpts(r.antenna)}</select></label>` : ''}
         ${bad ? `<div class="sched-why">${EN ? 'The current SDR stick does not support these bands – the schedule does not apply.' : 'Der aktuelle SDR-Stick unterstützt diese Bänder nicht – der Zeitplan greift nicht.'}</div>` : `<small class="muted sched-st">${schedState(r, ss, on)}</small>`}</td>
         <td><button type="button" class="btn btn-small btn-danger" data-sdel="${i}">✕</button></td></tr>`; }).join('')}</tbody></table>
         <p class="hint">${EN ? `Times in ${TZ.mode === 'utc' ? 'UTC' : "the Pi's local time"} (now ${esc(tfmt(new Date(), { date: false }))}) – switch under Settings → Station → Times.` : `Uhrzeiten in ${TZ.mode === 'utc' ? 'UTC' : 'der Ortszeit des Pi'} (jetzt ${esc(tfmt(new Date(), { date: false }))}) – umschalten unter Einstellungen → Station → Zeitangaben.`}</p>` : '<p class="muted">Noch kein Zeitplan.</p>';
     $('schedList').querySelectorAll('[data-si]').forEach(cb => cb.addEventListener('change', () => { const l = [...settings.schedules]; l[cb.dataset.si] = { ...l[cb.dataset.si], enabled: cb.checked }; saveSchedules(l); }));
+    $('schedList').querySelectorAll('[data-sant]').forEach(sel => sel.addEventListener('change', () => { const l = [...settings.schedules]; l[sel.dataset.sant] = { ...l[sel.dataset.sant], antenna: sel.value }; saveSchedules(l, '✓ Antenne des Zeitplans gespeichert').then(() => loadAntennas()); }));
+    if (!$('scAnt').matches(':focus')) { const v = $('scAnt').value; $('scAnt').innerHTML = schedAntOpts(v); $('scAnt').closest('.field').hidden = !(antData && antData.profiles || []).length; }
     $('schedList').querySelectorAll('[data-sdel]').forEach(b => b.addEventListener('click', () => { const l = [...settings.schedules]; l.splice(Number(b.dataset.sdel), 1); saveSchedules(l); }));
     $('scDays').innerHTML = ''; DAYS.forEach((d, i) => { const c = chip(d, scSel.days.has(i)); c.addEventListener('click', () => { scSel.days.has(i) ? scSel.days.delete(i) : scSel.days.add(i); renderSchedules(); }); $('scDays').appendChild(c); });
     $('scBands').innerHTML = '';
@@ -2352,15 +2355,21 @@
       const c = chip(b.name, scSel.bands.has(b.name)); c.addEventListener('click', () => { scSel.bands.has(b.name) ? scSel.bands.delete(b.name) : scSel.bands.add(b.name); renderSchedules(); }); $('scBands').appendChild(c);
     });
   }
+  // Antenne je Zeitplan (1.8.35): "" = wie im Scan-Kasten, "auto" = nach Band, sonst ein Profil
+  function schedAntOpts(cur) {
+    const p = (antData && antData.profiles) || [];
+    return `<option value="">${EN ? 'as in the scan box' : 'wie im Scan-Kasten'}</option><option value="auto"${cur === 'auto' ? ' selected' : ''}>${EN ? 'automatic by band' : 'automatisch nach Band'}</option>`
+      + p.map(x => `<option value="${esc(x.id)}"${cur === x.id ? ' selected' : ''}>${esc(x.name)}</option>`).join('');
+  }
   async function saveSchedules(list, okText) {
     try { const d = await post('/api/settings', { schedules: list }); settings = Object.assign(settings, d.settings); renderSchedules(); loadEstimate(); note($('schedNote'), okText || '✓ gespeichert'); return true; }
     catch (e) { note($('schedNote'), 'Fehler: ' + e.message, true); return false; }
   }
   setInterval(async () => {                               // aktiver Zeitplan wechselt mit der Uhr
-    try { const d = await api('/api/settings'); Object.assign(settings, { schedule_active: d.schedule_active, pi_time: d.pi_time, pi_tz: d.pi_tz }); renderSchedules(); } catch (e) { }
+    try { const d = await api('/api/settings'); Object.assign(settings, { schedule_active: d.schedule_active, pi_time: d.pi_time, pi_tz: d.pi_tz }); renderSchedules(); loadAntennas(); } catch (e) { }
   }, 60000);
   $('scAdd').addEventListener('click', async () => {
-    const sc = { name: $('scName').value.trim(), from: $('scFrom').value, to: $('scTo').value, days: [...scSel.days], bands: [...scSel.bands], enabled: true,
+    const sc = { name: $('scName').value.trim(), from: $('scFrom').value, to: $('scTo').value, days: [...scSel.days], bands: [...scSel.bands], enabled: true, antenna: $('scAnt').value,
                  tz: TZ.mode };                                   // eingegeben in der gerade eingestellten Zeit
     if (await saveSchedules([...(settings.schedules || []), sc], '✓ Zeitplan gespeichert')) { $('scName').value = ''; scSel.bands.clear(); renderSchedules(); }
   });
@@ -2785,7 +2794,7 @@
   });
 
   // ---------- Antennen-Profile (bin/antennas.py) ----------
-  let antData = { profiles: [], current: {} };
+  var antData = { profiles: [], current: {} };   // var: Zeitpläne lesen sie schon beim ersten Zeichnen
   const antRange = p => (p.fmin != null && p.fmax != null) ? `${String(p.fmin).replace('.', ',')}–${String(p.fmax).replace('.', ',')}` : '';
   function renderAntProfiles() {
     $('antCount').textContent = antData.profiles.length ? `· ${antData.profiles.length}` : '';
@@ -2810,7 +2819,12 @@
   const antById = id => antData.profiles.find(p => p.id === id);
   const antCovers = (p, lo, hi) => p.fmin == null || p.fmax == null || (lo >= p.fmin * 1e6 && hi <= p.fmax * 1e6);
   function antHints() {
-    const sp = antById(antData.current.scan), sel = (settings && settings.selected_bands) || [];
+    const sch = antData.schedule;                    // gilt gerade ein Zeitplan mit eigener Antenne?
+    const scanSel = sch ? sch.antenna : antData.current.scan;
+    $('antSched').hidden = !sch;
+    $('antSched').textContent = sch ? (EN ? `Schedule "${sch.name}" applies now – antenna: ${sch.antenna === 'auto' ? 'automatic by band' : (antById(sch.antenna) || {}).name || sch.antenna}. The choice here applies again afterwards.`
+      : `Zeitplan „${sch.name}“ gilt gerade – Antenne: ${sch.antenna === 'auto' ? 'automatisch nach Band' : (antById(sch.antenna) || {}).name || sch.antenna}. Die Wahl hier gilt danach wieder.`) : '';
+    const sp = antById(scanSel), sel = (settings && settings.schedule_active && settings.schedule_active.bands) || (settings && settings.selected_bands) || [];
     const out = sp ? bandplan.filter(b => sel.includes(b.name) && b.name !== 'EiBi' && b.start_hz != null && !antCovers(sp, b.start_hz, b.stop_hz)).map(b => b.name) : [];
     $('antHint').textContent = out.length ? (EN ? `${sp.name} is not made for ${out.join(', ')} – scanned anyway.` : `${sp.name} ist nicht für ${out.join(', ')} gedacht – wird trotzdem gescannt.`) : '';
     $('antHint').hidden = !out.length;
@@ -2819,7 +2833,7 @@
     $('liveAntHint').textContent = lout ? (EN ? `${lp.name} is not made for this frequency (${antRange(lp)} MHz) – listening anyway.` : `${lp.name} ist nicht für diese Frequenz gedacht (${antRange(lp)} MHz) – es wird trotzdem gehört.`) : '';
     $('liveAntHint').hidden = !lout;
   }
-  async function loadAntennas() { try { antData = await api('/api/antennas'); renderAntProfiles(); } catch (e) { } }
+  async function loadAntennas() { try { antData = await api('/api/antennas'); renderAntProfiles(); renderSchedules(); } catch (e) { } }
   function antRowsData() {
     return [...$('antRows').querySelectorAll('tr[data-i]')].map(tr => {
       const g = k => tr.querySelector(`[data-k="${k}"]`).value.trim(), r = g('range');

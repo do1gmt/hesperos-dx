@@ -845,3 +845,5 @@ input[type=time] { color-scheme: dark; min-width: 7.5rem; }
 body.dragging-card, body.dragging-card * { user-select: none; -webkit-user-select: none; cursor: grabbing !important; }
 .panel-mini > .panel-tools { top: .2rem; right: .2rem; opacity: .6; }
 @media (max-width: 640px) { .panel-tools button { width: 2.2rem; height: 2.2rem; } .panel.has-tools > h2 { padding-right: 5.2rem; } }
+.sched-ant { display: inline-flex; align-items: center; gap: .35rem; margin-top: .25rem; font-size: .85rem; }
+.sched-ant select { width: auto; min-height: 32px; padding: .15rem .4rem; font-size: .85rem; }

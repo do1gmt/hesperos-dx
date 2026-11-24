@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.8.35 – 2026-11-24
+
+- **Antenna per schedule** (step 2 of 3). Every schedule can bring its own antenna: *as in the scan box* (default –
+  nothing changes for existing schedules), *automatic by band* or a fixed profile. Chosen when adding a schedule or
+  directly in the schedule list. While the schedule applies, scans and satellite passes (including the beam
+  planning) use that antenna; the scan box says "Schedule … applies now – antenna: …" and checks the antenna range
+  against the bands of the schedule. Afterwards the choice in the scan box applies again; Live is never changed.
+- Self-test section 94.
+
 ## 1.8.34 – 2026-11-24
 
 - **Fix: "Scan now" ended as "Scan failed: scan requested, scheduler running, but run_cycle.sh did not start".**

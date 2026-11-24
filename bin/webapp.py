@@ -519,6 +519,11 @@ def save_settings(data):
         out["watchlist"] = clean_watchlist(data["watchlist"])
     if "schedules" in data:
         out["schedules"] = clean_schedules(data["schedules"])
+        try:
+            import antennas as _AN
+            _AN._sched_cache["t"] = 0.0                     # Antenne eines Zeitplans gleich neu bestimmen
+        except Exception:
+            pass
     write_json(SETTINGS, out)
     return load_settings()
 
@@ -1126,8 +1131,11 @@ def clean_schedules(items):
         days = sorted({int(d) for d in it.get("days") or [] if 0 <= int(d) <= 6}) or list(range(7))
         sid = str(it.get("id") or "")
         sid = sid if _re.fullmatch(r"[A-Za-z0-9_-]{1,32}", sid) else secrets.token_hex(4)
+        ant = str(it.get("antenna") or "").strip()                  # "" = wie im Scan-Kasten, "auto", Profil (1.8.35)
+        ant = ant if ant == "auto" or _re.fullmatch(r"[A-Za-z0-9_-]{1,40}", ant) else ""
         out.append({"id": sid, "name": str(it.get("name") or "").strip()[:40] or f"{f}–{t}",
                     "days": days, "from": f, "to": t, "bands": bands, "enabled": bool(it.get("enabled", True)),
+                    "antenna": ant,
                     # Zeitzone des Eintrags: wie beim Anlegen eingestellt (UTC oder Ortszeit); alte Einträge: Ortszeit
                     "tz": "utc" if it.get("tz") == "utc" else "local"})
     return out
@@ -2603,7 +2611,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json({"ok": True, "t": time.time()})
             if path == "/api/antennas":
                 import antennas as AN
-                return self.send_json(dict(AN.load(), current=AN.current()))       # current = use (scan, live)
+                return self.send_json(dict(AN.load(), current=AN.current(), schedule=AN.schedule_antenna()))   # current = use (scan, live)
             if path == "/api/services":
                 import services as SV
                 import mdns_alias as MD

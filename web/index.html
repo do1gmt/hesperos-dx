@@ -105,6 +105,7 @@
         </div>
         <div class="device-switch" id="deviceSwitch" role="radiogroup" aria-label="Angeschlossenes Gerät"></div>
         <label class="field ant-quick" title="Welche Antenne der Scan benutzt (auch für Überflüge) – fest oder automatisch nach Band (das Profil, dessen Frequenzbereich passt). Wird sofort gespeichert. Profile anlegen: System → Geräte → Antennen."><span>Antenne</span><select id="antQuick"></select></label>
+        <p class="hint ant-hint sched-on" id="antSched" hidden></p>
         <p class="hint ant-hint" id="antHint" hidden></p>
         <p class="hint" id="deviceHint"></p>
         <div class="row">
@@ -194,13 +195,14 @@
       </section>
       <section class="panel" id="panel-sched">
         <h2>Zeitpläne</h2>
-        <p class="hint" id="schedHint">Zu bestimmten Zeiten andere Bänder scannen, z. B. nachts 80 und 40 m. Solange ein Zeitplan gilt, ersetzt er die Auswahl oben (auch „Satelliten“). Er gilt nur, wenn er Bänder des gewählten Geräts enthält.</p>
+        <p class="hint" id="schedHint">Zu bestimmten Zeiten andere Bänder scannen, z. B. nachts 80 und 40 m. Solange ein Zeitplan gilt, ersetzt er die Auswahl oben (auch „Satelliten“) und – wenn eingestellt – die Antenne. Er gilt nur, wenn er Bänder des gewählten Geräts enthält.</p>
         <div id="schedList"></div>
         <details class="sched-add"><summary>Zeitplan hinzufügen</summary>
           <div class="filter-grid">
             <label class="field"><span>Name</span><input id="scName" type="text" placeholder="z. B. Nacht" maxlength="40" autocomplete="off"></label>
             <label class="field"><span>von</span><input id="scFrom" type="time" value="22:00"></label>
             <label class="field"><span>bis</span><input id="scTo" type="time" value="06:00"></label>
+            <label class="field" title="Antenne, solange der Zeitplan gilt (Scan und Überflüge). „wie im Scan-Kasten“ ändert nichts."><span>Antenne</span><select id="scAnt"></select></label>
           </div>
           <div class="chips" id="scDays"></div>
           <div class="chips" id="scBands"></div>

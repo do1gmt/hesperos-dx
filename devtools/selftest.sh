@@ -3717,5 +3717,43 @@ html, js = (web / "index.html").read_text(), (web / "app.js").read_text()
 assert 'id="updatePill"' in html and 'id="updBanner"' in html and "function showNewVersion" in js and ".update-pill {" in (web / "style.css").read_text()
 PY
 
+echo "== 94 Antenne je Zeitplan: gilt im Fenster für Scan und Überflüge, sonst die Wahl im Scan-Kasten; Live unberührt"
+(cd bin && timeout 90 python3 - "$SRC" <<'PY') && ok "Zeitplan-Antenne im Fenster (fest und automatisch), danach wieder Scan-Kasten, Live bleibt, ungültige Angaben verworfen" || bad "Antenne je Zeitplan"
+import json, sys, tempfile, time
+from pathlib import Path
+import antennas as AN, webapp as W, satellites as SAT
+AN.FILE = Path(tempfile.mkdtemp()) / "antennas.json"
+AN.save({"profiles": [{"id": "sigma", "name": "Sigma", "fmin": 1.8, "fmax": 30, "az": None},
+                      {"id": "yagi", "name": "Yagi 70", "fmin": 430, "fmax": 440, "az": 200, "bw": 60, "el": 0}],
+         "use": {"scan": "sigma", "live": "sigma"}})
+cfgp = AN.BASE / "config" / "web_settings.json"
+keep = cfgp.read_text()
+st = json.loads(keep)
+st["active_device"] = "rtlsdr"
+sc = W.clean_schedules([{"name": "Nacht", "from": "00:00", "to": "23:59", "days": [0, 1, 2, 3, 4, 5, 6], "bands": ["70cm"], "tz": "utc", "antenna": "yagi"},
+                        {"name": "Kaputt", "from": "01:00", "to": "02:00", "bands": ["2m"], "antenna": "../x"}])
+assert sc[0]["antenna"] == "yagi" and sc[1]["antenna"] == "", sc
+try:
+    st["schedules"] = sc[:1]; cfgp.write_text(json.dumps(st))
+    AN._sched_cache["t"] = 0
+    r = AN.resolve("scan", 437e6)
+    assert r["profile"]["id"] == "yagi" and r["schedule"] == "Nacht" and not r["outside"], r
+    assert AN.label("live", 437e6) == "Sigma"                       # Live folgt keinem Zeitplan
+    assert SAT.antenna_beam()["az"] == 200                          # Überflüge im Fenster: Richtantenne des Zeitplans
+    st["schedules"][0]["antenna"] = "auto"; cfgp.write_text(json.dumps(st)); AN._sched_cache["t"] = 0
+    assert AN.label("scan", 7.1e6) == "Sigma" and AN.label("scan", 435e6) == "Yagi 70"
+    st["schedules"][0]["antenna"] = ""; cfgp.write_text(json.dumps(st)); AN._sched_cache["t"] = 0
+    r = AN.resolve("scan", 437e6)
+    assert r["profile"]["id"] == "sigma" and r["outside"] and r["schedule"] is None   # wie im Scan-Kasten
+    st["schedules"][0].update(antenna="yagi", days=[(time.gmtime().tm_wday + 3) % 7]); cfgp.write_text(json.dumps(st)); AN._sched_cache["t"] = 0
+    assert AN.label("scan", 437e6) == "Sigma"                       # außerhalb des Fensters: Scan-Kasten
+finally:
+    cfgp.write_text(keep); AN._sched_cache["t"] = 0
+web = Path(sys.argv[1]) / "web"
+js, html = (web / "app.js").read_text(), (web / "index.html").read_text()
+assert 'id="scAnt"' in html and 'id="antSched"' in html and "data-sant" in js and "antenna: $('scAnt').value" in js
+assert "var antData" in js                                          # Zeitpläne lesen sie schon beim ersten Zeichnen
+PY
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

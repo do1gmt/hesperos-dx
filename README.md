@@ -233,7 +233,10 @@ The frequency range is only a hint: outside of it you still scan and listen, the
 (e.g. "Sigma is not made for 2m, 70cm – scanned anyway"). The choice is saved immediately and logged; hits, passes,
 Live stations, PSK Reporter spots and pictures carry the antenna that was actually used, and the pass planning uses
 the range and beam of the scan antenna. On the first start the previous choice (main stick or HF receiver) is taken
-over. Later, an antenna switch controlled by the Pi can select the antenna by band itself.
+over. **Each schedule can bring its own antenna** (*as in the scan box* – the default –, *automatic by band* or a
+profile; set when adding it or right in the schedule list): while the schedule applies, scans and passes use it and
+the scan box says so; afterwards the choice in the scan box applies again. Live is never changed by a schedule.
+Later, an antenna switch controlled by the Pi can select the antenna by band itself.
 
 **Scans and satellite passes share the stick.** A scan is only started if it will be finished before the next
 important pass (estimated from the longest recent scans and the estimate for the current band selection). If a

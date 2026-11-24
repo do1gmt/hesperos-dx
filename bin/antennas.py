@@ -173,12 +173,46 @@ def covers(p, freq_hz):
     return float(p["fmin"]) * 1e6 <= float(freq_hz) <= float(p["fmax"]) * 1e6
 
 
+_sched_cache = {"t": 0.0, "v": None}
+
+
+def schedule_antenna(now=None):
+    """Gilt gerade ein Zeitplan mit eigener Antenne? Rückgabe dict(name, antenna) oder None (1.8.35). Höchstens
+    alle 30 s neu nachgesehen (der Scanner fragt je Fenster)."""
+    import time as _t
+    t = _t.time() if now is None else now
+    if now is None and t - _sched_cache["t"] < 30:
+        return _sched_cache["v"]
+    v = None
+    try:
+        import scan_plan as SP
+        settings = json.loads((BASE / "config" / "web_settings.json").read_text(encoding="utf-8"))
+        sc = SP.active_schedule(settings, now=t)
+        if sc and sc.get("antenna"):
+            v = {"name": sc.get("name") or "Zeitplan", "antenna": sc["antenna"]}
+    except Exception:
+        v = None
+    if now is None:
+        _sched_cache.update(t=t, v=v)
+    return v
+
+
 def resolve(use, freq_hz=None, d=None):
-    """Welche Antenne gilt für use ("scan"/"live") auf freq_hz? Rückgabe dict(profile, auto, outside) –
-    profile None, wenn keine angelegt ist oder bei „auto“ kein Bereich passt (und es mehrere gibt)."""
+    """Welche Antenne gilt für use ("scan"/"live") auf freq_hz? Rückgabe dict(profile, auto, outside, schedule) –
+    profile None, wenn keine angelegt ist oder bei „auto“ kein Bereich passt (und es mehrere gibt). Für den Scan
+    (mit Überflügen) gilt die Antenne eines gerade gültigen Zeitplans vor der Wahl im Scan-Kasten."""
     d = d or load()
     profs = d.get("profiles") or []
     sel = (d.get("use") or {}).get(use, "auto")
+    sched = schedule_antenna() if use == "scan" else None
+    if sched and (sched["antenna"] == "auto" or any(x["id"] == sched["antenna"] for x in profs)):
+        sel = sched["antenna"]
+    r = _resolve(profs, sel, freq_hz)
+    r["schedule"] = sched["name"] if sched and sel == sched["antenna"] else None
+    return r
+
+
+def _resolve(profs, sel, freq_hz):
     if sel != "auto":
         p = next((x for x in profs if x["id"] == sel), None)
         if p is not None:
