@@ -995,6 +995,7 @@
     if (h.repeater) { const r = h.repeater;                // Relais auf dieser Ausgabe (afu.tools, 1.8.63)
       html += `<p class="hint px"><b>${EN ? 'Repeater' : 'Relais'} <span class="no-i18n">${r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.call)}</a>` : esc(r.call)}</span></b>`
         + `${r.qth ? ` · <span class="no-i18n">${esc(r.qth)}</span>` : ''}${r.km != null ? ` · ${String(r.km).replace('.', DS)} km` : ''}${r.mode ? ` · ${esc(r.mode)}` : ''}${r.tone_hz ? ` · ${EN ? 'tone' : 'Ton'} ${String(r.tone_hz).replace('.', DS)} Hz` : ''}`
+        + `${r.los ? `<br>${EN ? 'Line of sight' : 'Sichtlinie'}: ${losChip(r.los, `data-hlos="${esc(r.call)}" data-hz="${r.out_hz}"`)} <span class="los-hprof"></span>` : ''}`
         + `<br><small class="muted src-note">${aftSrc(((settings || {}).afutools || {}).attribution)}</small></p>`; }
     if (h.segment_note) html += `<p class="hint px">${esc(h.segment_note)}</p>`;
     const sat = h.band === 'Satelliten';
@@ -1593,7 +1594,7 @@
     // 1.8.53
     'own_frequencies_set': 'Eigene Frequenzen geändert',
     // 1.8.42: Ereignisse ohne Beschreibung (sonst stand im Protokoll der Rohname)
-    'mesh_connected': 'Mesh: verbunden', 'mesh_lost': 'Mesh: Verbindung weg', 'mesh_no_access': 'Mesh: kein Zugriff auf den Node', 'mesh_no_answer': 'Mesh: Gerät antwortet nicht', 'mesh_stopped': 'Mesh: beendet', 'mesh_msg': 'Mesh-Nachricht', 'mesh_open_failed': 'Mesh: Gerät ließ sich nicht öffnen', 'mesh_start_failed': 'Mesh ließ sich nicht starten', 'mesh_port_set': 'Mesh: Anschluss gewählt', 'mesh_alert_failed': 'Mesh-Warnung ließ sich nicht melden', 'mesh_set': 'Mesh-Node eingestellt', 'mesh_set_failed': 'Mesh-Node ließ sich nicht einstellen', 'mesh_clock_set': 'Mesh: Uhr des Nodes gestellt', 'mesh_sent': 'Mesh: Nachricht gesendet', 'afutools_set': 'afu.tools: Einstellung geändert', 'afutools_repeaters': 'afu.tools: Relais abgerufen', 'afutools_failed': 'afu.tools: Abruf fehlgeschlagen', 'afutools_qth': 'afu.tools: Locator nachgefragt', 'afutools_wx': 'afu.tools: Funkwetter abgerufen', 'afutools_cal': 'afu.tools: Contest- und DX-Kalender abgerufen', 'afutools_spots': 'afu.tools: seltene DX-Spots abgerufen', 'mesh_advert_sent': 'Mesh: Advert versendet', 'mesh_clock_failed': 'Mesh: Uhr ließ sich nicht stellen', 'mesh_server_connected': 'Mesh: Repeater/Room-Server verbunden', 'mesh_room_login': 'Mesh: am Room-Server angemeldet', 'mesh_room_login_failed': 'Mesh: Anmeldung am Room-Server abgelehnt', 'mesh_server_set': 'Mesh: Server eingestellt', 'mesh_server_set_failed': 'Mesh: Server ließ sich nicht einstellen',
+    'mesh_connected': 'Mesh: verbunden', 'mesh_lost': 'Mesh: Verbindung weg', 'mesh_no_access': 'Mesh: kein Zugriff auf den Node', 'mesh_no_answer': 'Mesh: Gerät antwortet nicht', 'mesh_stopped': 'Mesh: beendet', 'mesh_msg': 'Mesh-Nachricht', 'mesh_open_failed': 'Mesh: Gerät ließ sich nicht öffnen', 'mesh_start_failed': 'Mesh ließ sich nicht starten', 'mesh_port_set': 'Mesh: Anschluss gewählt', 'mesh_alert_failed': 'Mesh-Warnung ließ sich nicht melden', 'mesh_set': 'Mesh-Node eingestellt', 'mesh_set_failed': 'Mesh-Node ließ sich nicht einstellen', 'mesh_clock_set': 'Mesh: Uhr des Nodes gestellt', 'mesh_sent': 'Mesh: Nachricht gesendet', 'afutools_set': 'afu.tools: Einstellung geändert', 'afutools_repeaters': 'afu.tools: Relais abgerufen', 'afutools_failed': 'afu.tools: Abruf fehlgeschlagen', 'afutools_qth': 'afu.tools: Locator nachgefragt', 'afutools_wx': 'afu.tools: Funkwetter abgerufen', 'afutools_cal': 'afu.tools: Contest- und DX-Kalender abgerufen', 'afutools_spots': 'afu.tools: seltene DX-Spots abgerufen', 'afutools_los': 'afu.tools: Sichtlinie zu Relais berechnet', 'mesh_advert_sent': 'Mesh: Advert versendet', 'mesh_clock_failed': 'Mesh: Uhr ließ sich nicht stellen', 'mesh_server_connected': 'Mesh: Repeater/Room-Server verbunden', 'mesh_room_login': 'Mesh: am Room-Server angemeldet', 'mesh_room_login_failed': 'Mesh: Anmeldung am Room-Server abgelehnt', 'mesh_server_set': 'Mesh: Server eingestellt', 'mesh_server_set_failed': 'Mesh: Server ließ sich nicht einstellen',
     'analysis_skipped': 'Auswertung übersprungen', 'auto_backup': 'Automatische Sicherung', 'backup_now': 'Sicherung von Hand', 'decode_skipped': 'Dekodieren übersprungen', 'stick_main_auto': 'Stick automatisch Haupt-Stick', 'stick_new': 'Neuer Stick erkannt', 'stick_serial_written': 'Seriennummer geschrieben', 'stick_unsupported': 'Gerät nicht unterstützt', 'check_failed': 'Prüfung fehlgeschlagen', 'internet_back': 'Internet wieder da', 'network_changed': 'Netz gewechselt', 'live_gap': 'Live: Lücke im Empfang', 'live_heard_failed': 'Live: Gehörte nicht gespeichert', 'live_recorded': 'Live: Aufnahme gespeichert', 'live.start_failed': 'Live ließ sich nicht starten', 'watch_loop_failed': 'Dauerwache: Fehler', 'watch_off': 'Dauerwache aus', 'watch_on': 'Dauerwache an', 'watch_restarted': 'Dauerwache neu gestartet', 'outbox_sent': 'Nachgeholte Nachrichten verschickt', 'test_mail_sent': 'Test-Mail verschickt', 'test_push_sent': 'Test-Push verschickt', 'sstv_upload_failed': 'SSTV-Bild: Upload fehlgeschlagen', 'sstv_uploaded': 'SSTV-Bild hochgeladen', 'rds_decoded': 'RDS dekodiert', 'rds_failed': 'RDS: Fehler', 'rundir_recreated': 'Arbeitsordner neu angelegt', 'pass_stick_restart': 'Überflug: Stick neu gestartet', 'publish_prepare_failed': 'Überflug: Webseiten-Upload nicht vorbereitet', 'waterfall_failed': 'Wasserfall ließ sich nicht erzeugen', 'band_summary_failed': 'Bandübersicht: Fehler', 'fm_watch_failed': 'UKW-Beobachtung: Fehler', 'pmsdr_fifo_reconnect': 'PMSDR: Datenstrom neu verbunden', 'pmsdr_input_set': 'PMSDR: Eingang umgestellt', 'rtl_orphans_killed': 'Verwaiste RTL-Prozesse beendet', 'run_exception': 'Scan: unerwarteter Fehler', 'scan_yielded': 'Scan gibt den Stick frei', 'health_failed': 'Selbstprüfung: Fehler', 'publish_failed': 'Webseiten-Upload: Fehler', 'restore_done': 'Sicherung eingespielt', 'restore_failed': 'Einspielen fehlgeschlagen', 'restore_stick_adopt_failed': 'Einspielen: Stick nicht übernommen', 'restore_stick_adopted': 'Einspielen: Stick übernommen', 'satellite_arming': 'Satelliten werden scharfgeschaltet', 'satellite_watchdog': 'Überflug hängt – beendet', 'scan_yield_requested': 'Scan soll den Stick freigeben', 'settings_unreadable': 'Einstellungen nicht lesbar', 'sticks_failed': 'Sticks: Fehler', 'sysmon_failed': 'Systemwerte: Fehler', 'reboot_requested': 'Neustart angefordert', 'restart_requested': 'Dienst-Neustart angefordert', 'dir_move_failed': 'Programmordner nicht umgezogen', 'dir_move_skipped': 'Programmordner-Umzug ausgelassen', 'dir_moved': 'Programmordner umgezogen', 'hostname_change_failed': 'Rechnername nicht geändert', 'hostname_changed': 'Rechnername geändert', 'hostname_notice_failed': 'Rechnername: Hinweis fehlgeschlagen', 'services_rename_failed': 'Dienste nicht umbenannt', 'services_renamed': 'Dienste umbenannt', 'backup_dir_move_failed': 'Sicherungsordner nicht umgezogen', 'backup_dir_rename_failed': 'Sicherungsordner nicht umbenannt', 'backup_dir_renamed': 'Sicherungsordner umbenannt', 'update_failed': 'Update fehlgeschlagen', 'auto_backup_set': 'Automatische Sicherung eingestellt', 'backup_downloaded': 'Sicherung heruntergeladen', 'backup_from_target': 'Sicherung vom Ziel eingespielt', 'backup_target_nas': 'Sicherungsziel: Netzwerkfreigabe', 'backup_target_nas_removed': 'Netzwerkfreigabe entfernt', 'backup_target_usb': 'Sicherungsziel: USB-Stick', 'backup_uploaded': 'Sicherung hochgeladen', 'backup_usb_ejected': 'USB-Stick ausgeworfen', 'diagnose_downloaded': 'Diagnose heruntergeladen', 'eibi_refresh_failed': 'EiBi: Herunterladen fehlgeschlagen', 'eibi_uploaded': 'EiBi-Liste hochgeladen', 'follow_updated': 'Satelliten-Nachführung eingestellt', 'hf_device_updated': 'Kurzwellengerät eingestellt', 'interference_changed': 'Störlinie geändert', 'live_favorites_saved': 'Live-Favoriten gespeichert', 'location_confirmed': 'Standort bestätigt', 'publish_set': 'Webseiten-Upload eingestellt', 'restore_requested': 'Einspielen angefordert', 'satellites_armed_now': 'Satelliten sofort scharf', 'satellites_arming': 'Satelliten in 1 Minute scharf', 'scan_stop_requested': 'Scan-Abbruch angefordert', 'scheduler_dead_fallback': 'Zeitplaner antwortet nicht – Scan direkt gestartet', 'sstv_event_added': 'SSTV-Termin eingetragen', 'sstv_event_deleted': 'SSTV-Termin gelöscht', 'sstv_events_failed': 'SSTV-Termine: Abruf fehlgeschlagen', 'sstv_manual_queued': 'SSTV-Bild für die Webseite vorgemerkt', 'stick_updated': 'Stick-Einstellungen gespeichert', 'time_mode_set': 'Zeitangaben umgestellt', 'ui_prefs_failed': 'Ansicht-Profil: Fehler', 'update_started': 'Update gestartet', 'watchdog_ping_failed': 'Watchdog-Meldung fehlgeschlagen', 'webapp_stall': 'Dashboard hing kurz', 'webapp_stall_probe_failed': 'Dashboard-Hänger: Prüfung fehlgeschlagen', 'wifi_fallback_added': 'Ersatz-WLAN eingetragen', 'wifi_fallback_removed': 'Ersatz-WLAN entfernt', 'wsjtx_udp_set': 'Weitergabe im Netz (WSJT-X) eingestellt',
     'notice_raised': 'Hinweis gemeldet', 'notice_resolved': 'Hinweis behoben', 'notice_event': 'Ereignis gemeldet', 'update_done': 'Update fertig', 'rescue.start': 'Notfallseite gestartet', 'sysupdate_checked': 'Systemupdates geprüft', 'sysupgrade_requested': 'Systemupdate angefordert', 'sysupgrade_started': 'Systemupdate gestartet', 'sysupgrade_done': 'Systemupdate fertig', 'sysupgrade_failed': 'Systemupdate fehlgeschlagen', 'sysupgrade_waiting': 'Systemupdate wartet auf eine freie Minute', 'sysupgrade_cancelled': 'Systemupdate nicht mehr angefordert', 'sysupgrade_start_failed': 'Systemupdate ließ sich nicht starten', 'reboot_after_update': 'Neustart nach Systemupdate', 'reboot_postponed': 'Neustart verschoben', 'reboot_done': 'Neustart nach Systemupdate erledigt', 'sysupdate_settings': 'Systemupdates eingestellt', 'sysupdate_failed': 'Systemupdates: Fehler', 'foreign_request_blocked': 'Anfrage einer fremden Webseite abgewiesen', 'backup_key_set': 'Passwort der Zugangsdaten gesetzt', 'backup_key_cleared': 'Passwort der Zugangsdaten gelöscht', 'live_image_keep': 'Bild aus Live behalten (★)', 'live_image_unkeep': 'Bild aus Live nicht mehr behalten', 'live_image_delete': 'Bild aus Live gelöscht', 'live_image_publish': 'Bild aus Live für die Webseite vorgemerkt', 'ui_prefs_replaced': 'Ansicht-Profil übernommen', 'ui_prefs_copied': 'Ansicht-Profil kopiert', 'backup_dir_moved': 'Sicherungsordner umgezogen', 'writewatch_failed': 'Schreib-Zählung: Fehler', 'db_keeper_failed': 'Ruhende Datenbank-Verbindung: Fehler', 'live_yield': 'Live hält kurz an', 'live_resumed': 'Live läuft weiter', 'auth_none': 'Dashboard ohne Passwort', 'live_thumb_failed': 'Vorschaubild ließ sich nicht erzeugen',
     run_start: 'Scan gestartet', run_done: 'Scan fertig', run_failed: 'Scan fehlgeschlagen', run_cancelled: 'Scan abgebrochen',
@@ -3254,6 +3255,10 @@
     $('aftSpotsRow').hidden = !(a.has_key && fs.spots);          // seltene DX-Spots (1.8.70)
     if (document.activeElement !== $('aftSpotsMin')) $('aftSpotsMin').value = a.spots_min || 'selten';
     $('aftSpotsNotify').checked = ((settings.watchlist) || []).some(r => r.type === 'event' && r.value === 'dx_rare' && r.enabled !== false);
+    $('aftLosRow').hidden = !(a.has_key && fs.los);              // Sichtlinie (1.8.71)
+    $('aftLosLoc').placeholder = a.los_precise ? (EN ? 'set – leave empty to keep' : 'gesetzt – leer lassen = unverändert') : (EN ? 'e.g. JN59AB12' : 'z. B. JN59AB12');
+    $('aftLosClear').hidden = !a.los_precise;
+    if (document.activeElement !== $('aftLosH')) $('aftLosH').value = String(a.los_height != null ? a.los_height : 10);
     if (!$('ownRepBox').hidden) loadOwnRep();
   }
   async function aftPost(body, okText) {
@@ -3278,12 +3283,57 @@
       note($('aftNote'), on ? (EN ? '✓ rare DX stations are reported (watchlist, 30 min quiet time per rule)' : '✓ seltene DX-Stationen werden gemeldet (Beobachtungsliste, 30 min Ruhezeit)') : (EN ? '✓ no longer reported' : '✓ wird nicht mehr gemeldet')); }
     catch (err) { note($('aftNote'), (EN ? 'Error: ' : 'Fehler: ') + I18N.t(err.message), true); }
   });
+  $('aftLosLoc').addEventListener('change', () => { const v = $('aftLosLoc').value.trim(); if (!v) return;   // nie zurückgeschrieben
+    aftPost({ los_locator: v }, EN ? '✓ saved – the line of sight is recalculated over the next hour' : '✓ gespeichert – die Sichtlinie wird in der nächsten Stunde neu berechnet').then(() => { $('aftLosLoc').value = ''; }); });
+  $('aftLosLoc').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('aftLosLoc').blur(); } });
+  $('aftLosH').addEventListener('change', () => aftPost({ los_height: $('aftLosH').value }, EN ? '✓ saved – the line of sight is recalculated over the next hour' : '✓ gespeichert – die Sichtlinie wird in der nächsten Stunde neu berechnet'));
+  $('aftLosClear').addEventListener('click', () => aftPost({ los_locator: '' }, EN ? '✓ precise location removed' : '✓ genauer Standort entfernt'));
   $('aftClear').addEventListener('click', () => { if (confirm(EN ? 'Remove the afu.tools key? The stored repeaters are deleted too.' : 'afu.tools-Schlüssel entfernen? Die gespeicherten Relais werden mit gelöscht.'))
     aftPost({ clear_key: true }, EN ? '✓ key removed' : '✓ Schlüssel entfernt'); });
   $('aftRefresh').addEventListener('click', async () => { note($('aftNote'), EN ? 'fetching …' : 'wird abgerufen …');
     try { const d = await post('/api/afutools/refresh', {}); settings = d.settings; renderAft(); note($('aftNote'), d.ok ? (EN ? '✓ fetched' : '✓ abgerufen') : (EN ? 'Error: ' : 'Fehler: ') + I18N.t(d.error || ''), !d.ok); }
     catch (e) { note($('aftNote'), (EN ? 'Error: ' : 'Fehler: ') + I18N.t(e.message), true); } });
+  document.addEventListener('click', e => {               // Sichtlinie an der Trefferkarte: Geländeschnitt auf/zu
+    const b = e.target.closest('[data-hlos]'); if (!b) return;
+    const box = b.parentElement.querySelector('.los-hprof') || b.nextElementSibling;
+    if (box.innerHTML) { box.innerHTML = ''; box.classList.remove('los-prof'); return; }
+    box.classList.add('los-prof'); box.textContent = '…'; losProfile(box, b.dataset.hlos, Number(b.dataset.hz));
+  });
   const ownRep = { list: [], offset: 0, per: 25 };
+  // Sichtlinie zum Relais (afu.tools, 1.8.71): Kurzurteil als Knopf, Geländeschnitt als kleines Profil
+  const LOS_UI = { frei: ['👁', 'frei', 'clear', 'los-frei'], verdeckt: ['⛰', 'verdeckt', 'blocked', 'los-zu'] };
+  function losChip(x, attrs) {
+    if (!x) return `<span class="muted" title="${EN ? 'not checked yet' : 'noch nicht geprüft'}">…</span>`;
+    if (x.outside) return `<span class="muted" title="${EN ? 'outside Germany – no terrain model' : 'außerhalb Deutschlands – kein Höhenmodell'}">–</span>`;
+    if (x.error) return `<span class="muted" title="${EN ? 'query failed, tried again later' : 'Abfrage fehlgeschlagen, später neu'}">?</span>`;
+    const u = LOS_UI[x.urteil] || ['◐', x.urteil || '?', x.urteil || '?', 'los-knapp'];
+    const tip = (x.text || '') + (x.engster && x.engster.luft != null ? ` · ${EN ? 'tightest point' : 'engster Punkt'} ${String(x.engster.km).replace('.', DS)} km, ${x.engster.luft >= 0 ? (EN ? 'clearance' : 'Luft') : (EN ? 'terrain above the line by' : 'Gelände über der Linie um')} ${String(Math.abs(Math.round(x.engster.luft)))} m` : '');
+    return `<button type="button" class="btn btn-small los-chip ${u[3]}" ${attrs || ''} title="${esc(tip)}">${u[0]}<span class="los-lab"> ${EN ? u[2] : u[1]}</span></button>`;
+  }
+  async function losProfile(el, call, hz) {
+    let d; try { d = await api(`/api/afutools/los?call=${encodeURIComponent(call)}&out_hz=${hz}`); } catch (e) { el.textContent = EN ? 'not available' : 'nicht verfügbar'; return; }
+    const x = d.los;
+    if (!x || !x.profil || !x.profil.length) { el.textContent = EN ? 'No terrain profile yet.' : 'Noch kein Geländeschnitt.'; return; }
+    const P = x.profil.filter(p => p[0] != null && p[1] != null), W = 600, H = 170, pl = 38, pr = 8, pt = 10, pb = 22;
+    const kmax = P[P.length - 1][0] || 1;
+    const lo = Math.min(...P.map(p => Math.min(p[1], p[2] - (p[3] || 0)))), hi = Math.max(...P.map(p => Math.max(p[1], p[2])));
+    const span = Math.max(20, hi - lo), y0 = lo - span * .05, y1 = hi + span * .08;
+    const X = km => pl + (W - pl - pr) * km / kmax, Y = h => pt + (H - pt - pb) * (1 - (h - y0) / (y1 - y0));
+    const terr = `M${X(0)},${Y(y0)} ` + P.map(p => `L${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(' ') + ` L${X(kmax)},${Y(y0)} Z`;
+    const los = `M${X(P[0][0])},${Y(P[0][2])} L${X(kmax)},${Y(P[P.length - 1][2])}`;
+    const fz = P.map((p, i) => `${i ? 'L' : 'M'}${X(p[0]).toFixed(1)},${Y(p[2] - (p[3] || 0)).toFixed(1)}`).join(' ');
+    const hit = P.filter(p => p[1] > p[2]).map(p => `<circle cx="${X(p[0]).toFixed(1)}" cy="${Y(p[1]).toFixed(1)}" r="2.2" class="los-hit"/>`).join('');
+    const tick = v => `<text x="${pl - 4}" y="${Y(v) + 3}" text-anchor="end">${Math.round(v)}</text><line x1="${pl}" x2="${W - pr}" y1="${Y(v)}" y2="${Y(v)}" class="los-grid"/>`;
+    const st = Math.pow(10, Math.floor(Math.log10(span))) * (span / Math.pow(10, Math.floor(Math.log10(span))) > 5 ? 2 : 1);
+    let ticks = ''; for (let v = Math.ceil(y0 / st) * st; v <= y1; v += st) ticks += tick(v);
+    el.innerHTML = `<svg class="los-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${EN ? 'terrain profile' : 'Geländeschnitt'}">${ticks}`
+      + `<path d="${terr}" class="los-terr"/><path d="${fz}" class="los-fz"/><path d="${los}" class="los-line"/>${hit}`
+      + `<text x="${pl}" y="${H - 6}">${EN ? 'you' : 'du'} (${Math.round(x.h_start || 0)} m + ${String(x.h_von).replace('.', DS)} m)</text>`
+      + `<text x="${W - pr}" y="${H - 6}" text-anchor="end" class="no-i18n">${esc(call)} (${Math.round(x.h_ziel || 0)} m + ${x.h_nach} m) · ${String(x.km).replace('.', DS)} km</text></svg>`
+      + `<p class="hint">${losChip(x)} ${esc(x.text || '')}${x.mehr_m > 0 && x.urteil !== 'frei' ? ` ${EN ? 'Needed extra height' : 'Nötige Zusatzhöhe'}: ${Math.round(x.mehr_m) > 2000 ? (EN ? 'out of reach' : 'nicht erreichbar') : Math.round(x.mehr_m) + ' m'}.` : ''}</p>`
+      + `<p class="hint los-legend"><span class="los-k los-k-line"></span>${EN ? 'line of sight' : 'Sichtlinie'} <span class="los-k los-k-fz"></span>${EN ? 'lower edge of the 1st Fresnel zone' : 'Unterkante 1. Fresnelzone'} <span class="los-k los-k-hit"></span>${EN ? 'terrain in the way' : 'Gelände im Weg'} · ${x.mhz ? String(x.mhz).replace('.', DS) + ' MHz' : ''}</p>`
+      + `<small class="src-note muted">${aftSrc(d.attribution)}${x.vermerk ? ' · ' + esc(x.vermerk) : ''}${x.stand ? ' (' + esc(x.stand) + ')' : ''}</small>`;
+  }
   const REP_MODE = m => /^FM$/i.test(m) ? 'fm' : /DMR|D-?STAR|C4FM|YSF|FUSION|M17|NXDN|TETRA|DV/i.test(m) ? 'dv' : null;
   async function loadOwnRep() {
     let d; try { d = await api('/api/afutools/repeaters'); } catch (e) { return; }
@@ -3293,6 +3343,14 @@
     if (bands.includes(cur)) $('ownRepBand').value = cur;
     $('ownRepMeta').textContent = d.fetched ? `· ${d.km} km · ${EN ? 'as of' : 'Stand'} ${fmtTime(d.fetched)}` : '';
     $('ownRepNote').textContent = d.tone_note ? I18N.t(d.tone_note) : '';
+    ownRep.los = d.los || null;                              // Sichtlinie (1.8.71)
+    document.querySelectorAll('.los-col').forEach(x => { x.hidden = !ownRep.los; });
+    $('ownRepLos').hidden = !ownRep.los;
+    if (ownRep.los) $('ownRepLos').innerHTML = (EN ? `Line of sight: ${ownRep.los.done} of ${ownRep.los.total} repeaters checked` : `Sichtlinie: ${ownRep.los.done} von ${ownRep.los.total} Relais geprüft`)
+      + (ownRep.los.done < ownRep.los.total ? (EN ? ' (15 per quarter hour)' : ' (15 je Viertelstunde)') : '')
+      + ` · ${EN ? 'your antenna' : 'deine Antenne'} ${String(ownRep.los.height).replace('.', DS)} m, ${EN ? 'repeater' : 'Relais'} ${ownRep.los.rep_height} m${ownRep.los.precise ? '' : (EN ? ' · from the centre of your locator square' : ' · ab der Mitte deines Locator-Felds')}. `
+      + (EN ? 'Tap the symbol for the terrain profile.' : 'Symbol antippen für den Geländeschnitt.')
+      + (ownRep.los.attribution ? `<br><small class="src-note">${aftSrc(ownRep.los.attribution)} · © GeoBasis-DE / BKG</small>` : '');
     $('ownRepSrc').innerHTML = aftSrc(d.attribution);
     renderOwnRep();
   }
@@ -3304,12 +3362,20 @@
       return `<tr><td><b class="no-i18n">${r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.call)}</a>` : esc(r.call)}</b><small class="muted rep-m no-i18n">${esc(r.qth || '')}${r.km != null ? ' · ' + String(r.km).replace('.', DS) + ' km' : ''}${r.tone_hz ? ' · ' + String(r.tone_hz).replace('.', DS) + ' Hz' : ''}</small></td><td class="no-i18n">${esc(r.qth || '–')}</td>`
         + `<td class="mono-num">${(r.out_hz / 1e6).toFixed(4).replace('.', DS)}</td><td>${esc(r.mode)}</td><td class="mono-num">${r.tone_hz ? String(r.tone_hz).replace('.', DS) + ' Hz' : '–'}</td>`
         + `<td class="mono-num">${r.km != null ? String(r.km).replace('.', DS) + ' km' : '–'}</td>`
+        + (ownRep.los ? `<td>${losChip(r.los, `data-los="${ownRep.offset + i}"`)}</td>` : '')
         + `<td>${r.own ? `<span class="muted">★ ${EN ? 'added' : 'übernommen'}</span>` : can ? `<button type="button" class="btn btn-small" data-rep="${ownRep.offset + i}">★ ${EN ? 'add' : 'übernehmen'}</button>`
           : `<span class="muted" title="${!r.in_band ? (EN ? 'outside the band plan' : 'außerhalb des Bandplans') : (EN ? 'mode cannot be scanned' : 'Betriebsart nicht scanbar')}">–</span>`}</td></tr>`;
     }).join('') || `<tr><td colspan="7" class="muted">${EN ? 'No repeaters.' : 'Keine Relais.'}</td></tr>`;
     const a = total ? ownRep.offset + 1 : 0, z = Math.min(total, ownRep.offset + ownRep.per);
     $('ownRepPos').textContent = EN ? `${a}–${z} of ${total}` : `${a}–${z} von ${total}`;
     $('ownRepPrev').disabled = ownRep.offset === 0; $('ownRepNext').disabled = z >= total;
+    $('ownRepList').querySelectorAll('[data-los]').forEach(btn => btn.addEventListener('click', () => {   // Geländeschnitt aufklappen
+      const tr = btn.closest('tr'), nx = tr.nextElementSibling;
+      if (nx && nx.classList.contains('los-row')) { nx.remove(); return; }
+      const r = l[Number(btn.dataset.los)], row = document.createElement('tr'); row.className = 'los-row';
+      row.innerHTML = `<td colspan="8"><div class="los-prof">…</div></td>`; tr.after(row);
+      losProfile(row.querySelector('.los-prof'), r.call, r.out_hz);
+    }));
     $('ownRepList').querySelectorAll('[data-rep]').forEach(btn => btn.addEventListener('click', async () => {
       const r = l[Number(btn.dataset.rep)];
       const name = `${r.call} ${r.qth || ''}`.trim().slice(0, 24);

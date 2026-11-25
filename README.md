@@ -724,6 +724,18 @@ badge and the hit card a 🔥 badge with the callsign (entity and reason in the 
 (default *rare*); the checkbox *report by mail / push / Telegram* adds the watchlist rule *Event → Rare DX station
 heard* (30 min quiet time; it fires on scan hits and in Live).
 
+**Line of sight to repeaters** (switch it on below the key; Germany only): for every repeater site and band in
+*Repeaters nearby* afu.tools checks once whether terrain blocks the path, using the federal elevation model DGM200
+(© GeoBasis-DE / BKG), effective earth radius 4/3 and the first Fresnel zone. The list gets a column *Sight* –
+👁 *clear*, ◐ *tight* (Fresnel zone cut), ▲ *blocked* – and a hit on a repeater output shows the same in its
+repeater line; tap the symbol for a small terrain profile (terrain, line of sight, lower edge of the Fresnel zone,
+points in the way). At most 15 queries per quarter hour; results are kept, because terrain does not change – asked
+again only for another own location, antenna height or a moved repeater. Your antenna height above ground is
+set in the card (default 10 m); repeater antenna heights are not known, 30 m is assumed. A six-character locator
+is coarse for this (about 4.6 × 2.3 km), so the card takes an optional **precise location** (eight-character
+locator, about 400 × 200 m). It stays on the Pi: it is never shown in the dashboard, never logged and not written
+to the simple backup (only to the encrypted credentials); it is sent to afu.tools because the query needs it.
+
 **Locators for heard stations.** Many stations (FT8 outside CQ calls, CW, RTTY) never send a locator. With a key
 the Pi asks afu.tools (`/qth`) for their location as reported to PSK Reporter or the Reverse Beacon Network –
 never from the callsign register: every 15 minutes at most one request for up to 100 callsigns heard in the last

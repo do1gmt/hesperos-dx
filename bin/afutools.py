@@ -20,12 +20,19 @@ Schritt 5 (1.8.70): seltene DX-Spots (/dx/spots?minuten=60&stufe=ungewoehnlich,s
 data/afutools_spots.json, zwei Stunden lang gemerkt. Hört Hesperos ein solches Rufzeichen, wird es hervorgehoben
 (Stationen, Treffer) und die Beobachtungsliste kann es melden (Ereignis „Seltene DX-Station gehört“).
 
+Schritt 6 (1.8.71): Sichtlinie zu den Relais in der Nähe (/sichtlinie, Höhenmodell DGM200 des BKG, nur Deutschland).
+Je Relaisstandort und Band einmal gefragt (höchstens 15 je Viertelstunde), Ergebnis mit kleinem Geländeschnitt dauerhaft unter
+data/afutools_los.json – neu nur bei anderem eigenen Standort, anderer Antennenhöhe oder verschobenem Relais.
+Der genaue Standort (8-stelliger Locator, optional) bleibt auf dem Pi: nicht im Dashboard, nicht im Log, nicht im
+einfachen Backup – er geht nur an afu.tools, weil die Abfrage ihn braucht.
+
 Der Schlüssel liegt in config/web_settings.json unter afutools.api_key, wird nie ans Dashboard gegeben, nie
 protokolliert und nicht ins einfache Backup geschrieben (wie die anderen Zugangsdaten). Jede Antwort bringt unter
 `quellenangabe` mit, welche Quellen sichtbar zu nennen sind – das Dashboard zeigt genau diese Nennung.
 Regeln der API: nur GET, 120 Abfragen je Minute – Hesperos fragt hier ein Mal am Tag.
 """
 import json
+import re
 import math
 import os
 import threading
@@ -69,7 +76,8 @@ FEATURES = {"repeaters": (True, "Relais in der Nähe und an Treffern"),
             "qth": (True, "Standort gehörter Stationen ohne eigenen Locator"),
             "wx": (False, "Funkwetter auf der Scan-Seite (Sonne, Magnetfeld, welche Bänder offen sind)"),
             "cal": (False, "Contest- und DX-Kalender (Karte auf der Scan-Seite, Hinweis im Scan-Verlauf, DX-Abzeichen bei Stationen)"),
-            "spots": (False, "Seltene DX-Spots: Hervorhebung, wenn Hesperos eine gerade selten gespottete Station hört (Meldung über die Beobachtungsliste)")}
+            "spots": (False, "Seltene DX-Spots: Hervorhebung, wenn Hesperos eine gerade selten gespottete Station hört (Meldung über die Beobachtungsliste)"),
+            "los": (False, "Sichtlinie zu den Relais in der Nähe (Gelände dazwischen, nur Deutschland)")}
 
 
 def public_config(settings=None):
@@ -79,6 +87,7 @@ def public_config(settings=None):
     return {"has_key": bool(c["api_key"]), "km": c["km"], "radii": list(RADII), "locator": c["locator"],
             "features": c["features"], "feature_labels": {k: v[1] for k, v in FEATURES.items()},
             "spots_min": spots_min(settings), "spot_levels": list(SPOT_LEVELS),
+            "los_height": los_conf(settings)["height"], "los_precise": bool(los_conf(settings)["precise"]),
             "fetched": d.get("fetched"), "count": len(d.get("repeaters") or []), "error": d.get("error"),
             "near": d.get("near"), "km_cached": d.get("km"), "attribution": d.get("attribution")}
 
@@ -186,7 +195,8 @@ def cached():
 
 def forget():
     """Schlüssel entfernt: zwischengespeicherte Daten mit löschen (ohne Schlüssel keine Nutzung der Daten)."""
-    for f in (CACHE, BASE / "data" / "afutools_wx.json", BASE / "data" / "afutools_cal.json", BASE / "data" / "afutools_spots.json"):
+    for f in (CACHE, BASE / "data" / "afutools_wx.json", BASE / "data" / "afutools_cal.json", BASE / "data" / "afutools_spots.json",
+              BASE / "data" / "afutools_los.json"):
         try:
             f.unlink()
         except OSError:
@@ -667,3 +677,187 @@ def rare_spot(call, band=None, now=None, settings=None):
 def spot_text(x):
     lab = {"ungewoehnlich": "ungewöhnlich", "selten": "selten", "sehr_selten": "sehr selten"}.get(x["stufe"], x["stufe"])
     return f"{x['entitaet'] or x['call']} – {lab} gespottet" + (f" ({x['band']} {x['modus']})".rstrip(" ") if x.get("band") else "")
+
+
+# ---------------------------------------------------------------- Schritt 6: Sichtlinie zu den Relais
+LOS = BASE / "data" / "afutools_los.json"
+LOS_BATCH = 15                              # Abfragen je Viertelstunde (Housekeeping); Gelände ändert sich nicht
+LOS_RETRY_S = 6 * 3600                      # fehlgeschlagene Abfrage frühestens nach 6 h wiederholen
+LOS_POINTS = 96                             # Punkte im Geländeschnitt (reicht fürs kleine Profil, hält die Datei klein)
+REP_HEIGHT_M = 30.0                         # Antennenhöhe der Relais: unbekannt, afu.tools-Voreinstellung
+_LS = {"mtime": None, "data": None}
+_LOS_LOCK = threading.Lock()
+LOC_RE = re.compile(r"^[A-R]{2}[0-9]{2}([A-X]{2}([0-9]{2}([A-X]{2})?)?)?$")
+
+
+def los_conf(settings=None):
+    if settings is None:
+        try:
+            settings = json.loads(SETTINGS.read_text(encoding="utf-8"))
+        except Exception:
+            settings = {}
+    c = settings.get("afutools") if isinstance(settings.get("afutools"), dict) else {}
+    precise = str(c.get("los_locator") or "").upper()
+    try:
+        h = float(c.get("los_height", 10))
+    except (TypeError, ValueError):
+        h = 10.0
+    own = precise if LOC_RE.match(precise) else str(settings.get("my_locator") or "").upper()
+    return {"precise": precise if LOC_RE.match(precise) else "", "from": own if LOC_RE.match(own) else "",
+            "height": max(0.0, min(h, 500.0))}
+
+
+def _loc_fix(v):
+    """Locator für die Abfrage in der üblichen Schreibweise (JN59hh), leer wenn ungültig."""
+    v = str(v or "").strip().upper()
+    if not LOC_RE.match(v):
+        return ""
+    return v[:4] + v[4:6].lower() + v[6:8] + v[8:10].lower()
+
+
+def _rep_key(r):
+    """Ein Ergebnis je Standort und Band: mehrere Relais am selben Mast (2 m, 70 cm …) teilen sich die Abfrage
+    – innerhalb eines Bandes ändert die Frequenz an der Fresnelzone praktisch nichts."""
+    return f"{_rep_pos(r)}|{r.get('band') or int(r.get('out_hz', 0) // 1_000_000)}"
+
+
+def _rep_pos(r):
+    if r.get("lat") is not None and r.get("lon") is not None:
+        return f"{float(r['lat']):.5f},{float(r['lon']):.5f}"
+    return _loc_fix(r.get("locator"))
+
+
+def _in_de(r):
+    """Grob: liegt das Relais im Rechteck um Deutschland? (Feine Grenze prüft afu.tools selbst: moeglich=false)"""
+    if r.get("lat") is None or r.get("lon") is None:
+        return True
+    return 47.2 <= float(r["lat"]) <= 55.1 and 5.8 <= float(r["lon"]) <= 15.1
+
+
+def los_cached():
+    try:
+        m = LOS.stat().st_mtime
+    except OSError:
+        return {}
+    if _LS["mtime"] != m:
+        try:
+            _LS["data"] = json.loads(LOS.read_text(encoding="utf-8"))
+        except Exception:
+            _LS["data"] = {}
+        _LS["mtime"] = m
+    return _LS["data"] or {}
+
+
+def _los_item(r, mhz):
+    """Ergebnis einer Abfrage: Urteil, Erklärung, engster Punkt und ein kleiner Geländeschnitt."""
+    def n(v, d=1):
+        try:
+            return round(float(v), d)
+        except (TypeError, ValueError):
+            return None
+    ep = r.get("engster_punkt") if isinstance(r.get("engster_punkt"), dict) else {}
+    prof = [[n(p.get("km"), 2), n(p.get("hoehe")), n(p.get("sicht")), n(p.get("fresnel"))]
+            for p in (r.get("profil") or []) if isinstance(p, dict)][:1024]
+    q = r.get("quelle") if isinstance(r.get("quelle"), dict) else {}
+    return {"ok": bool(r.get("moeglich", True)), "urteil": str(r.get("urteil") or "")[:20], "text": str(r.get("text") or "")[:300],
+            "km": n(r.get("strecke_km"), 2), "fresnel_anteil": n(r.get("anteil_fresnel"), 2),
+            "engster": {"km": n(ep.get("km"), 2), "luft": n(ep.get("luft")), "hoehe": n(ep.get("hoehe"))} if ep else None,
+            "h_start": n(r.get("hoehe_start_m")), "h_ziel": n(r.get("hoehe_ziel_m")), "mehr_m": n(r.get("zusaetzliche_hoehe_m")),
+            "mhz": mhz, "profil": prof, "vermerk": str(q.get("vermerk") or "")[:80], "stand": str(q.get("stand") or "")[:40],
+            "ts": time.time()}
+
+
+def los_refresh(settings=None, log=None, batch=LOS_BATCH):
+    """Nächste Relais ohne Ergebnis abfragen. Rückgabe: Anzahl der Abfragen (None, wenn ausgeschaltet)."""
+    c = config(settings)
+    lc = los_conf(settings)
+    if not c["api_key"] or not c["features"]["los"] or not lc["from"]:
+        return None
+    with _LOS_LOCK:
+        d = dict(los_cached())
+        sig = f"{lc['from']}|{lc['height']}|{REP_HEIGHT_M}"
+        if d.get("sig") != sig:                          # anderer Standort oder Höhe: alles neu
+            d = {"sig": sig, "items": {}}
+        items = dict(d.get("items") or {})
+        reps = cached().get("repeaters") or []
+        now, asked, changed = time.time(), 0, False
+        for r in reps:
+            if asked >= batch:
+                break
+            k, pos = _rep_key(r), _rep_pos(r)
+            if not pos:
+                continue
+            old = items.get(k)
+            if old and old.get("pos") == pos and (not old.get("error") or now - old.get("ts", 0) < LOS_RETRY_S):
+                continue
+            mhz = round(r["out_hz"] / 1e6, 4)
+            if not _in_de(r):
+                items[k] = {"pos": pos, "ok": False, "urteil": "", "text": "", "ts": now}
+                changed = True
+                continue
+            asked += 1
+            try:
+                res = _get("/sichtlinie", {"von": _loc_fix(lc["from"]), "nach": pos, "hoehe_von": lc["height"],
+                                           "hoehe_nach": REP_HEIGHT_M, "mhz": min(max(mhz, 0.2), 100000), "punkte": LOS_POINTS}, c["api_key"])
+                it = _los_item(res, mhz)
+                if not d.get("attribution"):
+                    d["attribution"] = attribution(res.get("quellenangabe"))
+            except Exception as e:
+                it = {"error": str(e)[:200], "ts": now}
+                if log:
+                    log("WARN", "afutools", "afutools_failed", what="Sichtlinie", error=it["error"])
+                if "401" in it["error"] or "429" in it["error"] or "nicht erreichbar" in it["error"]:
+                    it["pos"] = pos
+                    items[k] = it
+                    changed = True
+                    break                                   # nicht weiter anrennen
+            it["pos"] = pos
+            items[k] = it
+            changed = True
+        keep = {_rep_key(r) for r in reps}
+        if any(k not in keep for k in items):              # Relais aus dem Umkreis gefallen
+            items = {k: v for k, v in items.items() if k in keep}
+            changed = True
+        if changed or d.get("items") is None:
+            d["items"] = items
+            LOS.parent.mkdir(parents=True, exist_ok=True)
+            tmp = LOS.with_suffix(".tmp")
+            tmp.write_text(json.dumps(d, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+            os.replace(tmp, LOS)
+        if asked and log:
+            log("DEBUG", "afutools", "afutools_los", n=asked, done=sum(1 for v in items.values() if v.get("urteil")), total=len(reps))
+        return asked
+
+
+def los_for(rep, settings=None, full=False):
+    """Ergebnis für ein Relais (kurz; full=True mit Geländeschnitt) oder None."""
+    if not _on("los", settings):
+        return None
+    d = los_cached()
+    if d.get("sig", "").split("|")[0] != los_conf(settings)["from"]:
+        return None
+    it = (d.get("items") or {}).get(_rep_key(rep))
+    if not it or it.get("pos") != _rep_pos(rep):
+        return None
+    if it.get("error"):
+        return {"error": True}
+    if not it.get("ok"):
+        return {"outside": True}
+    out = {k: it.get(k) for k in ("urteil", "text", "km", "engster", "mehr_m", "h_start", "h_ziel")}
+    if full:
+        out.update(profil=it.get("profil"), mhz=it.get("mhz"), vermerk=it.get("vermerk"), stand=it.get("stand"),
+                   h_von=los_conf(settings)["height"], h_nach=REP_HEIGHT_M)
+    return out
+
+
+def los_attribution():
+    d = los_cached()
+    return d.get("attribution")
+
+
+def los_progress(settings=None):
+    d = los_cached()
+    reps = cached().get("repeaters") or []
+    it = d.get("items") or {}
+    return {"done": sum(1 for r in reps if (it.get(_rep_key(r)) or {}).get("urteil") or (it.get(_rep_key(r)) or {}).get("ok") is False),
+            "total": len(reps)}

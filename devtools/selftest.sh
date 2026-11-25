@@ -4655,7 +4655,7 @@ try:
     st = json.loads(bak); st["my_locator"] = "JN59LL"; st["afutools"] = {"api_key": "afu_test", "km": 50}
     W.SETTINGS.write_text(json.dumps(st))
     AFT._write({"repeaters": [{"call": "DB0FUE", "out_hz": 145637500, "km": 3.8}], "near": "JN59LL", "km": 50, "fetched_ts": 9e12})
-    assert AFT.config()["features"] == {"repeaters": True, "qth": True, "wx": False, "cal": False, "spots": False} and AFT.repeater_at(145637500)["call"] == "DB0FUE"
+    assert AFT.config()["features"] == {"repeaters": True, "qth": True, "wx": False, "cal": False, "spots": False, "los": False} and AFT.repeater_at(145637500)["call"] == "DB0FUE"
     W.afutools_save({"features": {"repeaters": False}})
     assert AFT.config()["features"]["repeaters"] is False and AFT.repeater_at(145637500) is None
     assert AFT.refresh(json.loads(W.SETTINGS.read_text()), force=True).get("repeaters")      # abgeschaltet: nicht geholt (alter Stand)
@@ -4796,6 +4796,58 @@ assert 'id="aftSpotsMin"' in html and 'id="aftSpotsNotify"' in html and "r.value
 assert "'afutools_spots': 'afu.tools: seltene DX-Spots abgerufen'" in js
 PY
 pkill -f "afutools_fake.py 8093" 2>/dev/null; rm -f "$AFL"
+
+echo "== 129 afu.tools: Sichtlinie zu den Relais (je Standort und Band einmal, genauer Standort bleibt privat)"
+AFL=$(mktemp); (python3 "$SRC/devtools/afutools_fake.py" 8092 "$AFL" > /dev/null 2>&1 &); sleep 1
+(cd bin && HSP_AFUTOOLS_URL=http://127.0.0.1:8092/api/v1 timeout 60 python3 - "$SRC" "$AFL" <<'PY') && ok "aus: nichts gefragt; an: je Relaisstandort und Band eine Abfrage (frei/knapp/verdeckt, Geländeschnitt), Höhe und Ort aus den Einstellungen, neu erst bei anderem Standort; genauer Standort nie im Dashboard, Log oder einfachen Backup, aber im verschlüsselten; Quelle BKG" || bad "Sichtlinie"
+import sys, json
+from pathlib import Path
+import afutools as AFT, webapp as W, backup as BK
+bak = W.SETTINGS.read_text()
+calls = lambda: [json.loads(l)["qs"] for l in Path(sys.argv[2]).read_text().splitlines() if "/sichtlinie" in l]
+try:
+    st = json.loads(bak); st["my_locator"] = "JN59LL"; st["afutools"] = {"api_key": "afu_test", "km": 50}
+    W.SETTINGS.write_text(json.dumps(st))
+    AFT.refresh(st, force=True)
+    assert AFT.los_refresh(st) is None and calls() == []
+    W.afutools_save({"features": {"los": True}, "los_locator": "jn59ab12", "los_height": "12,5"})
+    st = json.loads(W.SETTINGS.read_text())
+    assert st["afutools"]["los_locator"] == "JN59AB12" and st["afutools"]["los_height"] == 12.5
+    import time; time.sleep(1.5)                        # Thread nach dem Speichern darf schon gerechnet haben
+    AFT.los_refresh(st)
+    q = calls()
+    assert len(q) == 6 and {x["von"][0] for x in q} == {"JN59ab12"} and q[0]["hoehe_von"] == ["12.5"] and q[0]["hoehe_nach"] == ["30.0"], q
+    assert {x["mhz"][0] for x in q} >= {"145.6375"}, q
+    assert AFT.los_refresh(st) == 0 and len(calls()) == 6                 # Gelände ändert sich nicht
+    reps = AFT.cached()["repeaters"]
+    by = {r["call"]: AFT.los_for(r) for r in reps}
+    assert by["DB0FUE"]["urteil"] == "frei" and by["DM0SC"]["urteil"] == "knapp" and by["DB0UN"]["urteil"] == "verdeckt", by
+    assert by["DB0UN"]["engster"]["luft"] == -108.5 and "profil" not in by["DB0UN"]
+    full = AFT.los_for(reps[0], full=True); assert len(full["profil"]) == 257 and full["vermerk"] == "© GeoBasis-DE / BKG" and full["h_von"] == 12.5, {k: v for k, v in full.items() if k != "profil"}
+    assert any("Kartographie" in x["name"] for x in AFT.los_attribution()["sources"])
+    assert AFT.los_progress() == {"done": 9, "total": 9}, AFT.los_progress()
+    # Dashboard, Log, Backup: genauer Standort nie sichtbar
+    pub = json.dumps(W.load_settings()); assert "JN59AB12" not in pub.upper() and '"los_precise": true' in pub
+    logs = [l for l in (W.BASE / "data" / "log").rglob("*") if l.is_file()] if (W.BASE / "data" / "log").exists() else []
+    assert not any("JN59AB12" in l.read_text(errors="ignore").upper() for l in logs)
+    assert BK.current_secrets()["afutools"]["los_locator"] == "JN59AB12"
+    # anderer Standort: alles neu
+    W.afutools_save({"los_locator": ""}); st = json.loads(W.SETTINGS.read_text())
+    assert "los_locator" not in st["afutools"] and AFT.los_for(reps[0]) is None
+    AFT.los_refresh(st); assert len(calls()) == 12 and calls()[-1]["von"] == ["JN59ll"]
+    for bad_ in ({"los_locator": "XX12"}, {"los_height": "900"}):
+        try:
+            W.afutools_save(bad_); raise SystemExit(f"angenommen: {bad_}")
+        except ValueError:
+            pass
+    W.afutools_save({"clear_key": True}); assert not AFT.LOS.exists()
+finally:
+    W.SETTINGS.write_text(bak); AFT.forget()
+src = Path(sys.argv[1]); js = (src / "web" / "app.js").read_text(); html = (src / "web" / "index.html").read_text()
+assert 'id="aftLosLoc"' in html and 'id="aftLosH"' in html and "function losProfile(" in js and "© GeoBasis-DE / BKG" in js
+assert "'afutools_los': 'afu.tools: Sichtlinie zu Relais berechnet'" in js and "data-hlos" in js
+PY
+pkill -f "afutools_fake.py 8092" 2>/dev/null; rm -f "$AFL"
 
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.8.71 – 2026-11-26
+
+- **afu.tools, step 6 – line of sight to repeaters** (switched off by default; *Settings → afu.tools*): every
+  repeater site and band within the radius is checked once against the DGM200 elevation model (BKG, Germany only):
+  👁 clear, ◐ tight (Fresnel zone cut) or ▲ blocked, shown as a new column *Sight* in *Repeaters nearby* and on hit
+  cards of a repeater output; tapping the symbol opens a terrain profile with line of sight, Fresnel zone and the
+  points in the way. 15 queries per quarter hour, results kept until the own location, antenna height or repeater
+  changes. New settings: own antenna height (default 10 m) and an optional precise location (8-character locator)
+  that is never shown, never logged and kept out of the simple backup (encrypted credentials only). Logged as
+  `afutools_los`; sources incl. "© GeoBasis-DE / BKG" shown below list and profile.
+- Self-test section 129.
+
 ## 1.8.70 – 2026-11-25
 
 - **afu.tools, step 5 – rare DX spots** (switched off by default; *Settings → afu.tools*): every 10 minutes the

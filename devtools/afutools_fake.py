@@ -13,6 +13,22 @@ FIXQ = json.loads((Path(__file__).parent / "afutools_fixture_qth.json").read_tex
 FIXW = json.loads((Path(__file__).parent / "afutools_fixture_wx.json").read_text(encoding="utf-8"))
 FIXC = json.loads((Path(__file__).parent / "afutools_fixture_cal.json").read_text(encoding="utf-8"))
 FIXS = json.loads((Path(__file__).parent / "afutools_fixture_spots.json").read_text(encoding="utf-8"))
+FIXL = json.loads((Path(__file__).parent / "afutools_fixture_los.json").read_text(encoding="utf-8"))
+
+
+def los_answer(q):
+    """Echte Beispielantwort (JO50hb → JO50wb, verdeckt); für DB0FUE (49.48…) frei, für DM0SC (49.31…) knapp."""
+    nach = (q.get("nach") or [""])[0]
+    d = json.loads(json.dumps(FIXL))
+    if nach.startswith("49.48"):
+        for p in d["profil"]:
+            p["hoehe"] = min(p["hoehe"], p["sicht"] - p["fresnel"] - 5)
+        d.update(urteil="frei", text="Freie Sicht, die erste Fresnelzone ist frei.", anteil_fresnel=1.0, zusaetzliche_hoehe_m=0.0)
+    elif nach.startswith("49.31"):
+        d.update(urteil="knapp", text="Sichtlinie frei, die Fresnelzone ist angeschnitten.", anteil_fresnel=0.4)
+    elif nach.startswith("40."):
+        d = {"quellenangabe": FIXL["quellenangabe"], "moeglich": False, "text": "Außerhalb Deutschlands."}
+    return d
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8099
 LOG = Path(sys.argv[2]) if len(sys.argv) > 2 else None
 
@@ -30,6 +46,8 @@ class H(BaseHTTPRequestHandler):
             return self._send(401, {"error": "Schlüssel fehlt oder ungültig", "status": 401})
         if u.path == "/api/v1/repeaters":
             return self._send(200, FIX)
+        if u.path == "/api/v1/sichtlinie":
+            return self._send(200, los_answer(parse_qs(u.query)))
         if u.path == "/api/v1/dx/spots":                # Ausschnitt einer echten Antwort, dazu ein erfundener sehr seltener
             return self._send(200, FIXS)
         if u.path == "/api/v1/contests":

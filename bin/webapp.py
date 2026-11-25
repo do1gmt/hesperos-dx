@@ -943,7 +943,9 @@ def _rep_brief(rf_hz):
         return None
     if not r:
         return None
-    return {k: r.get(k) for k in ("call", "qth", "km", "mode", "tone_hz", "offset_mhz", "url", "locator")}
+    out = {k: r.get(k) for k in ("call", "qth", "km", "mode", "tone_hz", "offset_mhz", "url", "locator", "out_hz")}
+    out["los"] = AFT.los_for(r)                                  # Sichtlinie (1.8.71)
+    return out
 
 
 def afutools_save(data):
@@ -974,6 +976,27 @@ def afutools_save(data):
         if data["spots_min"] != c.get("spots_min"):
             c["spots_min"] = data["spots_min"]
             changed.append(f"DX-Spots ab {data['spots_min']}")
+    if "los_locator" in data:                         # genauer Standort für die Sichtlinie (1.8.71) – nie protokolliert
+        v = str(data.get("los_locator") or "").strip().upper()
+        if v and not AFT.LOC_RE.match(v):
+            raise ValueError("Genauer Standort: Locator mit 6, 8 oder 10 Stellen, z. B. JN59AB12")
+        if v != c.get("los_locator", ""):
+            if v:
+                c["los_locator"] = v
+                changed.append("genauer Standort für die Sichtlinie gesetzt")
+            else:
+                c.pop("los_locator", None)
+                changed.append("genauer Standort für die Sichtlinie entfernt")
+    if data.get("los_height") not in (None, ""):      # eigene Antennenhöhe über Grund
+        try:
+            h = round(float(str(data["los_height"]).replace(",", ".")), 1)
+        except ValueError:
+            h = -1
+        if not 0 <= h <= 500:
+            raise ValueError("Antennenhöhe: 0 bis 500 m über Grund")
+        if h != c.get("los_height", 10):
+            c["los_height"] = h
+            changed.append(f"Antennenhöhe {h:g} m")
     if isinstance(data.get("features"), dict):        # einzelne Teile an/aus (1.8.67)
         f = dict(c.get("features") or {})
         for k, v in data["features"].items():
@@ -2908,7 +2931,20 @@ class Handler(BaseHTTPRequestHandler):
                 for r in d["repeaters"]:
                     r["own"] = any(abs(r["out_hz"] - o) <= AFT.MATCH_HZ for o in own)
                     r["in_band"] = next((b["name"] for b in plan if not b.get("eibi") and b["start_hz"] <= r["out_hz"] <= b["stop_hz"]), None)
+                    r["los"] = AFT.los_for(r)                       # Sichtlinie (1.8.71), ohne Geländeschnitt
+                if AFT._on("los"):
+                    d["los"] = dict(AFT.los_progress(), attribution=AFT.los_attribution(), precise=bool(AFT.los_conf()["precise"]),
+                                    height=AFT.los_conf()["height"], rep_height=AFT.REP_HEIGHT_M)
                 return self.send_json(d)
+            if path == "/api/afutools/los":                 # Geländeschnitt zu einem Relais (1.8.71)
+                import afutools as AFT
+                try:
+                    hz = int(qs.get("out_hz", 0))
+                except ValueError:
+                    hz = 0
+                r = next((x for x in AFT.cached().get("repeaters") or [] if x["call"] == qs.get("call") and x["out_hz"] == hz), None)
+                return self.send_json({"los": AFT.los_for(r, full=True) if r else None, "call": qs.get("call"),
+                                       "attribution": AFT.los_attribution()})
             if path == "/api/runs":
                 return self.send_json(list_runs(max(1, min(int(qs.get("limit", 25)), 500)),
                                                 max(0, int(qs.get("offset", 0)))))
@@ -3495,6 +3531,11 @@ class Handler(BaseHTTPRequestHandler):
                     threading.Thread(target=AFT.wx_refresh, args=(st, APPLOG.log), kwargs={"force": True}, daemon=True).start()
                 if (data.get("features") or {}).get("spots"):
                     threading.Thread(target=AFT.spots_refresh, args=(st, APPLOG.log), kwargs={"force": True}, daemon=True).start()
+                if (data.get("features") or {}).get("los") or "los_locator" in data or "los_height" in data or data.get("refresh"):
+                    def _los(st=st):
+                        AFT.refresh(st)                            # Relaisliste zuerst (falls neu), dann die erste Runde
+                        AFT.los_refresh(st, APPLOG.log)
+                    threading.Thread(target=_los, daemon=True).start()
                 if (data.get("features") or {}).get("cal"):
                     threading.Thread(target=AFT.cal_refresh, args=(st, APPLOG.log), kwargs={"force": True}, daemon=True).start()
                 return self.send_json({"ok": True, "settings": load_settings()})
@@ -3504,6 +3545,7 @@ class Handler(BaseHTTPRequestHandler):
                 AFT.wx_refresh(read_json(SETTINGS, {}), APPLOG.log, force=True)
                 AFT.cal_refresh(read_json(SETTINGS, {}), APPLOG.log, force=True)
                 AFT.spots_refresh(read_json(SETTINGS, {}), APPLOG.log, force=True)
+                threading.Thread(target=AFT.los_refresh, args=(read_json(SETTINGS, {}), APPLOG.log), daemon=True).start()
                 return self.send_json({"ok": not d.get("error"), "error": d.get("error"), "settings": load_settings()})
             if path == "/api/own-frequencies":                 # Einstellungen → Eigene Frequenzen
                 try:
@@ -4104,6 +4146,10 @@ def main():
                 __import__("afutools").spots_refresh(read_json(SETTINGS, {}), APPLOG.log)
             except Exception as e:
                 APPLOG.log("WARN", "afutools", "afutools_failed", what="DX-Spots", error=f"{type(e).__name__}: {e}")
+            try:                                             # afu.tools: Sichtlinie zu den Relais (je Relais einmal, 15 je Runde)
+                __import__("afutools").los_refresh(read_json(SETTINGS, {}), APPLOG.log)
+            except Exception as e:
+                APPLOG.log("WARN", "afutools", "afutools_failed", what="Sichtlinie", error=f"{type(e).__name__}: {e}")
             try:                                             # afu.tools: Contest- und DX-Kalender (einmal am Tag)
                 __import__("afutools").cal_refresh(read_json(SETTINGS, {}), APPLOG.log)
             except Exception as e:

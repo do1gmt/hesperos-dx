@@ -826,9 +826,10 @@
             <label class="field"><span>Band</span><select id="ownRepBand"><option value="">alle</option></select></label>
           </div>
           <div class="table-wrap"><table class="table own-rep">
-            <thead><tr><th>Relais</th><th>Ort</th><th>Ausgabe</th><th>Art</th><th>Ton</th><th>Entfernung</th><th></th></tr></thead>
+            <thead><tr><th>Relais</th><th>Ort</th><th>Ausgabe</th><th>Art</th><th>Ton</th><th>Entfernung</th><th class="los-col" hidden>Sicht</th><th></th></tr></thead>
             <tbody id="ownRepList"></tbody></table></div>
           <div class="row pager-row"><button type="button" class="btn btn-small" id="ownRepPrev">◀</button><span class="hint" id="ownRepPos"></span><button type="button" class="btn btn-small" id="ownRepNext">▶</button></div>
+          <p class="hint" id="ownRepLos" hidden></p>
           <p class="hint" id="ownRepNote"></p>
           <p class="hint src-note" id="ownRepSrc"></p>
         </div>
@@ -847,6 +848,14 @@
         <div class="mesh-set-row" id="aftSpotsRow" hidden>
           <label class="field"><span>Seltene DX-Spots ab</span><select id="aftSpotsMin"><option value="ungewoehnlich">ungewöhnlich</option><option value="selten">selten</option><option value="sehr_selten">sehr selten</option></select></label>
           <label class="check"><input type="checkbox" id="aftSpotsNotify"> <span>per Mail / Push / Telegram melden (Beobachtungsliste)</span></label>
+        </div>
+        <div id="aftLosRow" hidden>
+          <div class="mesh-set-row">
+            <label class="field"><span>Genauer Standort (optional)</span><input type="text" id="aftLosLoc" maxlength="10" autocomplete="off" spellcheck="false" placeholder="z. B. JN59AB12"></label>
+            <label class="field"><span>Deine Antennenhöhe über Grund (m)</span><input type="number" id="aftLosH" min="0" max="500" step="1" inputmode="decimal"></label>
+            <button type="button" class="btn btn-small btn-danger" id="aftLosClear" hidden>Standort entfernen</button>
+          </div>
+          <p class="hint" id="aftLosHint">Für die Sichtlinie reicht der sechsstellige Locator oft nicht (ein Feld ist etwa 4,6 × 2,3 km). Ein achtstelliger Locator (etwa 400 × 200 m) bleibt auf dem Pi – er wird nicht angezeigt, nicht protokolliert und nicht ins einfache Backup geschrieben; nur afu.tools bekommt ihn für die Abfrage. Ohne ihn rechnet Hesperos mit der Mitte deines Locator-Felds. Die Antennenhöhe der Relais ist nicht bekannt – angenommen werden 30 m.</p>
         </div>
         <div class="save-note" id="aftNote" aria-live="polite"></div>
       </section>
