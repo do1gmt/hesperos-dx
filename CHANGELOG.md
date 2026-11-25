@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.8.59 – 2026-11-25
+
+- **MeshCore: "Node settings" is now "Node configuration" (*Konfiguration Node*)** and sits as a button right below
+  the status line of the companion card – before it was folded away at the very bottom, under the message, node and
+  advert lists, and hard to find.
+- SNR in the message list with one decimal and the decimal comma in German, like the node and advert lists.
+- Documentation: screenshots of the MeshCore companion and room server cards (README, section *Mesh*).
+- Self-test section 107 checks the new place and name.
+
 ## 1.8.58 – 2026-11-25
 
 - **MeshCore adverts evaluated:** the companion reports every received packet with SNR and RSSI; so far they

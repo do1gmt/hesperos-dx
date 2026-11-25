@@ -4196,6 +4196,7 @@ assert M.command("name", name="x")["error"] in ("Kein Node verbunden", "Node ant
 assert hashlib.sha256(b"#bayern").digest()[:16] and "hashlib.sha256(n.encode(\"utf-8\")).digest()[:16]" in (Path(sys.argv[1]) / "bin" / "mesh.py").read_text()
 src = Path(sys.argv[1]); wa = (src / "bin" / "webapp.py").read_text(); html = (src / "web" / "index.html").read_text(); js = (src / "web" / "app.js").read_text()
 assert 'if path == "/api/mesh/cmd":' in wa and 'where == "locator"' in wa and "[:6]" in wa
+assert '<summary>Konfiguration Node</summary>' in html and html.index('id="meshSetup"') < html.index('id="meshMsgs"') and html.index('id="meshState"') < html.index('id="meshSetup"')
 assert 'id="meshSetup"' in html and 'id="meshChanAdd"' in html and "post('/api/mesh/cmd', body)" in js and "'mesh_clock_set': 'Mesh: Uhr des Nodes gestellt'" in js
 PY
 pkill -f "mesh_fake.py $MF" 2>/dev/null; rm -rf "$MF"

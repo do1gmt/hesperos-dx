@@ -245,6 +245,26 @@
   <section class="panel" id="panel-mesh" hidden>
     <h2>MeshCore-Node (Companion)</h2>
     <p class="hint" id="meshState">–</p>
+    <details class="mesh-setup" id="meshSetup"><summary>Konfiguration Node</summary>
+      <p class="hint" id="meshRadio">–</p>
+      <div class="mesh-set-row">
+        <label class="field"><span>Name des Nodes</span><input id="meshName" type="text" maxlength="31" autocomplete="off"></label>
+        <button type="button" class="btn" id="meshNameSave">Name speichern</button>
+      </div>
+      <div class="mesh-set-row">
+        <span class="hint" id="meshPosText">–</span>
+        <button type="button" class="btn" id="meshPosLoc" title="Mitte des 6-stelligen Locator-Felds aus Einstellungen → Station – etwa 5 × 2,5 km genau, nicht dein Haus">Position aus dem Locator (ungefähr)</button>
+        <button type="button" class="btn" id="meshPosNone">Keine Position</button>
+      </div>
+      <h4 class="sub">Kanäle</h4>
+      <div id="meshChannels"></div>
+      <div class="mesh-set-row">
+        <label class="field"><span>#Kanal hinzufügen</span><input id="meshChanNew" type="text" maxlength="30" placeholder="#franken" autocomplete="off"></label>
+        <button type="button" class="btn" id="meshChanAdd">Hinzufügen</button>
+      </div>
+      <div class="save-note" id="meshSetNote" aria-live="polite"></div>
+      <p class="hint">Wirkt sofort im Node (wie in der MeshCore-App). Die Uhr des Nodes stellt der Pi selbst – beim Verbinden und täglich, wenn sie mehr als 10 s danebenliegt. Position: Andere sehen deinen Node damit auf ihrer Karte; „ungefähr“ nimmt die Mitte deines Locator-Felds. Öffentliche #Kanäle haben ihren Schlüssel im Namen – wer den Namen kennt, liest mit. Die Funkdaten (Frequenz, SF, Bandbreite) bleiben, wie sie im Node eingestellt sind.</p>
+    </details>
     <div class="row filter-row">
       <label class="field"><span>Kanal</span><select id="meshChan"><option value="">alle</option></select></label>
     </div>
@@ -272,29 +292,9 @@
       <button type="button" class="btn btn-small" id="meshAdvPrev">◀</button><span class="hint" id="meshAdvPos"></span><button type="button" class="btn btn-small" id="meshAdvNext">▶</button>
     </div>
     <p class="hint">Jede Ankündigung (Advert), die der Node empfängt: Name, Art, Position, Signal und Weg – „direkt“ oder über welche Repeater (Name, wenn bekannt, sonst ihr Kürzel). Dieselbe Ankündigung über einen weiteren Weg zählt nicht noch einmal. Bleiben 30 Tage. Braucht eine Companion-Firmware, die empfangene Pakete meldet.</p>
-    <details class="mesh-setup" id="meshSetup"><summary>Node einstellen</summary>
-      <p class="hint" id="meshRadio">–</p>
-      <div class="mesh-set-row">
-        <label class="field"><span>Name des Nodes</span><input id="meshName" type="text" maxlength="31" autocomplete="off"></label>
-        <button type="button" class="btn" id="meshNameSave">Name speichern</button>
-      </div>
-      <div class="mesh-set-row">
-        <span class="hint" id="meshPosText">–</span>
-        <button type="button" class="btn" id="meshPosLoc" title="Mitte des 6-stelligen Locator-Felds aus Einstellungen → Station – etwa 5 × 2,5 km genau, nicht dein Haus">Position aus dem Locator (ungefähr)</button>
-        <button type="button" class="btn" id="meshPosNone">Keine Position</button>
-      </div>
-      <h4 class="sub">Kanäle</h4>
-      <div id="meshChannels"></div>
-      <div class="mesh-set-row">
-        <label class="field"><span>#Kanal hinzufügen</span><input id="meshChanNew" type="text" maxlength="30" placeholder="#franken" autocomplete="off"></label>
-        <button type="button" class="btn" id="meshChanAdd">Hinzufügen</button>
-      </div>
-      <div class="save-note" id="meshSetNote" aria-live="polite"></div>
-      <p class="hint">Wirkt sofort im Node (wie in der MeshCore-App). Die Uhr des Nodes stellt der Pi selbst – beim Verbinden und täglich, wenn sie mehr als 10 s danebenliegt. Position: Andere sehen deinen Node damit auf ihrer Karte; „ungefähr“ nimmt die Mitte deines Locator-Felds. Öffentliche #Kanäle haben ihren Schlüssel im Namen – wer den Namen kennt, liest mit. Die Funkdaten (Frequenz, SF, Bandbreite) bleiben, wie sie im Node eingestellt sind.</p>
-    </details>
     <label class="field mesh-port"><span>Node am USB</span><select id="meshPort"><option value="auto">automatisch erkennen (alle Geräte)</option><option value="off">aus</option></select></label>
     <div class="save-note" id="meshNote" aria-live="polite"></div>
-    <p class="hint">Ein MeshCore-Node mit der Firmware „Companion Radio (USB)“ (z. B. Heltec V3/V4, RAK) am USB des Pi: Hesperos DX liest mit, was er empfängt – Nachrichten in seinen Kanälen, Direktnachrichten an ihn und die Nodes in Reichweite. Ins Mesh gesendet wird nichts; am Node geändert wird nur, was du unter „Node einstellen“ wählst, und die Uhr. Nachrichten bleiben 90 Tage, Positionen zeigt die Karte oben unter „Mesh“.</p>
+    <p class="hint">Ein MeshCore-Node mit der Firmware „Companion Radio (USB)“ (z. B. Heltec V3/V4, RAK) am USB des Pi: Hesperos DX liest mit, was er empfängt – Nachrichten in seinen Kanälen, Direktnachrichten an ihn und die Nodes in Reichweite. Ins Mesh gesendet wird nichts; am Node geändert wird nur, was du unter „Konfiguration Node“ wählst, und die Uhr. Nachrichten bleiben 90 Tage, Positionen zeigt die Karte oben unter „Mesh“.</p>
   </section>
   <section class="panel" id="panel-meshsrv" hidden>
     <h2 id="meshSrvTitle">MeshCore Room-Server</h2>

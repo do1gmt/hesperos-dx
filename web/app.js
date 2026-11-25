@@ -2931,7 +2931,7 @@
         (EN ? 'up ' : 'läuft seit ') + up, sx.noise_floor != null ? (EN ? 'noise ' : 'Rauschen ') + sx.noise_floor + ' dBm' : '',
         sx.tx_air_s != null ? (EN ? `airtime TX ${sx.tx_air_s} s / RX ${sx.rx_air_s} s` : `Sendezeit ${sx.tx_air_s} s / Empfang ${sx.rx_air_s} s`) : ''].filter(Boolean).join(' · ');
     }
-    // Node einstellen
+    // Konfiguration Node
     const on = st.state === 'connected';
     $('meshSetup').hidden = !on;
     if (on) {
@@ -3003,7 +3003,7 @@
     const rows = meshPage.rows, total = meshPage.total;
     $('meshMsgs').innerHTML = rows.map(m => `<tr${m.kind === 'dm' ? ' class="mesh-dm"' : ''} style="--ch:${m.kind === 'dm' ? 280 : chanHue(m.channel_name || m.channel)}"><td class="mono-num">${fmtTime(m.time)}</td>`
       + `<td>${chanTag(m)}</td><td><b class="no-i18n">${esc(m.sender || '?')}</b></td>`
-      + `<td class="wrap no-i18n">${chanTag(m).replace('chan-tag', 'chan-tag chan-m')}${esc(m.text)}</td><td class="mono-num">${m.snr != null ? m.snr + ' dB' : '–'}</td><td class="mono-num">${m.hops ?? '–'}</td></tr>`).join('')
+      + `<td class="wrap no-i18n">${chanTag(m).replace('chan-tag', 'chan-tag chan-m')}${esc(m.text)}</td><td class="mono-num">${meshSnr(m.snr)}</td><td class="mono-num">${m.hops ?? '–'}</td></tr>`).join('')
       || `<tr><td colspan="6" class="muted">${EN ? 'No messages yet.' : 'Noch keine Nachrichten.'}</td></tr>`;
     const a = total ? meshPage.offset + 1 : 0, b = Math.min(total, meshPage.offset + meshPage.per);
     $('meshPos').textContent = EN ? `${a}–${b} of ${total} messages` : `${a}–${b} von ${total} Nachrichten`;

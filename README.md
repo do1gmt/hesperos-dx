@@ -607,6 +607,8 @@ serve`) count as coming from the browser behind it, not from the Pi: they need t
 
 ## Mesh (MeshCore)
 
+![MeshCore node (companion): messages with coloured channels, heard nodes with adverts, SNR and path](docs/screenshots/mesh-companion.png)
+
 Plug a MeshCore node into the Pi's USB – for example a Heltec V3/V4 or a RAK board with the firmware
 **"Companion Radio (USB)"** (from the MeshCore web flasher; the Bluetooth companion, repeater and room server
 firmwares do not talk over USB). Hesperos DX finds it by itself (only USB serial devices of the usual LoRa board
@@ -627,8 +629,8 @@ makers are tried; GPS receivers and other serial devices are left alone) and sho
   itself or writes in a channel (`*` as wildcard, e.g. `DB0FRK*`); *Mesh keyword* – a word in a message;
   *Event → Mesh: direct message to my node*.
 
-Nothing is sent into the mesh; the node decodes, the Pi just reads a few bytes. *Node settings* in the card
-changes the node's name, its position (approximately from your locator – the centre of the 6-character square –
+Nothing is sent into the mesh; the node decodes, the Pi just reads a few bytes. *Node configuration* (the button right below the
+status line of the card) changes the node's name, its position (approximately from your locator – the centre of the 6-character square –
 or none) and the public #channels it listens to; the Pi keeps the node's clock right (when connecting and daily,
 if it is more than 10 s off). The radio settings stay as they are. Battery, uptime, noise floor and airtime of
 the node are shown in the card's status line. Messages are kept for 90 days. The card stays hidden on a Pi without a node. If the Pi may not open the
@@ -640,6 +642,8 @@ found as well – its firmware speaks a text console instead of the companion pr
 *MeshCore room server* (or *repeater*), which shows its role, name, firmware,
 board, radio settings, battery, uptime, noise floor, airtime and packet counters (every minute), and the Pi sets
 its clock when it is slow (these devices lose the time on every restart).
+
+![MeshCore room server on USB: firmware, radio, statistics and the notice board, live](docs/screenshots/mesh-room.png)
 
 **Room server: notice board and administration.** Note the special case: the notice board cannot be read over the
 server's USB console – a room server only pushes its posts to nodes that are logged in to it over the air. So the

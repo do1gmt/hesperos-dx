@@ -885,7 +885,9 @@ body.dragging-card, body.dragging-card * { user-select: none; -webkit-user-selec
   .mesh-adverts th:nth-child(3), .mesh-adverts td:nth-child(3), .mesh-adverts th:nth-child(5), .mesh-adverts td:nth-child(5),
   .mesh-adverts th:nth-child(7), .mesh-adverts td:nth-child(7) { display: none; } .mesh-adverts td:first-child { white-space: normal; } .mesh-table, .mesh-nodes, .mesh-adverts { font-size: .8rem; }
   .mesh-table td.wrap { min-width: 9em; } .mesh-table td:first-child, .mesh-nodes td:last-child, .mesh-nodes td:first-child, .mesh-nodes td:nth-child(7) { white-space: normal; } }
-.mesh-setup { margin-top: .8rem; } .mesh-setup > summary { cursor: pointer; font-weight: 600; }
+.mesh-setup { margin: .4rem 0 .8rem; } .mesh-setup > summary { cursor: pointer; font-weight: 600; display: inline-block; padding: .35rem .8rem;
+  border: 1px solid var(--border, #8884); border-radius: 8px; } .mesh-setup[open] > summary { margin-bottom: .5rem; }
+.mesh-setup[open] { border-left: 3px solid var(--accent); padding-left: .7rem; }   /* 1.8.59: oben unter der Statuszeile, als Knopf */
 .mesh-set-row { display: flex; flex-wrap: wrap; gap: .5rem; align-items: flex-end; margin: .5rem 0; }
 .mesh-set-row .field { flex: 1 1 14rem; max-width: 22rem; margin: 0; }
 .mesh-chan { display: inline-flex; align-items: center; gap: .3rem; margin: 0 .4rem .3rem 0; padding: .15rem .5rem; border: 1px solid var(--line, #334155); border-radius: 999px; }
