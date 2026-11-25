@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.8.67 – 2026-11-25
+
+- **afu.tools parts can be switched off one by one** (*Settings → afu.tools*, below the key): repeaters and
+  locations of heard stations. Switched off, nothing is fetched and nothing is shown for that part. Parts added
+  later start switched off, so the dashboard does not get crowded. Each switch is logged.
+- **Sources in short form:** "Sources: afu.tools · PSK Reporter · PSK Reporter MQTT · Reverse Beacon Network ·
+  Natural Earth · Protomaps" instead of the full wording – each name up to its first bracket or comma, the same
+  name once; the full wording is in the tooltip and every link stays.
+- Self-test section 125.
+
 ## 1.8.66 – 2026-11-25
 
 - **Fold-out areas look like buttons.** *Map*, *Antennas*, *Network share*, *Add schedule*, *Manage favourites*,

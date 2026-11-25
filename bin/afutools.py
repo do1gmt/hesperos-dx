@@ -47,8 +47,16 @@ def config(settings=None):
             settings = {}
     c = settings.get("afutools") if isinstance(settings.get("afutools"), dict) else {}
     km = c.get("km", 50)
+    f = c.get("features") if isinstance(c.get("features"), dict) else {}
     return {"api_key": str(c.get("api_key") or ""), "km": km if km in RADII else 50,
-            "locator": str(settings.get("my_locator") or "").upper()}
+            "locator": str(settings.get("my_locator") or "").upper(),
+            "features": {k: bool(f.get(k, d)) for k, (d, _) in FEATURES.items()}}
+
+
+# Was Hesperos von afu.tools holt – einzeln abschaltbar, damit das Dashboard nicht überladen wird (1.8.67).
+# Neue Teile kommen ausgeschaltet dazu; Relais und Standorte waren schon da und bleiben an.
+FEATURES = {"repeaters": (True, "Relais in der Nähe und an Treffern"),
+            "qth": (True, "Standort gehörter Stationen ohne eigenen Locator")}
 
 
 def public_config(settings=None):
@@ -56,6 +64,7 @@ def public_config(settings=None):
     c = config(settings)
     d = cached()
     return {"has_key": bool(c["api_key"]), "km": c["km"], "radii": list(RADII), "locator": c["locator"],
+            "features": c["features"], "feature_labels": {k: v[1] for k, v in FEATURES.items()},
             "fetched": d.get("fetched"), "count": len(d.get("repeaters") or []), "error": d.get("error"),
             "near": d.get("near"), "km_cached": d.get("km"), "attribution": d.get("attribution")}
 
@@ -114,7 +123,7 @@ def refresh(settings=None, log=None, force=False):
     c = config(settings)
     with _LOCK:
         d = cached()
-        if not c["api_key"] or len(c["locator"]) < 4:
+        if not c["api_key"] or len(c["locator"]) < 4 or not c["features"]["repeaters"]:
             return d
         same = d.get("near") == c["locator"][:6] and d.get("km") == c["km"]
         age = time.time() - float(d.get("fetched_ts") or 0)
@@ -170,14 +179,30 @@ def forget():
     _MEM.update(mtime=None, data=None)
 
 
-def repeater_at(rf_hz):
-    """Nächstes Relais, dessen Ausgabe bei rf_hz liegt (±4 kHz), sonst None."""
-    if not rf_hz:
+def repeater_at(rf_hz, settings=None):
+    """Nächstes Relais, dessen Ausgabe bei rf_hz liegt (±4 kHz), sonst None (auch wenn „Relais“ abgeschaltet ist)."""
+    if not rf_hz or not _on("repeaters", settings):
         return None
     reps = [r for r in cached().get("repeaters") or [] if abs(r["out_hz"] - float(rf_hz)) <= MATCH_HZ]
     if not reps:
         return None
     return min(reps, key=lambda r: r["km"] if r["km"] is not None else math.inf)
+
+
+def _on(feature, settings=None):
+    """Teil eingeschaltet und Schlüssel da? Die Einstellungsdatei wird nur bei Änderung neu gelesen."""
+    if settings is None:
+        try:
+            m = SETTINGS.stat().st_mtime
+        except OSError:
+            return False
+        if _MEM.get("st_mtime") != m:
+            _MEM["st"] = config()
+            _MEM["st_mtime"] = m
+        c = _MEM["st"]
+    else:
+        c = config(settings)
+    return bool(c["api_key"]) and c["features"].get(feature, False)
 
 
 def repeaters():
@@ -224,7 +249,7 @@ def qth_candidates(db, now=None):
 def qth_refresh(db_connect, settings=None, log=None):
     """Eine Abfrage für die nächsten bis zu 100 Rufzeichen. Gibt (gefragt, gefunden) oder None (nichts zu tun)."""
     c = config(settings)
-    if not c["api_key"] or time.time() - _QTH["fail_ts"] < RETRY_S:
+    if not c["api_key"] or not c["features"]["qth"] or time.time() - _QTH["fail_ts"] < RETRY_S:
         return None
     db = db_connect()
     try:
@@ -269,9 +294,10 @@ SRC_NAMES = {"psk": "PSK Reporter", "rbn": "RBN", "log": "Log"}
 
 
 def qth_for(db, calls):
-    """{Rufzeichen: {loc, src, age_days}} für die gefragten Rufzeichen, soweit afu.tools einen Locator kannte."""
+    """{Rufzeichen: {loc, src, age_days}} für die gefragten Rufzeichen, soweit afu.tools einen Locator kannte
+    (leer, wenn „Standorte“ abgeschaltet oder kein Schlüssel da ist)."""
     calls = [c for c in calls if c]
-    if not calls:
+    if not calls or not _on("qth"):
         return {}
     ensure_qth(db)
     out = {}

@@ -687,13 +687,18 @@ and restarts the server.
 ### afu.tools (optional)
 
 *Settings → afu.tools*: enter the free API key from your [afu.tools](https://afu.tools) account and a radius
-(10–200 km). Once a day the Pi fetches the repeaters around your locator (one request, cached in
+(10–200 km). Below the key, tick what Hesperos fetches from afu.tools – every part can be switched off on its own,
+so only what you want appears (repeaters and locations are on; parts added later start switched off). Once a day the Pi fetches the repeaters around your locator (one request, cached in
 `data/afutools_repeaters.json`; again at once after changing key, locator or radius; after a failure at most once an
 hour). Then
 - a hit on a repeater output shows the repeater – callsign (linked), site, distance, mode, CTCSS tone – as a 📡 badge
   and a line in the card, with the sources;
 - *Settings → Own frequencies* lists *Repeaters nearby* (band filter, 25 per page): ★ *add* takes one over as an own
   frequency (FM as FM, DMR/D-Star/C4FM as digital voice; ATV and outside the band plan cannot be added).
+
+Sources are named as afu.tools requires, in short form: "Sources: afu.tools · PSK Reporter · Reverse Beacon Network
+…" – each name up to its first bracket or comma, the same name once; the full wording is in the tooltip, every link
+(new window) stays.
 
 The key is sent as `X-API-Key`, never shown in the dashboard, never logged, not written into the simple backup
 (only into the encrypted credentials) and removed together with the cached repeaters by *Remove key*. Without a key

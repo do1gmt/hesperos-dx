@@ -952,6 +952,13 @@ def afutools_save(data):
             raise ValueError("Schlüssel sieht nicht richtig aus (eine Zeile ohne Leerzeichen)")
         c["api_key"] = k
         changed.append("Schlüssel gesetzt")
+    if isinstance(data.get("features"), dict):        # einzelne Teile an/aus (1.8.67)
+        f = dict(c.get("features") or {})
+        for k, v in data["features"].items():
+            if k in AFT.FEATURES and bool(v) != AFT.config({"afutools": c})["features"][k]:
+                f[k] = bool(v)
+                changed.append(f"{AFT.FEATURES[k][1]}: {'an' if v else 'aus'}")
+        c["features"] = f
     if data.get("km") not in (None, "", 0):          # leer = unverändert (1.8.65: leere Auswahl verhinderte das Speichern)
         try:
             km = int(data["km"])

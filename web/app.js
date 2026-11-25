@@ -3154,10 +3154,19 @@
   });
 
   // afu.tools (1.8.63): Schlüssel, Umkreis, Stand; Relais in der Nähe unter „Eigene Frequenzen“
-  function aftSrc(att) {                               // Pflicht-Nennung der Quellen (aus `quellenangabe` der Antwort)
+  // Pflicht-Nennung der Quellen (aus `quellenangabe` der Antwort). Kurz (1.8.67): jeder Name nur bis zur ersten
+  // Klammer bzw. zum ersten Komma, gleiche Namen einmal – der volle Wortlaut steht im Tooltip, jeder Link bleibt.
+  const srcShort = n => String(n).split(/ \(|, /)[0].replace(/^MQTT-Strom des PSK Reporter$/, 'PSK Reporter MQTT').trim() || n;
+  function aftSrc(att) {
     if (!att) return '';
-    const l = (att.sources || []).map(x => x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.name)}</a>` : esc(x.name));
-    return l.length ? `${EN ? 'Sources' : 'Quellen'}: ${l.join('; ')}` : esc(att.text);
+    const m = new Map();
+    for (const x of att.sources || []) {
+      const k = srcShort(x.name), e = m.get(k);
+      if (e) e.full.push(x.name); else m.set(k, { url: x.url, full: [x.name] });
+    }
+    const l = [...m].map(([k, e]) => { const t = esc(e.full.join(' · '));
+      return e.url ? `<a href="${esc(e.url)}" target="_blank" rel="noopener" title="${t}">${esc(k)}</a>` : `<span title="${t}">${esc(k)}</span>`; });
+    return l.length ? `${EN ? 'Sources' : 'Quellen'}: ${l.join(' · ')}` : esc(att.text);
   }
   function renderAft() {
     const a = settings.afutools || {}, radii = a.radii && a.radii.length ? a.radii : [10, 25, 50, 100, 200];   // nie leer (1.8.65)
@@ -3169,7 +3178,13 @@
       : !a.locator ? (EN ? 'Enter your locator (Settings → Station) – the repeaters are searched around it.' : 'Trag deinen Locator ein (Einstellungen → Station) – um ihn herum wird gesucht.')
       : (a.fetched ? (EN ? `${a.count} repeaters within ${a.km_cached} km of ${esc(a.near)}, as of ${fmtTime(a.fetched)}.` : `${a.count} Relais im Umkreis von ${a.km_cached} km um ${esc(a.near)}, Stand ${fmtTime(a.fetched)}.`) : (EN ? 'Not fetched yet.' : 'Noch nicht abgerufen.'))
         + (a.error ? ` <span class="warn-text">${EN ? 'Last attempt failed: ' : 'Letzter Abruf fehlgeschlagen: '}${esc(I18N.t(a.error))}</span>` : '');
-    $('ownRepBox').hidden = !(a.has_key && a.count);
+    // was geholt wird – einzeln abschaltbar (1.8.67), damit nur erscheint, was du willst
+    const fl = a.feature_labels || {}, fs = a.features || {};
+    $('aftFeatures').hidden = !a.has_key;
+    const fh = `<p class="hint">${EN ? 'What Hesperos fetches from afu.tools:' : 'Was Hesperos von afu.tools holt:'}</p>` + Object.keys(fl).map(k => `<label class="check"><input type="checkbox" data-aft="${k}"${fs[k] ? ' checked' : ''}> ${esc(I18N.t(fl[k]))}</label>`).join('');
+    if ($('aftFeatures').dataset.h !== fh) { $('aftFeatures').innerHTML = fh; $('aftFeatures').dataset.h = fh;
+      $('aftFeatures').querySelectorAll('[data-aft]').forEach(x => x.addEventListener('change', () => aftPost({ features: { [x.dataset.aft]: x.checked } }, x.checked ? (EN ? '✓ switched on' : '✓ eingeschaltet') : (EN ? '✓ switched off' : '✓ ausgeschaltet')))); }
+    $('ownRepBox').hidden = !(a.has_key && a.count && fs.repeaters);
     if (!$('ownRepBox').hidden) loadOwnRep();
   }
   async function aftPost(body, okText) {

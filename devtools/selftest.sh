@@ -4645,5 +4645,37 @@ assert """at.push(`<div class="stat ${hw.rtlsdr.present ? 'plugged' : 'idle'}">"
 assert (src / "docs" / "screenshots" / "station-detail.png").stat().st_size > 10000 and "station-detail.png" in (src / "README.md").read_text()
 PY
 
+echo "== 125 afu.tools: Teile einzeln abschaltbar, Quellen kurz genannt"
+(cd bin && timeout 30 python3 - "$SRC" <<'PY') && ok "Relais/Standorte abschaltbar (dann nichts geholt und nichts angezeigt), Schalter protokolliert; Quellen kurz (afu.tools · PSK Reporter · … · Protomaps), voller Name im Tooltip, jeder Link bleibt" || bad "afu.tools Schalter/Quellen"
+import sys, json, tempfile, subprocess
+from pathlib import Path
+import afutools as AFT, webapp as W
+bak = W.SETTINGS.read_text()
+try:
+    st = json.loads(bak); st["my_locator"] = "JN59LL"; st["afutools"] = {"api_key": "afu_test", "km": 50}
+    W.SETTINGS.write_text(json.dumps(st))
+    AFT._write({"repeaters": [{"call": "DB0FUE", "out_hz": 145637500, "km": 3.8}], "near": "JN59LL", "km": 50, "fetched_ts": 9e12})
+    assert AFT.config()["features"] == {"repeaters": True, "qth": True} and AFT.repeater_at(145637500)["call"] == "DB0FUE"
+    W.afutools_save({"features": {"repeaters": False}})
+    assert AFT.config()["features"]["repeaters"] is False and AFT.repeater_at(145637500) is None
+    assert AFT.refresh(json.loads(W.SETTINGS.read_text()), force=True).get("repeaters")      # abgeschaltet: nicht geholt (alter Stand)
+    W.afutools_save({"features": {"qth": False}}); assert AFT.qth_refresh(W.db_connect) is None
+    db = W.db_connect(); AFT.ensure_qth(db); db.execute("INSERT OR REPLACE INTO afu_qth VALUES ('ZZ1ZZ','JN59','psk',0,'2026-01-01T00:00:00Z')"); db.commit()
+    assert AFT.qth_for(db, ["ZZ1ZZ"]) == {}; W.afutools_save({"features": {"qth": True}}); assert AFT.qth_for(db, ["ZZ1ZZ"])["ZZ1ZZ"]["loc"] == "JN59"
+    db.execute("DELETE FROM afu_qth"); db.commit(); db.close()
+    assert W.load_settings()["afutools"]["feature_labels"]["qth"].startswith("Standort")
+finally:
+    W.SETTINGS.write_text(bak); AFT.forget()
+src = Path(sys.argv[1]); js = (src / "web" / "app.js").read_text()
+f = js[js.index("const srcShort"):js.index("function renderAft()")]
+att = {"sources": [{"name": "afu.tools", "url": "https://afu.tools"}, {"name": "PSK Reporter (Philip Gladstone, N1DQ), eigener Mitschnitt", "url": "https://pskreporter.info/"},
+                   {"name": "MQTT-Strom des PSK Reporter (Tom M0LTE)", "url": "https://www.mqtt.pskreporter.info/"},
+                   {"name": "Reverse Beacon Network, eigener Mitschnitt über afu.tools", "url": "https://afu.tools/rbn"},
+                   {"name": "Reverse Beacon Network, Skimmerliste mit Locator", "url": "https://www.reversebeacon.net/"}, {"name": "Protomaps (Basiskarte)", "url": "https://protomaps.com"}]}
+out = subprocess.run(["node", "-e", "const EN=false, esc=s=>String(s);" + f + "console.log(aftSrc(" + json.dumps(att) + "))"], capture_output=True, text=True).stdout
+assert ">afu.tools</a> · " in out and ">PSK Reporter</a>" in out and ">PSK Reporter MQTT</a>" in out and out.count(">Reverse Beacon Network</a>") == 1, out
+assert 'title="Reverse Beacon Network, eigener Mitschnitt über afu.tools · Reverse Beacon Network, Skimmerliste mit Locator"' in out and 'target="_blank" rel="noopener"' in out
+PY
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi
