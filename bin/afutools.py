@@ -13,6 +13,9 @@ neu gefragt, nicht gefundene nach 2 Tagen. Ergebnis in der Tabelle afu_qth der D
 Schritt 3 (1.8.68): Funkwetter (/funkwetter?kurz=true und /funkwetter/offen?von=dl) alle 30 min, zwischengespeichert
 unter data/afutools_wx.json – Kopf-Werte, Lage, Bandbewertung und die gemessenen Öffnungen von DL aus.
 
+Schritt 4 (1.8.69): Contest- und DX-Kalender (/contests?days=30, /dx?days=60) einmal am Tag unter
+data/afutools_cal.json; vergangene Contests bleiben 14 Tage stehen (für den Hinweis im Scan-Verlauf).
+
 Der Schlüssel liegt in config/web_settings.json unter afutools.api_key, wird nie ans Dashboard gegeben, nie
 protokolliert und nicht ins einfache Backup geschrieben (wie die anderen Zugangsdaten). Jede Antwort bringt unter
 `quellenangabe` mit, welche Quellen sichtbar zu nennen sind – das Dashboard zeigt genau diese Nennung.
@@ -60,7 +63,8 @@ def config(settings=None):
 # Neue Teile kommen ausgeschaltet dazu; Relais und Standorte waren schon da und bleiben an.
 FEATURES = {"repeaters": (True, "Relais in der Nähe und an Treffern"),
             "qth": (True, "Standort gehörter Stationen ohne eigenen Locator"),
-            "wx": (False, "Funkwetter auf der Scan-Seite (Sonne, Magnetfeld, welche Bänder offen sind)")}
+            "wx": (False, "Funkwetter auf der Scan-Seite (Sonne, Magnetfeld, welche Bänder offen sind)"),
+            "cal": (False, "Contest- und DX-Kalender (Karte auf der Scan-Seite, Hinweis im Scan-Verlauf, DX-Abzeichen bei Stationen)")}
 
 
 def public_config(settings=None):
@@ -176,7 +180,7 @@ def cached():
 
 def forget():
     """Schlüssel entfernt: zwischengespeicherte Daten mit löschen (ohne Schlüssel keine Nutzung der Daten)."""
-    for f in (CACHE, BASE / "data" / "afutools_wx.json"):
+    for f in (CACHE, BASE / "data" / "afutools_wx.json", BASE / "data" / "afutools_cal.json"):
         try:
             f.unlink()
         except OSError:
@@ -425,3 +429,136 @@ def wx():
         return {"on": False}
     d = wx_cached()
     return dict({k: v for k, v in d.items() if k != "tried_ts"}, on=True)
+
+
+# ---------------------------------------------------------------- Schritt 4: Contest- und DX-Kalender
+CAL = BASE / "data" / "afutools_cal.json"
+CAL_REFRESH_S = 24 * 3600
+CAL_KEEP_PAST_S = 14 * 86400
+_CAL = {"mtime": None, "data": None}
+STUFEN = ("haeufig", "ungewoehnlich", "selten", "sehr_selten")
+
+
+def _ts(iso):
+    """'2026-11-28T00:00:00Z' oder '2026-11-28' → Sekunden (UTC); None, wenn unlesbar."""
+    import calendar as _c
+    v = str(iso or "")
+    try:
+        if "T" in v:
+            return _c.timegm(time.strptime(v[:19], "%Y-%m-%dT%H:%M:%S"))
+        return _c.timegm(time.strptime(v[:10], "%Y-%m-%d"))
+    except ValueError:
+        return None
+
+
+def cal_refresh(settings=None, log=None, force=False):
+    c = config(settings)
+    if not c["api_key"] or not c["features"]["cal"]:
+        return None
+    d = cal_cached()
+    if not force and (time.time() - float(d.get("tried_ts") or 0) < (RETRY_S if d.get("error") else CAL_REFRESH_S)):
+        return d
+    new = dict(d, tried_ts=time.time())
+    try:
+        rc = _get("/contests", {"days": 30}, c["api_key"])
+        rd = _get("/dx", {"days": 60}, c["api_key"])
+        s = lambda v, n=80: str(v).strip()[:n] if v not in (None, "") else None
+        contests = []
+        for x in rc.get("contests") or []:
+            t0, t1 = _ts(x.get("start") or x.get("date")), _ts(x.get("end"))
+            if not t0:
+                continue
+            contests.append({"key": s(x.get("key"), 60) or s(x.get("name")), "name": s(x.get("name"), 100) or "?",
+                             "mode": s(x.get("mode"), 40) or "", "bands": [str(b)[:6] for b in (x.get("bands") or [])][:16],
+                             "start": t0, "end": t1 or t0 + 86400, "allday": bool(x.get("allday")), "url": s(x.get("url"), 200)})
+        keep = time.time() - CAL_KEEP_PAST_S                  # schon vorbei: 14 Tage stehen lassen (Scan-Verlauf)
+        for old in d.get("contests") or []:
+            if old.get("end", 0) >= keep and old["end"] < time.time() and not any(n["key"] == old["key"] and n["start"] == old["start"] for n in contests):
+                contests.append(old)
+        contests.sort(key=lambda x: x["start"])
+        dx = []
+        for x in rd.get("dxpeditions") or []:
+            t0, t1 = _ts(x.get("start")), _ts(x.get("end"))
+            if not x.get("call") or not t0:
+                continue
+            dx.append({"call": s(x["call"], 20).upper(), "start": t0, "end": (t1 or t0) + 86399, "entity": s(x.get("entity")),
+                       "dxcc": s(x.get("dxcc"), 10), "cont": s(x.get("cont"), 2), "iota": s(x.get("iota"), 10),
+                       "art": s(x.get("art"), 20), "typ": s(x.get("typ"), 20), "unsicher": bool(x.get("unsicher")),
+                       "stufe": x.get("stufe") if x.get("stufe") in STUFEN else None, "stufe_grund": s(x.get("stufe_grund"), 200),
+                       "qsl": s(x.get("qsl"), 60), "url": s(((x.get("quellen") or [{}])[0] or {}).get("url"), 200)})
+        src = attribution(rc.get("quellenangabe"))
+        for y in attribution(rd.get("quellenangabe"))["sources"]:
+            if not any(z["name"] == y["name"] for z in src["sources"]):
+                src["sources"].append(y)
+        new = {"fetched": _iso(), "tried_ts": time.time(), "error": None, "contests": contests, "dx": dx,
+               "note_contests": s(rc.get("note"), 600), "note_dx": s(rd.get("note"), 300), "attribution": src}
+        if log:
+            log("INFO", "afutools", "afutools_cal", contests=len(contests), dx=len(dx))
+    except Exception as e:
+        new["error"] = str(e)[:200]
+        if log:
+            log("WARN", "afutools", "afutools_failed", what="Kalender", error=new["error"])
+    CAL.parent.mkdir(parents=True, exist_ok=True)
+    tmp = CAL.with_suffix(".tmp")
+    tmp.write_text(json.dumps(new, ensure_ascii=False), encoding="utf-8")
+    os.replace(tmp, CAL)
+    return new
+
+
+def cal_cached():
+    try:
+        m = CAL.stat().st_mtime
+    except OSError:
+        return {}
+    if _CAL["mtime"] != m:
+        try:
+            _CAL["data"] = json.loads(CAL.read_text(encoding="utf-8"))
+        except Exception:
+            _CAL["data"] = {}
+        _CAL["mtime"] = m
+    return _CAL["data"] or {}
+
+
+def calendar_view(now=None):
+    """Fürs Dashboard: Contests, die laufen oder in den nächsten 7 Tagen beginnen; DX-Aktivitäten, die gerade laufen
+    oder in 14 Tagen beginnen – ohne Dauer-Sonderrufzeichen, die häufig sind (sonst wären es Hunderte)."""
+    if not _on("cal"):
+        return {"on": False}
+    now = now or time.time()
+    d = cal_cached()
+    cs = [dict(x, running=x["start"] <= now < x["end"]) for x in d.get("contests") or []
+          if x["end"] > now and x["start"] < now + 7 * 86400]
+    rank = {k: i for i, k in enumerate(STUFEN)}
+    dx = [dict(x, running=x["start"] <= now <= x["end"]) for x in d.get("dx") or []
+          if x["end"] >= now and x["start"] < now + 14 * 86400 and not (x.get("art") == "dauer" and x.get("stufe") == "haeufig")]
+    dx.sort(key=lambda x: (not x["running"], -rank.get(x.get("stufe"), 0), x["start"]))
+    return {"on": True, "fetched": d.get("fetched"), "error": d.get("error"), "contests": cs, "dx": dx,
+            "note_contests": d.get("note_contests"), "note_dx": d.get("note_dx"), "attribution": d.get("attribution")}
+
+
+def contests_during(t0, t1, bands):
+    """Contests, die sich mit einem Scanlauf (t0..t1, Sekunden) und seinen Bändern überschneiden – für den Hinweis
+    im Scan-Verlauf („Contest lief: …“), sonst []."""
+    if not _on("cal") or not t0:
+        return []
+    bands = set(bands or [])
+    return [x["name"] for x in cal_cached().get("contests") or []
+            if x["start"] < (t1 or t0) and x["end"] > t0 and (not x.get("bands") or bands & set(x["bands"]))]
+
+
+def dx_active(calls, now=None):
+    """{Rufzeichen: DX-Eintrag} für Rufzeichen, die laut Kalender gerade (±1 Tag) aktiv sind; Dauer-Sonderrufzeichen
+    mit Stufe „häufig“ zählen nicht."""
+    if not calls or not _on("cal"):
+        return {}
+    now = now or time.time()
+    act = {}
+    for x in cal_cached().get("dx") or []:
+        if x["start"] - 86400 <= now <= x["end"] + 86400 and not (x.get("art") == "dauer" and x.get("stufe") == "haeufig"):
+            act.setdefault(x["call"], x)
+    out = {}
+    for c in calls:
+        b = _base(c)
+        if c.upper() in act or b in act:
+            out[c] = act.get(c.upper()) or act[b]
+    return out

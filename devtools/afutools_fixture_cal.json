@@ -1,0 +1,1016 @@
+{
+ "contests": {
+  "quellenangabe": {
+   "nennung": "Quellen: afu.tools; Ausschreibungen der Veranstalter, Termine aus den Wiederholungsregeln gerechnet; DARC-Contestkalender",
+   "hinweis": "Wer diese Daten weitergibt oder anzeigt, nennt die hier aufgeführten Quellen sichtbar für den, der das Ergebnis sieht: die ursprüngliche Quelle und afu.tools.",
+   "doku": "https://afu.tools/api#quellenangabe",
+   "zusammenstellung": {
+    "name": "afu.tools",
+    "url": "https://afu.tools",
+    "lizenz": "Nennung von afu.tools"
+   },
+   "datensaetze": [
+    {
+     "id": "contests",
+     "datensatz": "Contestkalender",
+     "wofuer": "Contesttermine, Kalenderabo",
+     "stand": "2026-11-25T17:08:18Z",
+     "quellen": [
+      {
+       "name": "Ausschreibungen der Veranstalter, Termine aus den Wiederholungsregeln gerechnet",
+       "url": "https://www.contestcalendar.com/",
+       "lizenz": null
+      },
+      {
+       "name": "DARC-Contestkalender",
+       "url": "https://www.darc.de/der-club/referate/conteste/ct-kalender/darc-contestkalender/",
+       "lizenz": null
+      }
+     ]
+    }
+   ]
+  },
+  "generated": "2026-11-25T17:07:56Z",
+  "note": "Die Termine sind aus den Wiederholungsregeln der Ausschreibungen berechnet und gegen die Termine des Jahres 2026 gegengeprüft. Einzelne Ausgaben werden gelegentlich verschoben, verbindlich ist die Ausschreibung des Veranstalters. Wo keine Uhrzeit steht, war sie nicht gesichert, sie steht dann in der Ausschreibung. Die Bänder stehen so in der Ausschreibung; welche davon deine Klasse nutzen darf, kommt aus dem Bandplan nach Amateurfunkverordnung. Weitere Termine und die regelmäßigen Aktivitätsabende stammen aus dem DARC-Contestkalender.",
+  "count": 9,
+  "contests": [
+   {
+    "key": "cq-ww-cw",
+    "name": "CQ World Wide DX Contest, CW",
+    "mode": "CW",
+    "rule": "letztes volles November-Wochenende",
+    "url": "https://www.cqww.com/rules.htm",
+    "adif": "CQ-WW-CW",
+    "austausch": {
+     "nummer": false,
+     "text": "CQ-Zone"
+    },
+    "bands": [
+     "160m",
+     "80m",
+     "40m",
+     "20m",
+     "15m",
+     "10m"
+    ],
+    "date": "2026-11-28",
+    "start": "2026-11-28T00:00:00Z",
+    "end": "2026-11-29T23:59:00Z",
+    "allday": false,
+    "klassen": {
+     "N": [
+      "10m"
+     ],
+     "E": [
+      "160m",
+      "80m",
+      "15m",
+      "10m"
+     ],
+     "A": [
+      "160m",
+      "80m",
+      "40m",
+      "20m",
+      "15m",
+      "10m"
+     ]
+    }
+   },
+   {
+    "key": "arrl-160",
+    "name": "ARRL 160-Meter Contest",
+    "mode": "CW",
+    "rule": "erstes volles Dezember-Wochenende, Beginn Freitagabend",
+    "url": "https://www.arrl.org/160-meter",
+    "adif": "ARRL-160",
+    "austausch": {
+     "nummer": false,
+     "text": ""
+    },
+    "bands": [
+     "160m"
+    ],
+    "date": "2026-12-04",
+    "start": "2026-12-04T22:00:00Z",
+    "end": "2026-12-06T16:00:00Z",
+    "allday": false,
+    "klassen": {
+     "E": [
+      "160m"
+     ],
+     "A": [
+      "160m"
+     ]
+    }
+   },
+   {
+    "key": "darc-pro-cw-contest",
+    "name": "PRO CW Contest",
+    "mode": "CW",
+    "rule": "laut DARC-Contestkalender",
+    "url": "https://proradiocontestclub.com/PCC%20Rules.html",
+    "quelle": "darc",
+    "bands": [
+     "80m",
+     "40m",
+     "20m",
+     "15m",
+     "10m"
+    ],
+    "bands_text": "80 - 10m",
+    "date": "2026-12-05",
+    "start": "2026-12-05T12:00:00Z",
+    "end": "2026-12-06T11:59:00Z",
+    "allday": false,
+    "klassen": {
+     "N": [
+      "10m"
+     ],
+     "E": [
+      "80m",
+      "15m",
+      "10m"
+     ],
+     "A": [
+      "80m",
+      "40m",
+      "20m",
+      "15m",
+      "10m"
+     ]
+    }
+   },
+   {
+    "key": "ft-challenge",
+    "name": "FT Challenge",
+    "mode": "FT4, FT8",
+    "rule": "erstes volles Dezember-Wochenende",
+    "url": "https://www.rttycontesting.com/ft-challenge/rules/",
+    "bands": [
+     "80m",
+     "40m",
+     "20m",
+     "15m",
+     "10m"
+    ],
+    "date": "2026-12-05",
+    "start": "2026-12-05T18:00:00Z",
+    "end": "2026-12-06T23:59:00Z",
+    "allday": false,
+    "klassen": {
+     "N": [
+      "10m"
+     ],
+     "E": [
+      "80m",
+      "15m",
+      "10m"
+     ],
+     "A": [
+      "80m",
+      "40m",
+      "20m",
+      "15m",
+      "10m"
+     ]
+    }
+   },
+   {
+    "key": "brandenburg-berlin",
+    "name": "Brandenburg-Berlin-Contest",
+    "mode": "CW, SSB, FM",
+    "rule": "erster Dezember-Sonntag",
+    "url": "https://www.darc.de/der-club/distrikte/y/funksport/brandenburg-berlin-contest/",
+    "bands": [
+     "80m",
+     "40m",
+     "2m",
+     "70cm"
+    ],
+    "date": "2026-12-06",
+    "start": "2026-12-06T07:00:00Z",
+    "end": "2026-12-06T15:00:00Z",
+    "allday": false,
+    "klassen": {
+     "N": [
+      "2m",
+      "70cm"
+     ],
+     "E": [
+      "80m",
+      "2m",
+      "70cm"
+     ],
+     "A": [
+      "80m",
+      "40m",
+      "2m",
+      "70cm"
+     ]
+    }
+   },
+   {
+    "key": "arrl-10",
+    "name": "ARRL 10-Meter Contest",
+    "mode": "CW, SSB",
+    "rule": "zweites volles Dezember-Wochenende",
+    "url": "https://www.arrl.org/10-meter",
+    "adif": "ARRL-10",
+    "austausch": {
+     "nummer": true,
+     "text": ""
+    },
+    "bands": [
+     "10m"
+    ],
+    "date": "2026-12-12",
+    "start": "2026-12-12T00:00:00Z",
+    "end": "2026-12-13T23:59:00Z",
+    "allday": false,
+    "klassen": {
+     "N": [
+      "10m"
+     ],
+     "E": [
+      "10m"
+     ],
+     "A": [
+      "10m"
+     ]
+    }
+   },
+   {
+    "key": "darc-naval-contest",
+    "name": "Naval Contest",
+    "mode": "CW, SSB",
+    "rule": "laut DARC-Contestkalender",
+    "url": "https://www.marinefreunde.com/deu/inc.html",
+    "quelle": "darc",
+    "bands": [
+     "80m",
+     "40m",
+     "20m",
+     "15m",
+     "10m"
+    ],
+    "bands_text": "80 - 10m",
+    "date": "2026-12-12",
+    "start": "2026-12-12T16:00:00Z",
+    "end": "2026-12-13T15:59:00Z",
+    "allday": false,
+    "klassen": {
+     "N": [
+      "10m"
+     ],
+     "E": [
+      "80m",
+      "15m",
+      "10m"
+     ],
+     "A": [
+      "80m",
+      "40m",
+      "20m",
+      "15m",
+      "10m"
+     ]
+    }
+   },
+   {
+    "key": "darc-ok-dx-rtty-contest",
+    "name": "OK DX RTTY Contest",
+    "mode": "RTTY",
+    "rule": "laut DARC-Contestkalender",
+    "url": "http://okrtty.crk.cz/index.php?page=english",
+    "quelle": "darc",
+    "bands": [
+     "80m",
+     "40m",
+     "20m",
+     "15m",
+     "10m"
+    ],
+    "bands_text": "80 - 10m",
+    "date": "2026-12-19",
+    "start": "2026-12-19T00:00:00Z",
+    "end": "2026-12-20T00:00:00Z",
+    "allday": false,
+    "klassen": {
+     "N": [
+      "10m"
+     ],
+     "E": [
+      "80m",
+      "15m",
+      "10m"
+     ],
+     "A": [
+      "80m",
+      "40m",
+      "20m",
+      "15m",
+      "10m"
+     ]
+    }
+   },
+   {
+    "key": "croatian-cw",
+    "name": "Croatian CW Contest",
+    "mode": "CW",
+    "rule": "drittes volles Dezember-Wochenende",
+    "url": "https://www.9acw.org/",
+    "bands": [
+     "160m",
+     "80m",
+     "40m",
+     "20m",
+     "15m",
+     "10m"
+    ],
+    "date": "2026-12-19",
+    "start": "2026-12-19T14:00:00Z",
+    "end": "2026-12-20T14:00:00Z",
+    "allday": false,
+    "klassen": {
+     "N": [
+      "10m"
+     ],
+     "E": [
+      "160m",
+      "80m",
+      "15m",
+      "10m"
+     ],
+     "A": [
+      "160m",
+      "80m",
+      "40m",
+      "20m",
+      "15m",
+      "10m"
+     ]
+    }
+   }
+  ]
+ },
+ "dx": {
+  "quellenangabe": {
+   "nennung": "Quellen: afu.tools; ADXO (NG3K, Bill Feidt); DX Calendar (VA3RJ); DX Calendar (425 DX News); Club Log, Liste der Nutzer; ARRL Logbook of the World, Aktivitätsliste; Reverse Beacon Network; Most Wanted (German DX Foundation); BIG CTY (AD1C, Jim Reisert)",
+   "hinweis": "Wer diese Daten weitergibt oder anzeigt, nennt die hier aufgeführten Quellen sichtbar für den, der das Ergebnis sieht: die ursprüngliche Quelle und afu.tools.",
+   "doku": "https://afu.tools/api#quellenangabe",
+   "zusammenstellung": {
+    "name": "afu.tools",
+    "url": "https://afu.tools",
+    "lizenz": "Nennung von afu.tools"
+   },
+   "datensaetze": [
+    {
+     "id": "dx",
+     "datensatz": "Angekündigte DX-Aktivitäten",
+     "wofuer": "DX-Kalender, Zeitleiste, Abo",
+     "stand": "2026-11-25T16:40:20Z",
+     "quellen": [
+      {
+       "name": "ADXO (NG3K, Bill Feidt)",
+       "url": "https://www.ng3k.com/Misc/adxo.html",
+       "lizenz": null
+      },
+      {
+       "name": "DX Calendar (VA3RJ)",
+       "url": "https://www.qsl.net/va3rj/dx_cal.html",
+       "lizenz": null
+      },
+      {
+       "name": "DX Calendar (425 DX News)",
+       "url": "https://www.425dxn.org/index.php?op=wcal",
+       "lizenz": null
+      }
+     ]
+    },
+    {
+     "id": "dxbeleg",
+     "datensatz": "Belege für stattgefundene Aktivitäten",
+     "wofuer": "Beleggrad im DX-Kalender",
+     "stand": "2026-11-25T03:50:48Z",
+     "quellen": [
+      {
+       "name": "Club Log, Liste der Nutzer",
+       "url": "https://clublog.org/",
+       "lizenz": null
+      },
+      {
+       "name": "ARRL Logbook of the World, Aktivitätsliste",
+       "url": "https://lotw.arrl.org/",
+       "lizenz": null
+      },
+      {
+       "name": "Reverse Beacon Network",
+       "url": "https://www.reversebeacon.net/",
+       "lizenz": null
+      }
+     ]
+    },
+    {
+     "id": "dxseltenheit",
+     "datensatz": "Seltenheit der Gebiete",
+     "wofuer": "Einstufung im DX-Kalender und im Cluster",
+     "stand": "2026-11-25T16:40:20Z",
+     "quellen": [
+      {
+       "name": "Most Wanted (German DX Foundation)",
+       "url": "https://gdxf.de/mostwanted/",
+       "lizenz": null
+      }
+     ]
+    },
+    {
+     "id": "dxcc",
+     "datensatz": "Länderdatei (DXCC-Zuordnung)",
+     "wofuer": "Präfixnachschlag, Gebiet zu Rufzeichen, Cluster",
+     "stand": "2026-11-25T17:08:18Z",
+     "quellen": [
+      {
+       "name": "BIG CTY (AD1C, Jim Reisert)",
+       "url": "https://www.country-files.com/big-cty/",
+       "lizenz": "MIT"
+      }
+     ]
+    }
+   ]
+  },
+  "generated": "2026-11-25T16:40:16Z",
+  "note": "Angekündigt ist nicht zugesagt: Termine verschieben sich, maßgeblich ist die Ankündigung der Expedition selbst.",
+  "quellen": [
+   {
+    "name": "ADXO (NG3K, Bill Feidt)",
+    "url": "https://www.ng3k.com/Misc/adxo.html",
+    "abruf": "https://www.ng3k.com/Misc/adxo.html",
+    "key": "ng3k"
+   },
+   {
+    "name": "DX Calendar (VA3RJ)",
+    "url": "https://www.qsl.net/va3rj/dx_cal.html",
+    "abruf": "https://www.qsl.net/va3rj/dx_cal.html",
+    "key": "va3rj"
+   },
+   {
+    "name": "DX Calendar (425 DX News)",
+    "url": "https://www.425dxn.org/index.php?op=wcal",
+    "abruf": "https://www.425dxn.org/index.php?op=wcal",
+    "key": "425dxn"
+   }
+  ],
+  "dxcc_quelle": {
+   "name": "BIG CTY (AD1C, Jim Reisert)",
+   "url": "https://www.country-files.com/big-cty/",
+   "lizenz": "MIT"
+  },
+  "kontinente": {
+   "AF": "Afrika",
+   "AN": "Antarktis",
+   "AS": "Asien",
+   "EU": "Europa",
+   "NA": "Nordamerika",
+   "OC": "Ozeanien",
+   "SA": "Südamerika"
+  },
+  "count": 14,
+  "dxpeditions": [
+   {
+    "call": "CE0X",
+    "start": "2027-01-01",
+    "end": "2027-04-01",
+    "tage": 91,
+    "iota": "SA-013",
+    "qsl": null,
+    "unsicher": true,
+    "quellen": [
+     {
+      "key": "va3rj",
+      "name": "DX Calendar (VA3RJ)",
+      "url": "https://www.qsl.net/va3rj/dx_cal.html"
+     }
+    ],
+    "art": "dauer",
+    "entity": "San Felix & San Ambrosio",
+    "dxcc": "CE0X",
+    "cont": "SA",
+    "cq": 12,
+    "itu": 14,
+    "lat": -26.28,
+    "lon": -80.07,
+    "beleg": "offen",
+    "beleg_detail": "liegt noch in der Zukunft",
+    "stufe": "sehr_selten",
+    "stufe_grund": "GDXF Most Wanted Platz 8, 85.7 % der Teilnehmer fehlt das Gebiet noch",
+    "aktive_rufzeichen": 2,
+    "tage_pro_jahr": 1.07,
+    "gehoert_tage": 3,
+    "beobachtet_tage": 87,
+    "gdxf_rang": 8,
+    "gdxf_prozent": 85.7,
+    "zuletzt_angekuendigt": "2027-01-01",
+    "typ": "dxpedition"
+   },
+   {
+    "call": "7P8EA",
+    "start": "2026-10-26",
+    "end": "2026-11-25",
+    "tage": 31,
+    "iota": null,
+    "qsl": "HB9CCS",
+    "unsicher": false,
+    "quellen": [
+     {
+      "key": "ng3k",
+      "name": "ADXO (NG3K, Bill Feidt)",
+      "url": "https://www.ng3k.com/Misc/adxo.html"
+     },
+     {
+      "key": "va3rj",
+      "name": "DX Calendar (VA3RJ)",
+      "url": "https://www.qsl.net/va3rj/dx_cal.html"
+     },
+     {
+      "key": "425dxn",
+      "name": "DX Calendar (425 DX News)",
+      "url": "https://www.425dxn.org/index.php?op=wcal"
+     }
+    ],
+    "art": "aktivitaet",
+    "entity": "Lesotho",
+    "dxcc": "7P",
+    "cont": "AF",
+    "cq": 38,
+    "itu": 57,
+    "lat": -29.22,
+    "lon": 27.88,
+    "beleg": "gehoert",
+    "beleg_detail": "gehört an 38 Tagen, 408 Meldungen (cluster,dxcache)",
+    "stufe": "ungewoehnlich",
+    "stufe_grund": "GDXF Most Wanted Platz 115, 44.6 % der Teilnehmer fehlt das Gebiet noch",
+    "aktive_rufzeichen": 53,
+    "tage_pro_jahr": 20.55,
+    "gehoert_tage": 42,
+    "beobachtet_tage": 87,
+    "gdxf_rang": 115,
+    "gdxf_prozent": 44.6,
+    "zuletzt_angekuendigt": "2026-10-29",
+    "typ": "dxpedition"
+   },
+   {
+    "call": "XU7X",
+    "start": "2026-11-13",
+    "end": "2026-11-23",
+    "tage": 11,
+    "iota": "AS-133",
+    "qsl": null,
+    "unsicher": false,
+    "quellen": [
+     {
+      "key": "425dxn",
+      "name": "DX Calendar (425 DX News)",
+      "url": "https://www.425dxn.org/index.php?op=wcal"
+     }
+    ],
+    "art": "aktivitaet",
+    "entity": "Cambodia",
+    "dxcc": "XU",
+    "cont": "AS",
+    "cq": 26,
+    "itu": 49,
+    "lat": 12.93,
+    "lon": 105.13,
+    "beleg": "offen",
+    "beleg_detail": "erst seit weniger als 60 Tagen vorbei, Logs kommen später",
+    "stufe": "ungewoehnlich",
+    "stufe_grund": "GDXF Most Wanted Platz 117, 44.5 % der Teilnehmer fehlt das Gebiet noch",
+    "aktive_rufzeichen": 72,
+    "tage_pro_jahr": 48.28,
+    "gehoert_tage": 52,
+    "beobachtet_tage": 87,
+    "gdxf_rang": 117,
+    "gdxf_prozent": 44.5,
+    "zuletzt_angekuendigt": "2027-11-13",
+    "typ": "dxpedition"
+   },
+   {
+    "call": "VK9XY",
+    "start": "2026-11-16",
+    "end": "2026-12-04",
+    "tage": 19,
+    "iota": "OC-002",
+    "qsl": "M0OXO",
+    "unsicher": false,
+    "quellen": [
+     {
+      "key": "ng3k",
+      "name": "ADXO (NG3K, Bill Feidt)",
+      "url": "https://www.ng3k.com/Misc/adxo.html"
+     },
+     {
+      "key": "va3rj",
+      "name": "DX Calendar (VA3RJ)",
+      "url": "https://www.qsl.net/va3rj/dx_cal.html"
+     },
+     {
+      "key": "425dxn",
+      "name": "DX Calendar (425 DX News)",
+      "url": "https://www.425dxn.org/index.php?op=wcal"
+     }
+    ],
+    "art": "aktivitaet",
+    "entity": "Christmas Island",
+    "dxcc": "VK9X",
+    "cont": "OC",
+    "cq": 29,
+    "itu": 54,
+    "lat": -10.48,
+    "lon": 105.63,
+    "beleg": "log",
+    "beleg_detail": "Club Log: QSOs 2026-11-16 bis 2026-11-22",
+    "stufe": "ungewoehnlich",
+    "stufe_grund": "GDXF Most Wanted Platz 129, 43.5 % der Teilnehmer fehlt das Gebiet noch",
+    "aktive_rufzeichen": 44,
+    "tage_pro_jahr": 18.0,
+    "gehoert_tage": 14,
+    "beobachtet_tage": 87,
+    "gdxf_rang": 129,
+    "gdxf_prozent": 43.5,
+    "zuletzt_angekuendigt": "2026-11-16",
+    "typ": "dxpedition"
+   },
+   {
+    "call": "4U1ITU",
+    "start": "2026-11-18",
+    "end": "2026-11-26",
+    "tage": 9,
+    "iota": null,
+    "qsl": null,
+    "unsicher": false,
+    "quellen": [
+     {
+      "key": "va3rj",
+      "name": "DX Calendar (VA3RJ)",
+      "url": "https://www.qsl.net/va3rj/dx_cal.html"
+     }
+    ],
+    "art": "aktivitaet",
+    "entity": "ITU HQ",
+    "dxcc": "4U1I",
+    "cont": "EU",
+    "cq": 14,
+    "itu": 28,
+    "lat": 46.17,
+    "lon": 6.05,
+    "beleg": "gehoert",
+    "beleg_detail": "gehört an 10 Tagen, 84 Meldungen (cluster,dxcache)",
+    "stufe": "ungewoehnlich",
+    "stufe_grund": "nicht in den GDXF-Top-150; Betrieb vor Ort, an 10 % der beobachteten Tage gehört",
+    "aktive_rufzeichen": 4,
+    "tage_pro_jahr": 0.0,
+    "gehoert_tage": 9,
+    "beobachtet_tage": 87,
+    "gdxf_rang": null,
+    "gdxf_prozent": null,
+    "zuletzt_angekuendigt": "2026-11-18",
+    "typ": "dxpedition"
+   },
+   {
+    "call": "9A170NT",
+    "start": "2025-07-10",
+    "end": "2026-12-31",
+    "tage": 540,
+    "iota": null,
+    "qsl": null,
+    "unsicher": false,
+    "quellen": [
+     {
+      "key": "va3rj",
+      "name": "DX Calendar (VA3RJ)",
+      "url": "https://www.qsl.net/va3rj/dx_cal.html"
+     }
+    ],
+    "art": "dauer",
+    "entity": "Croatia",
+    "dxcc": "9A",
+    "cont": "EU",
+    "cq": 15,
+    "itu": 28,
+    "lat": 45.18,
+    "lon": 15.3,
+    "beleg": "log",
+    "beleg_detail": "Club Log: QSOs 2026-07-10 bis 2026-09-10",
+    "stufe": "haeufig",
+    "stufe_grund": "nicht in den GDXF-Top-150; Betrieb vor Ort, an 100 % der beobachteten Tage gehört",
+    "aktive_rufzeichen": 1551,
+    "tage_pro_jahr": 0.41,
+    "gehoert_tage": 87,
+    "beobachtet_tage": 87,
+    "gdxf_rang": null,
+    "gdxf_prozent": null,
+    "zuletzt_angekuendigt": "2026-09-30",
+    "typ": "sonder"
+   },
+   {
+    "call": "DP0GVN",
+    "start": "2025-11-18",
+    "end": "2026-12-21",
+    "tage": 399,
+    "iota": "AN-016",
+    "qsl": null,
+    "unsicher": false,
+    "quellen": [
+     {
+      "key": "va3rj",
+      "name": "DX Calendar (VA3RJ)",
+      "url": "https://www.qsl.net/va3rj/dx_cal.html"
+     }
+    ],
+    "art": "dauer",
+    "entity": "Antarctica",
+    "dxcc": "CE9",
+    "cont": "SA",
+    "cq": 13,
+    "itu": 74,
+    "lat": -90.0,
+    "lon": -0.0,
+    "beleg": "gehoert",
+    "beleg_detail": "gehört an 19 Tagen, 23 Meldungen (cluster,dxcache)",
+    "stufe": "haeufig",
+    "stufe_grund": "nicht in den GDXF-Top-150; Betrieb vor Ort, an 92 % der beobachteten Tage gehört",
+    "aktive_rufzeichen": 93,
+    "tage_pro_jahr": 14.48,
+    "gehoert_tage": 80,
+    "beobachtet_tage": 87,
+    "gdxf_rang": null,
+    "gdxf_prozent": null,
+    "zuletzt_angekuendigt": "2027-03-01",
+    "typ": "dxpedition"
+   },
+   {
+    "call": "LY25XMAS",
+    "start": "2025-12-02",
+    "end": "2026-12-31",
+    "tage": 395,
+    "iota": null,
+    "qsl": null,
+    "unsicher": false,
+    "quellen": [
+     {
+      "key": "va3rj",
+      "name": "DX Calendar (VA3RJ)",
+      "url": "https://www.qsl.net/va3rj/dx_cal.html"
+     }
+    ],
+    "art": "dauer",
+    "entity": "Lithuania",
+    "dxcc": "LY",
+    "cont": "EU",
+    "cq": 15,
+    "itu": 29,
+    "lat": 55.45,
+    "lon": 23.63,
+    "beleg": "offen",
+    "beleg_detail": "läuft noch",
+    "stufe": "haeufig",
+    "stufe_grund": "nicht in den GDXF-Top-150; Betrieb vor Ort, an 100 % der beobachteten Tage gehört",
+    "aktive_rufzeichen": 549,
+    "tage_pro_jahr": 0.0,
+    "gehoert_tage": 87,
+    "beobachtet_tage": 87,
+    "gdxf_rang": null,
+    "gdxf_prozent": null,
+    "zuletzt_angekuendigt": "2026-09-01",
+    "typ": "sonder"
+   },
+   {
+    "call": "8J260FJ",
+    "start": "2026-09-02",
+    "end": "2026-11-30",
+    "tage": 90,
+    "iota": "AS-007",
+    "qsl": null,
+    "unsicher": false,
+    "quellen": [
+     {
+      "key": "va3rj",
+      "name": "DX Calendar (VA3RJ)",
+      "url": "https://www.qsl.net/va3rj/dx_cal.html"
+     }
+    ],
+    "art": "aktivitaet",
+    "entity": "Japan",
+    "dxcc": "JA",
+    "cont": "AS",
+    "cq": 25,
+    "itu": 45,
+    "lat": 36.4,
+    "lon": 138.38,
+    "beleg": "offen",
+    "beleg_detail": "läuft noch",
+    "stufe": "haeufig",
+    "stufe_grund": "nicht in den GDXF-Top-150; Betrieb vor Ort, an 100 % der beobachteten Tage gehört",
+    "aktive_rufzeichen": 12881,
+    "tage_pro_jahr": 1.97,
+    "gehoert_tage": 87,
+    "beobachtet_tage": 87,
+    "gdxf_rang": null,
+    "gdxf_prozent": null,
+    "zuletzt_angekuendigt": "2027-03-01",
+    "typ": "sonder"
+   },
+   {
+    "call": "8N2TUT",
+    "start": "2026-09-14",
+    "end": "2026-11-30",
+    "tage": 78,
+    "iota": "AS-007",
+    "qsl": null,
+    "unsicher": false,
+    "quellen": [
+     {
+      "key": "va3rj",
+      "name": "DX Calendar (VA3RJ)",
+      "url": "https://www.qsl.net/va3rj/dx_cal.html"
+     }
+    ],
+    "art": "aktivitaet",
+    "entity": "Japan",
+    "dxcc": "JA",
+    "cont": "AS",
+    "cq": 25,
+    "itu": 45,
+    "lat": 36.4,
+    "lon": 138.38,
+    "beleg": "offen",
+    "beleg_detail": "läuft noch",
+    "stufe": "haeufig",
+    "stufe_grund": "nicht in den GDXF-Top-150; Betrieb vor Ort, an 100 % der beobachteten Tage gehört",
+    "aktive_rufzeichen": 12881,
+    "tage_pro_jahr": 1.97,
+    "gehoert_tage": 87,
+    "beobachtet_tage": 87,
+    "gdxf_rang": null,
+    "gdxf_prozent": null,
+    "zuletzt_angekuendigt": "2027-03-01",
+    "typ": "sonder"
+   },
+   {
+    "call": "AT26HFI",
+    "start": "2026-10-01",
+    "end": "2026-12-01",
+    "tage": 62,
+    "iota": null,
+    "qsl": null,
+    "unsicher": false,
+    "quellen": [
+     {
+      "key": "va3rj",
+      "name": "DX Calendar (VA3RJ)",
+      "url": "https://www.qsl.net/va3rj/dx_cal.html"
+     }
+    ],
+    "art": "aktivitaet",
+    "entity": "India",
+    "dxcc": "VU",
+    "cont": "AS",
+    "cq": 22,
+    "itu": 41,
+    "lat": 22.5,
+    "lon": 77.58,
+    "beleg": "log",
+    "beleg_detail": "Club Log: QSOs 2026-11-05 bis 2026-11-08",
+    "stufe": "haeufig",
+    "stufe_grund": "nicht in den GDXF-Top-150; Betrieb vor Ort, an 100 % der beobachteten Tage gehört",
+    "aktive_rufzeichen": 652,
+    "tage_pro_jahr": 7.38,
+    "gehoert_tage": 87,
+    "beobachtet_tage": 87,
+    "gdxf_rang": null,
+    "gdxf_prozent": null,
+    "zuletzt_angekuendigt": "2026-12-18",
+    "typ": "sonder"
+   },
+   {
+    "call": "VY0ZOO",
+    "start": "2026-10-05",
+    "end": "2026-11-29",
+    "tage": 56,
+    "iota": "NA-007",
+    "qsl": null,
+    "unsicher": true,
+    "quellen": [
+     {
+      "key": "va3rj",
+      "name": "DX Calendar (VA3RJ)",
+      "url": "https://www.qsl.net/va3rj/dx_cal.html"
+     }
+    ],
+    "art": "aktivitaet",
+    "entity": "Canada",
+    "dxcc": "VE",
+    "cont": "NA",
+    "cq": 5,
+    "itu": 9,
+    "lat": 44.35,
+    "lon": -78.75,
+    "beleg": "gehoert",
+    "beleg_detail": "gehört an 1 Tag, 1 Meldungen (cluster)",
+    "stufe": "haeufig",
+    "stufe_grund": "nicht in den GDXF-Top-150; Betrieb vor Ort, an 100 % der beobachteten Tage gehört",
+    "aktive_rufzeichen": 6147,
+    "tage_pro_jahr": 11.76,
+    "gehoert_tage": 87,
+    "beobachtet_tage": 87,
+    "gdxf_rang": null,
+    "gdxf_prozent": null,
+    "zuletzt_angekuendigt": "2027-03-01",
+    "typ": "sonstige"
+   },
+   {
+    "call": "3B9",
+    "start": "2026-10-20",
+    "end": "2026-11-28",
+    "tage": 40,
+    "iota": null,
+    "qsl": "LoTW",
+    "unsicher": false,
+    "quellen": [
+     {
+      "key": "ng3k",
+      "name": "ADXO (NG3K, Bill Feidt)",
+      "url": "https://www.ng3k.com/Misc/adxo.html"
+     }
+    ],
+    "art": "aktivitaet",
+    "entity": "Rodriguez Island",
+    "dxcc": "3B9",
+    "cont": "AF",
+    "cq": 39,
+    "itu": 53,
+    "lat": -19.7,
+    "lon": 63.42,
+    "beleg": "offen",
+    "beleg_detail": "läuft noch",
+    "stufe": "haeufig",
+    "stufe_grund": "nicht in den GDXF-Top-150; Betrieb vor Ort, an 100 % der beobachteten Tage gehört",
+    "aktive_rufzeichen": 34,
+    "tage_pro_jahr": 10.93,
+    "gehoert_tage": 87,
+    "beobachtet_tage": 87,
+    "gdxf_rang": null,
+    "gdxf_prozent": null,
+    "zuletzt_angekuendigt": "2026-11-28",
+    "typ": "dxpedition"
+   },
+   {
+    "call": "TZ4AM",
+    "start": "2026-10-22",
+    "end": "2026-12-02",
+    "tage": 42,
+    "iota": null,
+    "qsl": "LoTW",
+    "unsicher": false,
+    "quellen": [
+     {
+      "key": "ng3k",
+      "name": "ADXO (NG3K, Bill Feidt)",
+      "url": "https://www.ng3k.com/Misc/adxo.html"
+     },
+     {
+      "key": "va3rj",
+      "name": "DX Calendar (VA3RJ)",
+      "url": "https://www.qsl.net/va3rj/dx_cal.html"
+     },
+     {
+      "key": "425dxn",
+      "name": "DX Calendar (425 DX News)",
+      "url": "https://www.425dxn.org/index.php?op=wcal"
+     }
+    ],
+    "art": "aktivitaet",
+    "entity": "Mali",
+    "dxcc": "TZ",
+    "cont": "AF",
+    "cq": 35,
+    "itu": 46,
+    "lat": 18.0,
+    "lon": -2.58,
+    "beleg": "gehoert",
+    "beleg_detail": "gehört an 52 Tagen, 323 Meldungen (cluster,dxcache)",
+    "stufe": "haeufig",
+    "stufe_grund": "nicht in den GDXF-Top-150; Betrieb vor Ort, an 57 % der beobachteten Tage gehört",
+    "aktive_rufzeichen": 19,
+    "tage_pro_jahr": 15.1,
+    "gehoert_tage": 50,
+    "beobachtet_tage": 87,
+    "gdxf_rang": null,
+    "gdxf_prozent": null,
+    "zuletzt_angekuendigt": "2026-10-22",
+    "typ": "dxpedition"
+   }
+  ]
+ }
+}

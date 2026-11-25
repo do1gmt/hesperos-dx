@@ -4655,7 +4655,7 @@ try:
     st = json.loads(bak); st["my_locator"] = "JN59LL"; st["afutools"] = {"api_key": "afu_test", "km": 50}
     W.SETTINGS.write_text(json.dumps(st))
     AFT._write({"repeaters": [{"call": "DB0FUE", "out_hz": 145637500, "km": 3.8}], "near": "JN59LL", "km": 50, "fetched_ts": 9e12})
-    assert AFT.config()["features"] == {"repeaters": True, "qth": True, "wx": False} and AFT.repeater_at(145637500)["call"] == "DB0FUE"
+    assert AFT.config()["features"] == {"repeaters": True, "qth": True, "wx": False, "cal": False} and AFT.repeater_at(145637500)["call"] == "DB0FUE"
     W.afutools_save({"features": {"repeaters": False}})
     assert AFT.config()["features"]["repeaters"] is False and AFT.repeater_at(145637500) is None
     assert AFT.refresh(json.loads(W.SETTINGS.read_text()), force=True).get("repeaters")      # abgeschaltet: nicht geholt (alter Stand)
@@ -4701,9 +4701,52 @@ finally:
     W.SETTINGS.write_text(bak); AFT.forget()
 src = Path(sys.argv[1]); js = (src / "web" / "app.js").read_text(); html = (src / "web" / "index.html").read_text()
 assert len(re.findall(r"async function loadWx\(", js)) == 1 and "async function loadRadioWx()" in js and 'id="panel-wx" hidden' in html and 'id="rwBands"' in html
-assert "if (name === 'scan') setTimeout(() => loadRadioWx(), 0);" in js and "'afutools_wx': 'afu.tools: Funkwetter abgerufen'" in js
+assert "if (name === 'scan') setTimeout(() => { loadRadioWx(); loadCalendar(); }, 0);" in js and "'afutools_wx': 'afu.tools: Funkwetter abgerufen'" in js
 PY
 pkill -f "afutools_fake.py 8096" 2>/dev/null; rm -f "$AFL"
+
+echo "== 127 afu.tools: Contest- und DX-Kalender (Karte, Hinweis im Scan-Verlauf, DX-Abzeichen)"
+AFL=$(mktemp); (python3 "$SRC/devtools/afutools_fake.py" 8095 "$AFL" > /dev/null 2>&1 &); sleep 1
+(cd bin && HSP_AFUTOOLS_URL=http://127.0.0.1:8095/api/v1 timeout 60 python3 - "$SRC" "$AFL" <<'PY') && ok "aus: nichts geholt; an: Contests der nächsten 7 Tage, laufende DX-Aktivitäten (seltene zuerst, häufige Dauer-Sonderrufzeichen ausgeblendet), Contest im Scan-Verlauf nur bei passendem Band, DX-Abzeichen bei gehörter Station (auch mit /P), Quellen; einmal am Tag" || bad "Contest-/DX-Kalender"
+import sys, json, time, calendar, tempfile
+from datetime import datetime, timezone
+from pathlib import Path
+import afutools as AFT, webapp as W, stations as ST
+bak = W.SETTINGS.read_text()
+try:
+    st = json.loads(bak); st["my_locator"] = "JN59LL"; st["afutools"] = {"api_key": "afu_test", "km": 50}
+    W.SETTINGS.write_text(json.dumps(st))
+    assert AFT.cal_refresh(st) is None and AFT.calendar_view() == {"on": False}
+    W.afutools_save({"features": {"cal": True}}); st = json.loads(W.SETTINGS.read_text())
+    d = AFT.cal_refresh(st)
+    assert not d["error"] and len(d["contests"]) == 9 and len(d["dx"]) == 14, d.get("error")
+    names = [x["name"] for x in d["attribution"]["sources"]]; assert names[0] == "afu.tools" and "DARC-Contestkalender" in names and any(n.startswith("ADXO") for n in names)
+    now = calendar.timegm((2026, 11, 25, 12, 0, 0))
+    v = AFT.calendar_view(now)
+    assert [x["name"] for x in v["contests"]] == ["CQ World Wide DX Contest, CW"] and not v["contests"][0]["running"]
+    calls = [x["call"] for x in v["dx"]]
+    assert "9A170NT" not in calls and "XU7X" not in calls and "CE0X" not in calls and v["dx"][0]["running"] and v["dx"][0]["stufe"] == "ungewoehnlich", calls
+    t = calendar.timegm((2026, 11, 28, 10, 0, 0))
+    assert AFT.contests_during(t, t + 1800, ["20m", "40m"]) == ["CQ World Wide DX Contest, CW"] and AFT.contests_during(t, t + 1800, ["2m"]) == []
+    a = AFT.dx_active(["VK9XY", "VK9XY/P", "9A170NT", "DL1ABC"], now); assert sorted(a) == ["VK9XY", "VK9XY/P"] and a["VK9XY"]["entity"] == "Christmas Island"
+    n = len(Path(sys.argv[2]).read_text().splitlines()); AFT.cal_refresh(st); assert len(Path(sys.argv[2]).read_text().splitlines()) == n == 2
+    # Stationsliste: Abzeichen (Termine auf heute verschoben, damit der Test nicht veraltet)
+    c = json.loads(AFT.CAL.read_text())
+    for x in c["dx"]:
+        if x["call"] == "VK9XY":
+            x["start"], x["end"] = time.time() - 86400, time.time() + 5 * 86400
+    AFT.CAL.write_text(json.dumps(c))
+    W.DB = Path(tempfile.mkdtemp()) / "t.db"; W.ensure_schema(); db = W.db_connect(); ST.ensure_tables(db); ST.ensure_summary(db)
+    ST.upsert_station(db, "VK9XY", datetime.now(timezone.utc).isoformat(timespec="seconds"), "20m", "FT8", None, -12); db.commit(); db.close()
+    r = W.stations(days=0)["stations"][0]; assert r["call"] == "VK9XY" and r["dx"]["entity"] == "Christmas Island" and r["dx"]["stufe"] == "ungewoehnlich"
+    W.afutools_save({"clear_key": True}); assert not AFT.CAL.exists()
+finally:
+    W.SETTINGS.write_text(bak); AFT.forget()
+src = Path(sys.argv[1]); js = (src / "web" / "app.js").read_text(); html = (src / "web" / "index.html").read_text()
+assert 'id="panel-cal" hidden' in html and "async function loadCalendar()" in js and "r.contests.join(', ')" in js and "DX ${esc(r.dx.entity || '')}" in js
+assert "'afutools_cal': 'afu.tools: Contest- und DX-Kalender abgerufen'" in js
+PY
+pkill -f "afutools_fake.py 8095" 2>/dev/null; rm -f "$AFL"
 
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

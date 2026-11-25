@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.8.69 – 2026-11-25
+
+- **afu.tools, step 4 – contest and DX calendar** (switched off by default; *Settings → afu.tools*): card *Contests &
+  DX* on the *Scan* page with contests running now and in the next 7 days and DX activities running now or within
+  14 days, rare ones first (rarity with reason in the tooltip; common long-running special callsigns left out). The
+  scan history shows "🏁 Contest: …" for runs during a contest on one of their bands; *Stations* marks heard
+  callsigns that are an announced DX activity (also with /P or an SSID) with a *DX …* badge. Fetched once a day;
+  past contests stay 14 days for the scan history. Laid out as a list so it wraps cleanly on phones.
+- Self-test section 127.
+
 ## 1.8.68 – 2026-11-25
 
 - **afu.tools, step 3 – radio weather** (switched off by default; *Settings → afu.tools*): a card *Radio weather* on

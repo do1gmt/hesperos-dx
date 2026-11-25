@@ -808,8 +808,9 @@
       const hpb = r.hits_per_band || {};
       const bands = (r.bands || []).map(b => hpb[b] ? `${esc(b)} <span class="n">${hpb[b]}</span>` : esc(b)).join(', ') || '<span class="muted">–</span>';
       const why = r.reason ? `<div class="run-why">${esc(r.reason)}</div>` : '';
+      const cont = (r.contests || []).length ? `<div class="run-contest" title="${EN ? 'contest calendar (afu.tools)' : 'Contest-Kalender (afu.tools)'}">🏁 Contest: ${esc(r.contests.join(', '))}</div>` : '';
       return `<tr title="Lauf ${r.id}"><td>${fmtTime(r.started_at)}<br><small class="muted">${r.finished_at ? 'bis ' + fmtTime(r.finished_at, false) : ''}</small></td>
-        <td>${r.device ? `<small class="muted">${r.device.split(',').map(x => dev[x] || x).join(' + ')}</small><br>` : ''}${bands}</td>
+        <td>${r.device ? `<small class="muted">${r.device.split(',').map(x => dev[x] || x).join(' + ')}</small><br>` : ''}${bands}${cont}</td>
         <td class="${r.status === 'success' ? 'ok' : r.status === 'running' ? '' : r.status === 'cancelled' ? 'muted' : 'bad'}">${st}${why}</td>
         <td>${r.peaks ?? ''}${r.rejected ? ` <small class="muted">/ ${r.rejected}</small>` : ''}</td><td>${r.tunes ?? ''}</td><td>${fmtDur(r.duration_s)}</td></tr>`;
     }).join('') || '<tr><td colspan="6">noch kein Lauf</td></tr>';
@@ -1592,7 +1593,7 @@
     // 1.8.53
     'own_frequencies_set': 'Eigene Frequenzen geändert',
     // 1.8.42: Ereignisse ohne Beschreibung (sonst stand im Protokoll der Rohname)
-    'mesh_connected': 'Mesh: verbunden', 'mesh_lost': 'Mesh: Verbindung weg', 'mesh_no_access': 'Mesh: kein Zugriff auf den Node', 'mesh_no_answer': 'Mesh: Gerät antwortet nicht', 'mesh_stopped': 'Mesh: beendet', 'mesh_msg': 'Mesh-Nachricht', 'mesh_open_failed': 'Mesh: Gerät ließ sich nicht öffnen', 'mesh_start_failed': 'Mesh ließ sich nicht starten', 'mesh_port_set': 'Mesh: Anschluss gewählt', 'mesh_alert_failed': 'Mesh-Warnung ließ sich nicht melden', 'mesh_set': 'Mesh-Node eingestellt', 'mesh_set_failed': 'Mesh-Node ließ sich nicht einstellen', 'mesh_clock_set': 'Mesh: Uhr des Nodes gestellt', 'mesh_sent': 'Mesh: Nachricht gesendet', 'afutools_set': 'afu.tools: Einstellung geändert', 'afutools_repeaters': 'afu.tools: Relais abgerufen', 'afutools_failed': 'afu.tools: Abruf fehlgeschlagen', 'afutools_qth': 'afu.tools: Locator nachgefragt', 'afutools_wx': 'afu.tools: Funkwetter abgerufen', 'mesh_advert_sent': 'Mesh: Advert versendet', 'mesh_clock_failed': 'Mesh: Uhr ließ sich nicht stellen', 'mesh_server_connected': 'Mesh: Repeater/Room-Server verbunden', 'mesh_room_login': 'Mesh: am Room-Server angemeldet', 'mesh_room_login_failed': 'Mesh: Anmeldung am Room-Server abgelehnt', 'mesh_server_set': 'Mesh: Server eingestellt', 'mesh_server_set_failed': 'Mesh: Server ließ sich nicht einstellen',
+    'mesh_connected': 'Mesh: verbunden', 'mesh_lost': 'Mesh: Verbindung weg', 'mesh_no_access': 'Mesh: kein Zugriff auf den Node', 'mesh_no_answer': 'Mesh: Gerät antwortet nicht', 'mesh_stopped': 'Mesh: beendet', 'mesh_msg': 'Mesh-Nachricht', 'mesh_open_failed': 'Mesh: Gerät ließ sich nicht öffnen', 'mesh_start_failed': 'Mesh ließ sich nicht starten', 'mesh_port_set': 'Mesh: Anschluss gewählt', 'mesh_alert_failed': 'Mesh-Warnung ließ sich nicht melden', 'mesh_set': 'Mesh-Node eingestellt', 'mesh_set_failed': 'Mesh-Node ließ sich nicht einstellen', 'mesh_clock_set': 'Mesh: Uhr des Nodes gestellt', 'mesh_sent': 'Mesh: Nachricht gesendet', 'afutools_set': 'afu.tools: Einstellung geändert', 'afutools_repeaters': 'afu.tools: Relais abgerufen', 'afutools_failed': 'afu.tools: Abruf fehlgeschlagen', 'afutools_qth': 'afu.tools: Locator nachgefragt', 'afutools_wx': 'afu.tools: Funkwetter abgerufen', 'afutools_cal': 'afu.tools: Contest- und DX-Kalender abgerufen', 'mesh_advert_sent': 'Mesh: Advert versendet', 'mesh_clock_failed': 'Mesh: Uhr ließ sich nicht stellen', 'mesh_server_connected': 'Mesh: Repeater/Room-Server verbunden', 'mesh_room_login': 'Mesh: am Room-Server angemeldet', 'mesh_room_login_failed': 'Mesh: Anmeldung am Room-Server abgelehnt', 'mesh_server_set': 'Mesh: Server eingestellt', 'mesh_server_set_failed': 'Mesh: Server ließ sich nicht einstellen',
     'analysis_skipped': 'Auswertung übersprungen', 'auto_backup': 'Automatische Sicherung', 'backup_now': 'Sicherung von Hand', 'decode_skipped': 'Dekodieren übersprungen', 'stick_main_auto': 'Stick automatisch Haupt-Stick', 'stick_new': 'Neuer Stick erkannt', 'stick_serial_written': 'Seriennummer geschrieben', 'stick_unsupported': 'Gerät nicht unterstützt', 'check_failed': 'Prüfung fehlgeschlagen', 'internet_back': 'Internet wieder da', 'network_changed': 'Netz gewechselt', 'live_gap': 'Live: Lücke im Empfang', 'live_heard_failed': 'Live: Gehörte nicht gespeichert', 'live_recorded': 'Live: Aufnahme gespeichert', 'live.start_failed': 'Live ließ sich nicht starten', 'watch_loop_failed': 'Dauerwache: Fehler', 'watch_off': 'Dauerwache aus', 'watch_on': 'Dauerwache an', 'watch_restarted': 'Dauerwache neu gestartet', 'outbox_sent': 'Nachgeholte Nachrichten verschickt', 'test_mail_sent': 'Test-Mail verschickt', 'test_push_sent': 'Test-Push verschickt', 'sstv_upload_failed': 'SSTV-Bild: Upload fehlgeschlagen', 'sstv_uploaded': 'SSTV-Bild hochgeladen', 'rds_decoded': 'RDS dekodiert', 'rds_failed': 'RDS: Fehler', 'rundir_recreated': 'Arbeitsordner neu angelegt', 'pass_stick_restart': 'Überflug: Stick neu gestartet', 'publish_prepare_failed': 'Überflug: Webseiten-Upload nicht vorbereitet', 'waterfall_failed': 'Wasserfall ließ sich nicht erzeugen', 'band_summary_failed': 'Bandübersicht: Fehler', 'fm_watch_failed': 'UKW-Beobachtung: Fehler', 'pmsdr_fifo_reconnect': 'PMSDR: Datenstrom neu verbunden', 'pmsdr_input_set': 'PMSDR: Eingang umgestellt', 'rtl_orphans_killed': 'Verwaiste RTL-Prozesse beendet', 'run_exception': 'Scan: unerwarteter Fehler', 'scan_yielded': 'Scan gibt den Stick frei', 'health_failed': 'Selbstprüfung: Fehler', 'publish_failed': 'Webseiten-Upload: Fehler', 'restore_done': 'Sicherung eingespielt', 'restore_failed': 'Einspielen fehlgeschlagen', 'restore_stick_adopt_failed': 'Einspielen: Stick nicht übernommen', 'restore_stick_adopted': 'Einspielen: Stick übernommen', 'satellite_arming': 'Satelliten werden scharfgeschaltet', 'satellite_watchdog': 'Überflug hängt – beendet', 'scan_yield_requested': 'Scan soll den Stick freigeben', 'settings_unreadable': 'Einstellungen nicht lesbar', 'sticks_failed': 'Sticks: Fehler', 'sysmon_failed': 'Systemwerte: Fehler', 'reboot_requested': 'Neustart angefordert', 'restart_requested': 'Dienst-Neustart angefordert', 'dir_move_failed': 'Programmordner nicht umgezogen', 'dir_move_skipped': 'Programmordner-Umzug ausgelassen', 'dir_moved': 'Programmordner umgezogen', 'hostname_change_failed': 'Rechnername nicht geändert', 'hostname_changed': 'Rechnername geändert', 'hostname_notice_failed': 'Rechnername: Hinweis fehlgeschlagen', 'services_rename_failed': 'Dienste nicht umbenannt', 'services_renamed': 'Dienste umbenannt', 'backup_dir_move_failed': 'Sicherungsordner nicht umgezogen', 'backup_dir_rename_failed': 'Sicherungsordner nicht umbenannt', 'backup_dir_renamed': 'Sicherungsordner umbenannt', 'update_failed': 'Update fehlgeschlagen', 'auto_backup_set': 'Automatische Sicherung eingestellt', 'backup_downloaded': 'Sicherung heruntergeladen', 'backup_from_target': 'Sicherung vom Ziel eingespielt', 'backup_target_nas': 'Sicherungsziel: Netzwerkfreigabe', 'backup_target_nas_removed': 'Netzwerkfreigabe entfernt', 'backup_target_usb': 'Sicherungsziel: USB-Stick', 'backup_uploaded': 'Sicherung hochgeladen', 'backup_usb_ejected': 'USB-Stick ausgeworfen', 'diagnose_downloaded': 'Diagnose heruntergeladen', 'eibi_refresh_failed': 'EiBi: Herunterladen fehlgeschlagen', 'eibi_uploaded': 'EiBi-Liste hochgeladen', 'follow_updated': 'Satelliten-Nachführung eingestellt', 'hf_device_updated': 'Kurzwellengerät eingestellt', 'interference_changed': 'Störlinie geändert', 'live_favorites_saved': 'Live-Favoriten gespeichert', 'location_confirmed': 'Standort bestätigt', 'publish_set': 'Webseiten-Upload eingestellt', 'restore_requested': 'Einspielen angefordert', 'satellites_armed_now': 'Satelliten sofort scharf', 'satellites_arming': 'Satelliten in 1 Minute scharf', 'scan_stop_requested': 'Scan-Abbruch angefordert', 'scheduler_dead_fallback': 'Zeitplaner antwortet nicht – Scan direkt gestartet', 'sstv_event_added': 'SSTV-Termin eingetragen', 'sstv_event_deleted': 'SSTV-Termin gelöscht', 'sstv_events_failed': 'SSTV-Termine: Abruf fehlgeschlagen', 'sstv_manual_queued': 'SSTV-Bild für die Webseite vorgemerkt', 'stick_updated': 'Stick-Einstellungen gespeichert', 'time_mode_set': 'Zeitangaben umgestellt', 'ui_prefs_failed': 'Ansicht-Profil: Fehler', 'update_started': 'Update gestartet', 'watchdog_ping_failed': 'Watchdog-Meldung fehlgeschlagen', 'webapp_stall': 'Dashboard hing kurz', 'webapp_stall_probe_failed': 'Dashboard-Hänger: Prüfung fehlgeschlagen', 'wifi_fallback_added': 'Ersatz-WLAN eingetragen', 'wifi_fallback_removed': 'Ersatz-WLAN entfernt', 'wsjtx_udp_set': 'Weitergabe im Netz (WSJT-X) eingestellt',
     'notice_raised': 'Hinweis gemeldet', 'notice_resolved': 'Hinweis behoben', 'notice_event': 'Ereignis gemeldet', 'update_done': 'Update fertig', 'rescue.start': 'Notfallseite gestartet', 'sysupdate_checked': 'Systemupdates geprüft', 'sysupgrade_requested': 'Systemupdate angefordert', 'sysupgrade_started': 'Systemupdate gestartet', 'sysupgrade_done': 'Systemupdate fertig', 'sysupgrade_failed': 'Systemupdate fehlgeschlagen', 'sysupgrade_waiting': 'Systemupdate wartet auf eine freie Minute', 'sysupgrade_cancelled': 'Systemupdate nicht mehr angefordert', 'sysupgrade_start_failed': 'Systemupdate ließ sich nicht starten', 'reboot_after_update': 'Neustart nach Systemupdate', 'reboot_postponed': 'Neustart verschoben', 'reboot_done': 'Neustart nach Systemupdate erledigt', 'sysupdate_settings': 'Systemupdates eingestellt', 'sysupdate_failed': 'Systemupdates: Fehler', 'foreign_request_blocked': 'Anfrage einer fremden Webseite abgewiesen', 'backup_key_set': 'Passwort der Zugangsdaten gesetzt', 'backup_key_cleared': 'Passwort der Zugangsdaten gelöscht', 'live_image_keep': 'Bild aus Live behalten (★)', 'live_image_unkeep': 'Bild aus Live nicht mehr behalten', 'live_image_delete': 'Bild aus Live gelöscht', 'live_image_publish': 'Bild aus Live für die Webseite vorgemerkt', 'ui_prefs_replaced': 'Ansicht-Profil übernommen', 'ui_prefs_copied': 'Ansicht-Profil kopiert', 'backup_dir_moved': 'Sicherungsordner umgezogen', 'writewatch_failed': 'Schreib-Zählung: Fehler', 'db_keeper_failed': 'Ruhende Datenbank-Verbindung: Fehler', 'live_yield': 'Live hält kurz an', 'live_resumed': 'Live läuft weiter', 'auth_none': 'Dashboard ohne Passwort', 'live_thumb_failed': 'Vorschaubild ließ sich nicht erzeugen',
     run_start: 'Scan gestartet', run_done: 'Scan fertig', run_failed: 'Scan fehlgeschlagen', run_cancelled: 'Scan abgebrochen',
@@ -1841,7 +1842,7 @@
     setTimeout(jumpCurrent, 400);
     if (name === 'logs') loadLogs();
     if (name === 'hits') loadHits();
-    if (name === 'scan') setTimeout(() => loadRadioWx(), 0);
+    if (name === 'scan') setTimeout(() => { loadRadioWx(); loadCalendar(); }, 0);
     if (name === 'system') setTimeout(() => { loadSysLive(); loadHistory(); loadSystem(); loadSticks(); loadBackup(); loadPsk(); loadServices(); loadAntennas(); loadUpdate(); loadWifi(); loadSysupd(); }, 0);
   }
   document.querySelectorAll('.tabs-main button').forEach(b => b.addEventListener('click', e => {
@@ -2105,6 +2106,34 @@
     $('rwSrc').innerHTML = aftSrc(d.attribution);
   }
   setInterval(() => { if (!document.hidden && document.querySelector('section.view[data-view="scan"]:not([hidden])')) loadRadioWx(); }, 5 * 60000);
+
+  // Contest- und DX-Kalender (afu.tools, 1.8.69): nur wenn eingeschaltet
+  const STUFE = { haeufig: ['häufig', 'common'], ungewoehnlich: ['ungewöhnlich', 'unusual'], selten: ['selten', 'rare'], sehr_selten: ['sehr selten', 'very rare'] };
+  const stufeTag = x => x && x.stufe && x.stufe !== 'haeufig' ? `<span class="badge dx-stufe dx-${x.stufe}" title="${esc(x.stufe_grund || '')}">${EN ? STUFE[x.stufe][1] : STUFE[x.stufe][0]}</span>` : '';
+  const calTime = t => tfmt(new Date(t * 1000).toISOString(), { date: true });
+  const calDay = t => { const p = tparts(new Date(t * 1000)); return EN ? `${p.D} ${MON[p.M - 1]}` : `${pad(p.D)}.${pad(p.M)}.`; };
+  let calDxAll = false;
+  async function loadCalendar() {
+    let d; try { d = await api('/api/afutools/calendar'); } catch (e) { return; }
+    $('panel-cal').hidden = !d.on || !d.fetched;
+    if ($('panel-cal').hidden) return;
+    const run = (d.contests || []).filter(x => x.running);
+    $('calTag').textContent = run.length ? `· ${EN ? 'running' : 'läuft'}: ${run.map(x => x.name).join(', ')}` : '';
+    // als Liste (nicht als Tabelle): bricht am Handy sauber um
+    $('calContests').innerHTML = (d.contests || []).map(x => `<div class="cal-row${x.running ? ' cal-now' : ''}"><span class="cal-when mono-num">${x.running ? `<b>${EN ? 'now' : 'jetzt'}</b> · ${EN ? 'until' : 'bis'} ${calTime(x.end)}` : calTime(x.start)}</span>`
+      + `<span class="cal-what"><b class="no-i18n">${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.name)}</a>` : esc(x.name)}</b> <small class="muted">${esc(x.mode)}</small></span>`
+      + `<small class="cal-extra">${esc((x.bands || []).join(' '))}</small></div>`).join('') || `<p class="muted">${EN ? 'No contest in the next 7 days.' : 'Kein Contest in den nächsten 7 Tagen.'}</p>`;
+    const dx = d.dx || [], show = calDxAll ? dx : dx.slice(0, 12);
+    $('calDx').innerHTML = show.map(x => `<div class="cal-row${x.running ? ' cal-now' : ''}"><span class="cal-when"><b class="no-i18n">${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.call)}</a>` : esc(x.call)}</b> ${stufeTag(x)}</span>`
+      + `<span class="cal-what no-i18n">${esc(x.entity || '')}${x.iota ? ` <small class="muted">${esc(x.iota)}</small>` : ''} <small class="muted">${esc(x.cont || '')}</small></span>`
+      + `<small class="cal-extra mono-num">${x.running ? (EN ? 'until ' : 'bis ') + calDay(x.end) : calDay(x.start) + ' – ' + calDay(x.end)}${x.unsicher ? ' ?' : ''}</small></div>`).join('')
+      || `<p class="muted">${EN ? 'No DX activity announced.' : 'Keine DX-Aktivität angekündigt.'}</p>`;
+    $('calDxMore').hidden = dx.length <= 12;
+    $('calDxMore').textContent = calDxAll ? (EN ? 'fewer' : 'weniger') : (EN ? `all ${dx.length}` : `alle ${dx.length}`);
+    $('calNote').textContent = [d.note_dx].filter(Boolean).map(t => I18N.t(t)).join(' ');
+    $('calSrc').innerHTML = aftSrc(d.attribution);
+  }
+  $('calDxMore').addEventListener('click', () => { calDxAll = !calDxAll; loadCalendar(); });
 
   async function loadSatPasses() {
     const root = $('satPasses'); if (!root) return;
@@ -2540,7 +2569,7 @@
     let d; try { d = await api(`/api/stations?${stParams()}&limit=${stPage.per}&offset=${stPage.offset}`); } catch (e) { return; }
     const dir = b => b == null ? '' : ['N', 'NO', 'O', 'SO', 'S', 'SW', 'W', 'NW'][Math.round(b / 45) % 8];
     $('stTable').innerHTML = d.stations.map(r => `<tr>
-        <td><button type="button" class="linklike" data-stcall="${esc(r.call)}" title="Alle Daten zu dieser Station"><b>${esc(r.call)}</b></button> <a href="https://www.qrz.com/db/${encodeURIComponent(r.call.split('-')[0])}" target="_blank" rel="noopener" title="QRZ.com" class="muted">↗</a></td>
+        <td><button type="button" class="linklike" data-stcall="${esc(r.call)}" title="Alle Daten zu dieser Station"><b>${esc(r.call)}</b></button> <a href="https://www.qrz.com/db/${encodeURIComponent(r.call.split('-')[0])}" target="_blank" rel="noopener" title="QRZ.com" class="muted">↗</a>${r.dx ? ` <span class="badge dx-stufe dx-${esc(r.dx.stufe || 'haeufig')}" title="${esc((EN ? 'DX activity (afu.tools calendar): ' : 'DX-Aktivität (afu.tools-Kalender): ') + (r.dx.entity || '') + (r.dx.stufe_grund ? ' – ' + r.dx.stufe_grund : ''))}">DX ${esc(r.dx.entity || '')}</span>` : ''}</td>
         <td>${r.grid ? esc(r.grid) : r.grid_ext ? `<span class="ext-loc" title="${esc(extTip(r.grid_ext))}">≈ ${esc(r.grid_ext.loc)}</span>` : '–'}</td>
         <td>${r.distance_km != null ? `${r.grid_ext ? '≈ ' : ''}${r.distance_km} km <small class="muted">${r.bearing}° ${dir(r.bearing)}</small>` : '–'}</td>
         <td>${esc((r.bands || '').split(',').join(', '))}</td><td>${esc((r.modes || '').split(',').join(', '))}</td>
@@ -3220,7 +3249,7 @@
     $('aftFeatures').hidden = !a.has_key;
     const fh = `<p class="hint">${EN ? 'What Hesperos fetches from afu.tools:' : 'Was Hesperos von afu.tools holt:'}</p>` + Object.keys(fl).map(k => `<label class="check"><input type="checkbox" data-aft="${k}"${fs[k] ? ' checked' : ''}> ${esc(I18N.t(fl[k]))}</label>`).join('');
     if ($('aftFeatures').dataset.h !== fh) { $('aftFeatures').innerHTML = fh; $('aftFeatures').dataset.h = fh;
-      $('aftFeatures').querySelectorAll('[data-aft]').forEach(x => x.addEventListener('change', async () => { await aftPost({ features: { [x.dataset.aft]: x.checked } }, x.checked ? (EN ? '✓ switched on' : '✓ eingeschaltet') : (EN ? '✓ switched off' : '✓ ausgeschaltet')); setTimeout(loadRadioWx, 5000); })); }
+      $('aftFeatures').querySelectorAll('[data-aft]').forEach(x => x.addEventListener('change', async () => { await aftPost({ features: { [x.dataset.aft]: x.checked } }, x.checked ? (EN ? '✓ switched on' : '✓ eingeschaltet') : (EN ? '✓ switched off' : '✓ ausgeschaltet')); setTimeout(() => { loadRadioWx(); loadCalendar(); }, 5000); })); }
     $('ownRepBox').hidden = !(a.has_key && a.count && fs.repeaters);
     if (!$('ownRepBox').hidden) loadOwnRep();
   }
@@ -4322,7 +4351,7 @@
   $('country').addEventListener('change', async e => {
     try {
       await post('/api/settings', { country: e.target.value });
-      await loadSettings(); await loadBandplan(); renderBands(); loadSatPasses(); loadRadioWx();
+      await loadSettings(); await loadBandplan(); renderBands(); loadSatPasses(); loadRadioWx(); loadCalendar();
       note($('stationNote'), '✓ Bandplan gewechselt – Bänder neu wählen, gilt ab dem nächsten Scan');
     } catch (err) { note($('stationNote'), 'Fehler: ' + err.message, true); }
   });
@@ -4367,6 +4396,7 @@
     setInterval(pollStatus, 2000);
     loadSatPasses(); setInterval(loadSatPasses, 30000);
     loadRadioWx();                                       // Funkwetter (afu.tools), alle 5 min bei offenem Scan-Reiter
+    loadCalendar(); setInterval(() => { if (!document.hidden) loadCalendar(); }, 15 * 60000);
     loadEibiScan();
     loadScanSummary(); setInterval(() => { if (document.visibilityState === 'visible') loadScanSummary(); }, 30000);
     setInterval(renderNextPass, 15000);

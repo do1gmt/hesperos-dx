@@ -1068,6 +1068,12 @@ def list_runs(limit=25, offset=0):
                                WHERE s.time >= ? AND s.time < ? AND s.band != 'Satelliten' GROUP BY s.band""",
                             (r["started_at"], _run_end(db, r))).fetchall()
             d["hits_per_band"] = {x["band"]: x["n"] for x in hb}
+        try:                                             # Contest lief währenddessen (afu.tools-Kalender, 1.8.69)
+            import afutools as AFT
+            t0 = AFT._ts(r["started_at"]); t1 = AFT._ts(d.get("finished_at") or r["started_at"])
+            d["contests"] = AFT.contests_during(t0, t1, d.get("bands"))
+        except Exception:
+            d["contests"] = []
         out.append(d)
     db.close()
     # "läuft" nur für den Lauf, der wirklich läuft – ältere Leichen werden als abgebrochen gezeigt
@@ -1337,6 +1343,11 @@ def stations(days=30, q="", band="", limit=100, offset=0):
         home = [round(x, 3) for x in SAT.locator_to_latlon(loc)] if loc else None
     except Exception:
         pass
+    act = AFT.dx_active([d["call"] for d in out])            # DX-Aktivität laut Kalender (1.8.69)
+    for d in out:
+        if d["call"] in act:
+            x = act[d["call"]]
+            d["dx"] = {k: x.get(k) for k in ("entity", "stufe", "stufe_grund", "iota", "art", "cont")}
     return {"stations": out, "total": total, "offset": offset, "limit": limit, "home": home,
             "qth_sources": AFT.qth_attribution() if any(d.get("grid_ext") for d in out) else None}
 
@@ -2859,6 +2870,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json({"hits": hits, "total": total, "server_time": now_iso(),
                                        "last_run": {"from": lf, "to": lt if lt != "9999" else None,
                                                     "status": (lr or {}).get("status")} if lf else None})
+            if path == "/api/afutools/calendar":           # Contest- und DX-Kalender (afu.tools, zwischengespeichert)
+                return self.send_json(__import__("afutools").calendar_view())
             if path == "/api/afutools/wx":                 # Funkwetter (afu.tools, zwischengespeichert)
                 return self.send_json(__import__("afutools").wx())
             if path == "/api/afutools/repeaters":          # Relais in der Nähe (afu.tools, zwischengespeichert)
@@ -3454,11 +3467,14 @@ class Handler(BaseHTTPRequestHandler):
                                  daemon=True).start()
                 if (data.get("features") or {}).get("wx"):        # gerade eingeschaltet: gleich holen
                     threading.Thread(target=AFT.wx_refresh, args=(st, APPLOG.log), kwargs={"force": True}, daemon=True).start()
+                if (data.get("features") or {}).get("cal"):
+                    threading.Thread(target=AFT.cal_refresh, args=(st, APPLOG.log), kwargs={"force": True}, daemon=True).start()
                 return self.send_json({"ok": True, "settings": load_settings()})
             if path == "/api/afutools/refresh":                # jetzt abrufen
                 import afutools as AFT
                 d = AFT.refresh(read_json(SETTINGS, {}), APPLOG.log, force=True)
                 AFT.wx_refresh(read_json(SETTINGS, {}), APPLOG.log, force=True)
+                AFT.cal_refresh(read_json(SETTINGS, {}), APPLOG.log, force=True)
                 return self.send_json({"ok": not d.get("error"), "error": d.get("error"), "settings": load_settings()})
             if path == "/api/own-frequencies":                 # Einstellungen → Eigene Frequenzen
                 try:
@@ -4055,6 +4071,10 @@ def main():
                 __import__("afutools").wx_refresh(read_json(SETTINGS, {}), APPLOG.log)
             except Exception as e:
                 APPLOG.log("WARN", "afutools", "afutools_failed", what="Funkwetter", error=f"{type(e).__name__}: {e}")
+            try:                                             # afu.tools: Contest- und DX-Kalender (einmal am Tag)
+                __import__("afutools").cal_refresh(read_json(SETTINGS, {}), APPLOG.log)
+            except Exception as e:
+                APPLOG.log("WARN", "afutools", "afutools_failed", what="Kalender", error=f"{type(e).__name__}: {e}")
             try:                                             # afu.tools: Locator zu gehörten Rufzeichen (bis 100 je 15 min)
                 __import__("afutools").qth_refresh(db_connect, read_json(SETTINGS, {}), APPLOG.log)
             except Exception as e:

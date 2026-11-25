@@ -707,7 +707,15 @@ nothing is fetched and everything works as before. **Radio weather** (switch it 
 short assessment; per band *now / day / night* (good, fair, poor, closed) and – measured from RBN and PSK Reporter
 over the last 30 minutes – to which continents signals from DL are being heard and by how many receivers;
 sporadic E on 6/4/2 m and aurora. Fetched every 30 minutes (two requests), sources below the card (NOAA SWPC, GFZ,
-GIRO, RBN, PSK Reporter). Contest and DX calendars will follow.
+GIRO, RBN, PSK Reporter).
+
+**Contest and DX calendar** (switch it on below the key; fetched once a day): a card *Contests & DX* on the *Scan*
+page – contests running now and in the next 7 days (time, name linked to the rules, modes, bands) and DX activities
+running now or starting within 14 days, rare ones first with their rarity (*unusual*, *rare*, *very rare* – why, in
+the tooltip); long-running special callsigns that are common are left out. The scan history notes "🏁 Contest: …"
+for runs during a contest on one of their bands (explains crowded bands and many hits), and *Stations* marks a heard
+callsign that is an announced DX activity with a *DX …* badge. Sources below the card (contest organisers, DARC,
+ADXO, DX calendars, Club Log, LoTW, RBN …).
 
 **Locators for heard stations.** Many stations (FT8 outside CQ calls, CW, RTTY) never send a locator. With a key
 the Pi asks afu.tools (`/qth`) for their location as reported to PSK Reporter or the Reverse Beacon Network –
