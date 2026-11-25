@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.8.70 – 2026-11-25
+
+- **afu.tools, step 5 – rare DX spots** (switched off by default; *Settings → afu.tools*): every 10 minutes the
+  spots of the last hour rated *unusual*, *rare* or *very rare* are fetched and kept for two hours. A heard callsign
+  among them (also with /P or an SSID) gets a 🔥 badge in *Stations* and on the hit card; threshold selectable
+  (default *rare*). New watchlist event *Rare DX station heard*, switchable right in the afu.tools card (*report by
+  mail / push / Telegram*), checked on scan hits and in Live. Logged as `afutools_spots`.
+- afu.tools switches on phones: long texts wrap next to the checkbox instead of below it.
+- Self-test section 128.
+
 ## 1.8.69 – 2026-11-25
 
 - **afu.tools, step 4 – contest and DX calendar** (switched off by default; *Settings → afu.tools*): card *Contests &

@@ -16,6 +16,10 @@ unter data/afutools_wx.json – Kopf-Werte, Lage, Bandbewertung und die gemessen
 Schritt 4 (1.8.69): Contest- und DX-Kalender (/contests?days=30, /dx?days=60) einmal am Tag unter
 data/afutools_cal.json; vergangene Contests bleiben 14 Tage stehen (für den Hinweis im Scan-Verlauf).
 
+Schritt 5 (1.8.70): seltene DX-Spots (/dx/spots?minuten=60&stufe=ungewoehnlich,selten,sehr_selten) alle 10 min unter
+data/afutools_spots.json, zwei Stunden lang gemerkt. Hört Hesperos ein solches Rufzeichen, wird es hervorgehoben
+(Stationen, Treffer) und die Beobachtungsliste kann es melden (Ereignis „Seltene DX-Station gehört“).
+
 Der Schlüssel liegt in config/web_settings.json unter afutools.api_key, wird nie ans Dashboard gegeben, nie
 protokolliert und nicht ins einfache Backup geschrieben (wie die anderen Zugangsdaten). Jede Antwort bringt unter
 `quellenangabe` mit, welche Quellen sichtbar zu nennen sind – das Dashboard zeigt genau diese Nennung.
@@ -64,7 +68,8 @@ def config(settings=None):
 FEATURES = {"repeaters": (True, "Relais in der Nähe und an Treffern"),
             "qth": (True, "Standort gehörter Stationen ohne eigenen Locator"),
             "wx": (False, "Funkwetter auf der Scan-Seite (Sonne, Magnetfeld, welche Bänder offen sind)"),
-            "cal": (False, "Contest- und DX-Kalender (Karte auf der Scan-Seite, Hinweis im Scan-Verlauf, DX-Abzeichen bei Stationen)")}
+            "cal": (False, "Contest- und DX-Kalender (Karte auf der Scan-Seite, Hinweis im Scan-Verlauf, DX-Abzeichen bei Stationen)"),
+            "spots": (False, "Seltene DX-Spots: Hervorhebung, wenn Hesperos eine gerade selten gespottete Station hört (Meldung über die Beobachtungsliste)")}
 
 
 def public_config(settings=None):
@@ -73,6 +78,7 @@ def public_config(settings=None):
     d = cached()
     return {"has_key": bool(c["api_key"]), "km": c["km"], "radii": list(RADII), "locator": c["locator"],
             "features": c["features"], "feature_labels": {k: v[1] for k, v in FEATURES.items()},
+            "spots_min": spots_min(settings), "spot_levels": list(SPOT_LEVELS),
             "fetched": d.get("fetched"), "count": len(d.get("repeaters") or []), "error": d.get("error"),
             "near": d.get("near"), "km_cached": d.get("km"), "attribution": d.get("attribution")}
 
@@ -180,7 +186,7 @@ def cached():
 
 def forget():
     """Schlüssel entfernt: zwischengespeicherte Daten mit löschen (ohne Schlüssel keine Nutzung der Daten)."""
-    for f in (CACHE, BASE / "data" / "afutools_wx.json", BASE / "data" / "afutools_cal.json"):
+    for f in (CACHE, BASE / "data" / "afutools_wx.json", BASE / "data" / "afutools_cal.json", BASE / "data" / "afutools_spots.json"):
         try:
             f.unlink()
         except OSError:
@@ -562,3 +568,102 @@ def dx_active(calls, now=None):
         if c.upper() in act or b in act:
             out[c] = act.get(c.upper()) or act[b]
     return out
+
+
+# ---------------------------------------------------------------- Schritt 5: seltene DX-Spots
+SPOTS = BASE / "data" / "afutools_spots.json"
+SPOTS_REFRESH_S = 10 * 60
+SPOTS_KEEP_S = 2 * 3600
+_SP = {"mtime": None, "data": None, "idx": None}
+SPOT_LEVELS = ("ungewoehnlich", "selten", "sehr_selten")
+
+
+def spots_min(settings=None):
+    if settings is None:
+        try:
+            settings = json.loads(SETTINGS.read_text(encoding="utf-8"))
+        except Exception:
+            settings = {}
+    v = (settings.get("afutools") or {}).get("spots_min") if isinstance(settings.get("afutools"), dict) else None
+    return v if v in SPOT_LEVELS else "selten"
+
+
+def spots_refresh(settings=None, log=None, force=False):
+    c = config(settings)
+    if not c["api_key"] or not c["features"]["spots"]:
+        return None
+    d = spots_cached()
+    if not force and (time.time() - float(d.get("tried_ts") or 0) < (RETRY_S if d.get("error") else SPOTS_REFRESH_S)):
+        return d
+    new = dict(d, tried_ts=time.time())
+    try:
+        r = _get("/dx/spots", {"minuten": 60, "stufe": ",".join(SPOT_LEVELS), "kompakt": "false", "limit": 1000}, c["api_key"])
+        now = time.time()
+        sp = {}
+        for x in (d.get("spots") or []):                        # bisherige noch zwei Stunden behalten
+            if now - x.get("t", 0) < SPOTS_KEEP_S:
+                sp[(x["call"], x.get("band"))] = x
+        for x in r.get("spots") or []:
+            if x.get("stufe") not in SPOT_LEVELS or not x.get("call"):
+                continue
+            t = _ts(x.get("zeit")) or now
+            k = (str(x["call"]).upper()[:20], str(x.get("band") or "")[:6])
+            old = sp.get(k)
+            if not old or t >= old.get("t", 0):
+                sp[k] = {"call": k[0], "band": k[1], "t": t, "freq_khz": _num(x.get("freq_khz")), "modus": str(x.get("modus") or "")[:12],
+                         "stufe": x["stufe"], "stufe_grund": str(x.get("stufe_grund") or "")[:200],
+                         "entitaet": str(x.get("entitaet") or "")[:60], "kontinent": str(x.get("kontinent") or "")[:2],
+                         "spotter": str(x.get("spotter") or "")[:20], "quelle": str(x.get("quelle") or "")[:12]}
+        new = {"fetched": _iso(), "tried_ts": now, "error": None, "spots": sorted(sp.values(), key=lambda x: -x["t"]),
+               "stufen": {k: str(v)[:80] for k, v in (r.get("stufen") or {}).items()}, "attribution": attribution(r.get("quellenangabe"))}
+        if log:
+            log("DEBUG", "afutools", "afutools_spots", n=len(new["spots"]))
+    except Exception as e:
+        new["error"] = str(e)[:200]
+        if log:
+            log("WARN", "afutools", "afutools_failed", what="DX-Spots", error=new["error"])
+    SPOTS.parent.mkdir(parents=True, exist_ok=True)
+    tmp = SPOTS.with_suffix(".tmp")
+    tmp.write_text(json.dumps(new, ensure_ascii=False), encoding="utf-8")
+    os.replace(tmp, SPOTS)
+    return new
+
+
+def spots_cached():
+    try:
+        m = SPOTS.stat().st_mtime
+    except OSError:
+        return {}
+    if _SP["mtime"] != m:
+        try:
+            _SP["data"] = json.loads(SPOTS.read_text(encoding="utf-8"))
+        except Exception:
+            _SP["data"] = {}
+        _SP["mtime"] = m
+        idx = {}
+        for x in _SP["data"].get("spots") or []:
+            idx.setdefault(x["call"], []).append(x)
+        _SP["idx"] = idx
+    return _SP["data"] or {}
+
+
+def rare_spot(call, band=None, now=None, settings=None):
+    """Spot-Eintrag, wenn das Rufzeichen (oder sein Grundrufzeichen) in den letzten zwei Stunden ab der eingestellten
+    Stufe gespottet wurde – auf demselben Band bevorzugt; sonst None."""
+    if not call or not _on("spots", settings):
+        return None
+    spots_cached()
+    idx = _SP["idx"] or {}
+    now = now or time.time()
+    lv = SPOT_LEVELS.index(spots_min(settings))
+    c = str(call).upper()
+    cand = [x for x in (idx.get(c) or idx.get(_base(c)) or []) if now - x["t"] < SPOTS_KEEP_S and SPOT_LEVELS.index(x["stufe"]) >= lv]
+    if not cand:
+        return None
+    same = [x for x in cand if band and x.get("band") == band]
+    return max(same or cand, key=lambda x: x["t"])
+
+
+def spot_text(x):
+    lab = {"ungewoehnlich": "ungewöhnlich", "selten": "selten", "sehr_selten": "sehr selten"}.get(x["stufe"], x["stufe"])
+    return f"{x['entitaet'] or x['call']} – {lab} gespottet" + (f" ({x['band']} {x['modus']})".rstrip(" ") if x.get("band") else "")

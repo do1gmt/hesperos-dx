@@ -876,6 +876,21 @@ def list_hits(params, with_total=False):
     if with_total:
         cnt = "SELECT COUNT(*) FROM peak p JOIN scan s ON s.id = p.scan_id WHERE 1=1" + where_sql.split("WHERE 1=1", 1)[1]
         total = db.execute(cnt, where_args).fetchone()[0]
+    rare = {}                                   # gerade selten gespottete Rufzeichen je Treffer (afu.tools, 1.8.70)
+    try:
+        import afutools as AFT
+        if rows and AFT._on("spots") and (AFT.spots_cached().get("spots")):
+            ids = [r["id"] for r in rows]
+            for i in range(0, len(ids), 500):
+                part = ids[i:i + 500]
+                for h in db.execute(f"SELECT peak_id, call, band FROM heard WHERE peak_id IN ({','.join('?' * len(part))})", part):
+                    if h["peak_id"] not in rare:
+                        x = AFT.rare_spot(h["call"], h["band"])
+                        if x:
+                            rare[h["peak_id"]] = {"call": h["call"], "stufe": x["stufe"], "entitaet": x.get("entitaet"),
+                                                  "band": x.get("band"), "modus": x.get("modus")}
+    except Exception:
+        rare = {}
     db.close()
     out = []
     pub = None                                  # Webseite: Zustand je SSTV-Bild (einmal je Abruf gelesen)
@@ -914,6 +929,7 @@ def list_hits(params, with_total=False):
             "antenna": r["antenna"] or "",
             "pub": pst,
             "repeater": _rep_brief(r["rf_hz"]) if r["band"] != "Satelliten" else None,
+            "rare": rare.get(r["id"]),
         })
     return (out, total) if with_total else out
 
@@ -952,6 +968,12 @@ def afutools_save(data):
             raise ValueError("Schlüssel sieht nicht richtig aus (eine Zeile ohne Leerzeichen)")
         c["api_key"] = k
         changed.append("Schlüssel gesetzt")
+    if data.get("spots_min"):                         # seltene DX-Spots ab dieser Stufe (1.8.70)
+        if data["spots_min"] not in AFT.SPOT_LEVELS:
+            raise ValueError("Stufe: ungewoehnlich, selten oder sehr_selten")
+        if data["spots_min"] != c.get("spots_min"):
+            c["spots_min"] = data["spots_min"]
+            changed.append(f"DX-Spots ab {data['spots_min']}")
     if isinstance(data.get("features"), dict):        # einzelne Teile an/aus (1.8.67)
         f = dict(c.get("features") or {})
         for k, v in data["features"].items():
@@ -1343,6 +1365,10 @@ def stations(days=30, q="", band="", limit=100, offset=0):
         home = [round(x, 3) for x in SAT.locator_to_latlon(loc)] if loc else None
     except Exception:
         pass
+    for d in out:                                            # gerade selten gespottet (1.8.70)
+        x = AFT.rare_spot(d["call"])
+        if x:
+            d["rare"] = {k: x.get(k) for k in ("stufe", "stufe_grund", "entitaet", "band", "modus", "t")}
     act = AFT.dx_active([d["call"] for d in out])            # DX-Aktivität laut Kalender (1.8.69)
     for d in out:
         if d["call"] in act:
@@ -3467,6 +3493,8 @@ class Handler(BaseHTTPRequestHandler):
                                  daemon=True).start()
                 if (data.get("features") or {}).get("wx"):        # gerade eingeschaltet: gleich holen
                     threading.Thread(target=AFT.wx_refresh, args=(st, APPLOG.log), kwargs={"force": True}, daemon=True).start()
+                if (data.get("features") or {}).get("spots"):
+                    threading.Thread(target=AFT.spots_refresh, args=(st, APPLOG.log), kwargs={"force": True}, daemon=True).start()
                 if (data.get("features") or {}).get("cal"):
                     threading.Thread(target=AFT.cal_refresh, args=(st, APPLOG.log), kwargs={"force": True}, daemon=True).start()
                 return self.send_json({"ok": True, "settings": load_settings()})
@@ -3475,6 +3503,7 @@ class Handler(BaseHTTPRequestHandler):
                 d = AFT.refresh(read_json(SETTINGS, {}), APPLOG.log, force=True)
                 AFT.wx_refresh(read_json(SETTINGS, {}), APPLOG.log, force=True)
                 AFT.cal_refresh(read_json(SETTINGS, {}), APPLOG.log, force=True)
+                AFT.spots_refresh(read_json(SETTINGS, {}), APPLOG.log, force=True)
                 return self.send_json({"ok": not d.get("error"), "error": d.get("error"), "settings": load_settings()})
             if path == "/api/own-frequencies":                 # Einstellungen → Eigene Frequenzen
                 try:
@@ -4071,6 +4100,10 @@ def main():
                 __import__("afutools").wx_refresh(read_json(SETTINGS, {}), APPLOG.log)
             except Exception as e:
                 APPLOG.log("WARN", "afutools", "afutools_failed", what="Funkwetter", error=f"{type(e).__name__}: {e}")
+            try:                                             # afu.tools: seltene DX-Spots (alle 10 min, nur eingeschaltet)
+                __import__("afutools").spots_refresh(read_json(SETTINGS, {}), APPLOG.log)
+            except Exception as e:
+                APPLOG.log("WARN", "afutools", "afutools_failed", what="DX-Spots", error=f"{type(e).__name__}: {e}")
             try:                                             # afu.tools: Contest- und DX-Kalender (einmal am Tag)
                 __import__("afutools").cal_refresh(read_json(SETTINGS, {}), APPLOG.log)
             except Exception as e:

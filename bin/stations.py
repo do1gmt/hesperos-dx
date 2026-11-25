@@ -43,6 +43,7 @@ EVENTS = {
     "satellite": "Satellit gehört (alle Treffer im Band Satelliten)",
     "mesh_dm": "Mesh: Direktnachricht an meinen Node",
     "mesh_room": "Mesh: neuer Beitrag am schwarzen Brett (Room-Server)",
+    "dx_rare": "Seltene DX-Station gehört (laut afu.tools gerade selten gespottet)",
 }
 
 
@@ -500,7 +501,7 @@ def call_detail(c, band, rf_hz=None, my_locator=""):
 def live_call_rules(calls, band, rules, my_locator="", t=None):
     """Rufzeichen-Alarm für Live: neu gehörte Rufzeichen sofort gegen die Regeln „Rufzeichen“ und „DX ab km“
     prüfen (vorher nur Scan-Treffer, einmal pro Minute nach dem Scan). Rückgabe [(rule, detail)]."""
-    rules = [r for r in rules or [] if r.get("type") in ("call", "dx")]
+    rules = [r for r in rules or [] if r.get("type") in ("call", "dx") or (r.get("type") == "event" and r.get("value") == "dx_rare")]
     if not rules or not calls:
         return []
     p = {"id": None, "rf_hz": calls[0].get("f") or 0, "band": band, "calls": calls, "decode": {}, "segment_id": "",
@@ -595,6 +596,16 @@ def check_rules(new_peaks, rules, my_locator=""):
                     detail = "APRS über die ISS: " + ", ".join(c["call"] for c in p["calls"][:5])
                 elif val == "satellite" and p["band"] == "Satelliten":
                     detail = f"{seg} {float(p['rf_hz'])/1e6:.3f} MHz"
+                elif val == "dx_rare":                       # gehörte Station ist gerade selten gespottet (afu.tools)
+                    try:
+                        import afutools as AFT
+                        for c in p["calls"]:
+                            x = AFT.rare_spot(c["call"], p["band"])
+                            if x:
+                                detail = call_detail(c, p["band"], p.get("rf_hz"), my_locator) + " · " + AFT.spot_text(x)
+                                break
+                    except Exception:
+                        pass
             if detail:
                 if p.get("snr_db") is not None:
                     detail += f" · SNR {float(p['snr_db']):.0f} dB"

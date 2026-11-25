@@ -4655,7 +4655,7 @@ try:
     st = json.loads(bak); st["my_locator"] = "JN59LL"; st["afutools"] = {"api_key": "afu_test", "km": 50}
     W.SETTINGS.write_text(json.dumps(st))
     AFT._write({"repeaters": [{"call": "DB0FUE", "out_hz": 145637500, "km": 3.8}], "near": "JN59LL", "km": 50, "fetched_ts": 9e12})
-    assert AFT.config()["features"] == {"repeaters": True, "qth": True, "wx": False, "cal": False} and AFT.repeater_at(145637500)["call"] == "DB0FUE"
+    assert AFT.config()["features"] == {"repeaters": True, "qth": True, "wx": False, "cal": False, "spots": False} and AFT.repeater_at(145637500)["call"] == "DB0FUE"
     W.afutools_save({"features": {"repeaters": False}})
     assert AFT.config()["features"]["repeaters"] is False and AFT.repeater_at(145637500) is None
     assert AFT.refresh(json.loads(W.SETTINGS.read_text()), force=True).get("repeaters")      # abgeschaltet: nicht geholt (alter Stand)
@@ -4747,6 +4747,55 @@ assert 'id="panel-cal" hidden' in html and "async function loadCalendar()" in js
 assert "'afutools_cal': 'afu.tools: Contest- und DX-Kalender abgerufen'" in js
 PY
 pkill -f "afutools_fake.py 8095" 2>/dev/null; rm -f "$AFL"
+
+echo "== 128 afu.tools: seltene DX-Spots (Hervorhebung, Meldung über die Beobachtungsliste)"
+AFL=$(mktemp); (python3 "$SRC/devtools/afutools_fake.py" 8093 "$AFL" > /dev/null 2>&1 &); sleep 1
+(cd bin && HSP_AFUTOOLS_URL=http://127.0.0.1:8093/api/v1 timeout 60 python3 - "$SRC" "$AFL" <<'PY') && ok "aus: nichts geholt; an: nur ungewöhnliche bis sehr seltene Spots gemerkt (je Rufzeichen und Band), Schwelle einstellbar, auch mit /P, Regel „Seltene DX-Station gehört“ bei Scan und Live, Abzeichen bei Stationen; alle 10 min" || bad "Seltene DX-Spots"
+import sys, json, time, tempfile
+from datetime import datetime, timezone
+from pathlib import Path
+import afutools as AFT, webapp as W, stations as ST
+bak = W.SETTINGS.read_text()
+try:
+    st = json.loads(bak); st["my_locator"] = "JN59LL"; st["afutools"] = {"api_key": "afu_test", "km": 50}
+    W.SETTINGS.write_text(json.dumps(st))
+    assert AFT.spots_refresh(st) is None and AFT.rare_spot("3Y0K") is None
+    W.afutools_save({"features": {"spots": True}}); time.sleep(1); st = json.loads(W.SETTINGS.read_text())
+    d = AFT.spots_refresh(st, force=True)
+    assert not d["error"] and sorted((x["call"], x["band"]) for x in d["spots"]) == [("3Y0K", "20m"), ("5W1SA", "15m"), ("KL4RL", "40m")], d
+    q = [json.loads(l) for l in Path(sys.argv[2]).read_text().splitlines() if "/dx/spots" in l][-1]["qs"]
+    assert q["stufe"] == ["ungewoehnlich,selten,sehr_selten"] and q["minuten"] == ["60"], q
+    c = json.loads(AFT.SPOTS.read_text())                # Zeiten auf jetzt, damit der Test nicht veraltet
+    for x in c["spots"]:
+        x["t"] = time.time() - 600
+    AFT.SPOTS.write_text(json.dumps(c))
+    assert AFT.spots_min() == "selten" and AFT.rare_spot("KL4RL") is None
+    x = AFT.rare_spot("3Y0K/P", "20m"); assert x and x["entitaet"] == "Bouvet Island" and x["stufe"] == "sehr_selten"
+    W.afutools_save({"spots_min": "ungewoehnlich"}); assert AFT.rare_spot("KL4RL")["entitaet"] == "Alaska"
+    try:
+        W.afutools_save({"spots_min": "egal"}); raise SystemExit("ungültige Stufe angenommen")
+    except ValueError:
+        pass
+    n = len(Path(sys.argv[2]).read_text().splitlines()); AFT.spots_refresh(json.loads(W.SETTINGS.read_text()))
+    assert len(Path(sys.argv[2]).read_text().splitlines()) == n          # 10 min Pause
+    rule = {"type": "event", "value": "dx_rare", "enabled": True}
+    p = {"id": 1, "rf_hz": 14025000, "band": "20m", "calls": [{"call": "DL1ABC"}, {"call": "3Y0K", "mode": "CW", "snr": -5}], "decode": {}, "segment_id": ""}
+    hits = ST.check_rules([p], [rule]); assert len(hits) == 1 and "3Y0K" in hits[0][2] and "Bouvet Island – sehr selten gespottet" in hits[0][2], hits
+    assert ST.check_rules([dict(p, calls=[{"call": "DL1ABC"}])], [rule]) == []
+    assert len(ST.live_call_rules([{"call": "3Y0K", "f": 14025000}], "20m", [rule])) == 1
+    assert "dx_rare" in ST.EVENTS
+    W.DB = Path(tempfile.mkdtemp()) / "t.db"; W.ensure_schema(); db = W.db_connect(); ST.ensure_tables(db); ST.ensure_summary(db)
+    ST.upsert_station(db, "3Y0K", datetime.now(timezone.utc).isoformat(timespec="seconds"), "20m", "CW", None, -5); db.commit(); db.close()
+    r = W.stations(days=0)["stations"][0]; assert r["call"] == "3Y0K" and r["rare"]["stufe"] == "sehr_selten"
+    W.afutools_save({"features": {"spots": False}}); assert AFT.rare_spot("3Y0K", settings=json.loads(W.SETTINGS.read_text())) is None
+    W.afutools_save({"clear_key": True}); assert not AFT.SPOTS.exists()
+finally:
+    W.SETTINGS.write_text(bak); AFT.forget()
+src = Path(sys.argv[1]); js = (src / "web" / "app.js").read_text(); html = (src / "web" / "index.html").read_text()
+assert 'id="aftSpotsMin"' in html and 'id="aftSpotsNotify"' in html and "r.value === 'dx_rare'" in js and "🔥 ${esc(h.rare.call)}" in js
+assert "'afutools_spots': 'afu.tools: seltene DX-Spots abgerufen'" in js
+PY
+pkill -f "afutools_fake.py 8093" 2>/dev/null; rm -f "$AFL"
 
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

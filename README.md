@@ -717,6 +717,13 @@ for runs during a contest on one of their bands (explains crowded bands and many
 callsign that is an announced DX activity with a *DX …* badge. Sources below the card (contest organisers, DARC,
 ADXO, DX calendars, Club Log, LoTW, RBN …).
 
+**Rare DX spots** (switch it on below the key; fetched every 10 minutes, one request): afu.tools' spots from the
+Reverse Beacon Network of the last hour, only those rated *unusual*, *rare* or *very rare*; each callsign/band is
+kept for two hours. When Hesperos hears such a callsign (also with /P or an SSID), *Stations* shows a 🔥 *rare*
+badge and the hit card a 🔥 badge with the callsign (entity and reason in the tooltip). The threshold is selectable
+(default *rare*); the checkbox *report by mail / push / Telegram* adds the watchlist rule *Event → Rare DX station
+heard* (30 min quiet time; it fires on scan hits and in Live).
+
 **Locators for heard stations.** Many stations (FT8 outside CQ calls, CW, RTTY) never send a locator. With a key
 the Pi asks afu.tools (`/qth`) for their location as reported to PSK Reporter or the Reverse Beacon Network –
 never from the callsign register: every 15 minutes at most one request for up to 100 callsigns heard in the last

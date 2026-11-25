@@ -965,3 +965,7 @@ details:not(.collapsible) > summary b { font-weight: 600; }
 .run-contest { font-size: .8em; color: var(--amber); margin-top: .15rem; }
 @media (max-width: 599px) { .cal-row { grid-template-columns: 1fr auto; } .cal-row .cal-what { grid-column: 1 / -1; order: 3; }
   .cal-extra { text-align: right; } }
+/* afu.tools-Schalter: lange Texte neben dem Häkchen umbrechen statt darunter (1.8.70, Handy) */
+#aftFeatures .check, #aftSpotsRow .check { display: flex; flex-wrap: nowrap; align-items: flex-start; }
+#aftFeatures .check input, #aftSpotsRow .check input { flex: 0 0 auto; margin-top: .15rem; }
+#aftFeatures .check span, #aftSpotsRow .check span { flex: 1 1 auto; }

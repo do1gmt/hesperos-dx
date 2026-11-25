@@ -12,6 +12,7 @@ FIX = json.loads((Path(__file__).parent / "afutools_fixture.json").read_text(enc
 FIXQ = json.loads((Path(__file__).parent / "afutools_fixture_qth.json").read_text(encoding="utf-8"))
 FIXW = json.loads((Path(__file__).parent / "afutools_fixture_wx.json").read_text(encoding="utf-8"))
 FIXC = json.loads((Path(__file__).parent / "afutools_fixture_cal.json").read_text(encoding="utf-8"))
+FIXS = json.loads((Path(__file__).parent / "afutools_fixture_spots.json").read_text(encoding="utf-8"))
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8099
 LOG = Path(sys.argv[2]) if len(sys.argv) > 2 else None
 
@@ -29,6 +30,8 @@ class H(BaseHTTPRequestHandler):
             return self._send(401, {"error": "Schlüssel fehlt oder ungültig", "status": 401})
         if u.path == "/api/v1/repeaters":
             return self._send(200, FIX)
+        if u.path == "/api/v1/dx/spots":                # Ausschnitt einer echten Antwort, dazu ein erfundener sehr seltener
+            return self._send(200, FIXS)
         if u.path == "/api/v1/contests":
             return self._send(200, FIXC["contests"])
         if u.path == "/api/v1/dx":
