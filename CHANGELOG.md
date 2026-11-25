@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.8.58 – 2026-11-25
+
+- **MeshCore adverts evaluated:** the companion reports every received packet with SNR and RSSI; so far they
+  were only counted. Adverts among them are now read – name, type, position, signal and path (direct or via which
+  repeaters; a repeater's short code is shown by name when it is unique among the known repeaters). New list
+  *Received adverts* on the *MeshCore node (companion)* card, 25/50/100/250 per page (view profile). The same advert
+  arriving over another path is stored once; adverts are kept for 30 days (daily clean-up with the messages).
+  Packets that do not parse cleanly (wrong length, unknown type, unreadable name) are dropped.
+- **Heard nodes** show the number of adverts of the last 30 days, best / last SNR and the path of the last advert.
+- Phones: the node and advert lists show fewer columns (name, adverts, SNR, path) so nothing is cut off.
+- Self-test section 120; section 104 counts the adverts of the simulated node.
+
 ## 1.8.57 – 2026-11-25
 
 - **Fix: info boxes (ⓘ) outside the visible area on phones.** The box always opened below its button – near the

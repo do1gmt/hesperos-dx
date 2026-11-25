@@ -1397,12 +1397,14 @@ def mesh_alert(kind, data):
     threading.Thread(target=run, daemon=True).start()
 
 
-def mesh_overview(limit=100, before=None, nlimit=25, noffset=0, offset=0, chan=""):
+def mesh_overview(limit=100, before=None, nlimit=25, noffset=0, offset=0, chan="", alimit=25, aoffset=0):
     """Mesh-Karte: Nachrichten und gehörte Nodes je seitenweise (limit/offset, nlimit/noffset), Kanalwahl chan
     („dm“ = Direktnachrichten, sonst Kanalname, leer = alle außer dem schwarzen Brett)."""
     nt = []
     out = {"status": MESH.status(), "port_setting": mesh_port(), "nodes": MESH.nodes(nlimit, noffset, nt),
            "board": MESH.messages(50, kind="room")["messages"]}          # schwarzes Brett (Room-Server)
+    adv = MESH.adverts(alimit, aoffset)                                    # empfangene Ankündigungen (1.8.58)
+    out["adverts"], out["adverts_total"], out["adverts_offset"] = adv["adverts"], adv["total"], aoffset
     if chan == "dm":
         out.update(MESH.messages(limit, before, kind="dm", offset=offset))
     elif chan:
@@ -2777,7 +2779,8 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/mesh":
                 return self.send_json(mesh_overview(max(1, min(int(qs.get("limit", 100)), 500)), qs.get("before"),
                                                     max(1, min(int(qs.get("nlimit", 25)), 1000)), max(0, int(qs.get("noffset", 0))),
-                                                    max(0, int(qs.get("offset", 0))), str(qs.get("chan", ""))[:40]))
+                                                    max(0, int(qs.get("offset", 0))), str(qs.get("chan", ""))[:40],
+                                                    max(1, min(int(qs.get("alimit", 25)), 250)), max(0, int(qs.get("aoffset", 0)))))
             if path == "/api/stations/map":
                 return self.send_json(stations_map(_period_days(qs, 0), qs.get("q", ""), qs.get("band", "")))
             if path == "/api/stations":

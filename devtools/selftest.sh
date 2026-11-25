@@ -4079,7 +4079,7 @@ s = M.status(); stop[0] = True
 assert s["state"] == "connected", s
 assert s["self"]["name"] == "DO1GMT Pi" and s["self"]["freq_mhz"] == 869.525 and s["self"]["sf"] == 11 and s["self"]["bw_khz"] == 250
 assert s["device"]["model"] == "Heltec V4" and s["channels"] == {"0": "Public", "1": "#franken"}
-assert s["packets_hour"] == 1 and s["last_rx"]["snr"] == 7.0 and s["last_rx"]["rssi"] == -90 and s["last_rx"]["type"] == "GRP_TXT"
+assert s["packets_hour"] == 3 and s["packet_types"] == {"GRP_TXT": 1, "ADVERT": 2} and s["last_rx"]["snr"] == 4.0 and s["last_rx"]["rssi"] == -80 and s["last_rx"]["type"] == "ADVERT"
 ms = M.messages()["messages"]
 assert [m["text"] for m in ms] == ["zweite Nachricht", "Direkt an dich", "Hallo Mesh aus Franken"], ms
 assert ms[2]["sender"] == "DL1ABC Mobil" and ms[2]["channel_name"] == "Public" and ms[2]["snr"] == 10.0 and ms[2]["hops"] == 2
@@ -4467,6 +4467,41 @@ assert "infoPop.style.position = 'fixed'" in f and "nr.top - 6" in f and "infoPo
 assert "function chanTag(m)" in js and "chan-tag chan-m" in js and ".chan-tag {" in (Path(sys.argv[1]) / "web" / "style.css").read_text()
 assert "const nothing = !!st.checked && !st.error && !pk.length" in js and "|| nothing ||" in js and "'Nichts zu aktualisieren'" in js
 PY
+
+echo "== 120 MeshCore: empfangene Adverts auswerten (Name, Art, Position, Signal, Weg) und je Node zählen"
+MF=$(mktemp -d); (python3 "$SRC/devtools/mesh_fake.py" "$MF" > "$MF/out" 2>&1 &); sleep 1
+(cd bin && HSP_MESH_DEV_GLOB="$MF/by-id/*" HSP_MESH_SYS_TTY="$MF/sys" timeout 60 python3 - "$SRC" <<'PY') && ok "Advert aus dem Paket-Log gelesen (Flood über 2 Repeater, Position, Name), über einen zweiten Weg nicht doppelt, Repeater-Kürzel als Name; kaputte Pakete verworfen; Node-Liste mit Anzahl, SNR und Weg; Karte seitenweise" || bad "MeshCore-Adverts"
+import sys, time, threading, tempfile
+from pathlib import Path
+import mesh as M
+M.DB = Path(tempfile.mkdtemp()) / "t.db"
+stop = [False]
+threading.Thread(target=M.run, args=(lambda: "auto", lambda *a, **k: None, None, lambda: stop[0], 2), daemon=True).start()
+for _ in range(40):
+    time.sleep(0.5)
+    if M.adverts()["total"] and M.status()["packets_hour"] >= 3:
+        break
+time.sleep(1); stop[0] = True
+r = M.adverts()
+assert r["total"] == 1, r
+a = r["adverts"][0]
+assert a["name"] == "DL1ABC Handy" and a["type"] == "Companion" and abs(a["lat"] - 49.45) < 1e-6 and abs(a["lon"] - 11.08) < 1e-6
+assert a["snr"] == -2.0 and a["rssi"] == -96 and a["hops"] == 2 and a["via"][0] == "DB0FRK Repeater" and a["via"][1] == "33", a
+# kaputt oder fremd: verworfen
+good = bytes([(4 << 2) | 1, 0]) + b"\x44" * 32 + (5).to_bytes(4, "little") + bytes(64) + bytes([0x82]) + b"X1"
+assert M.parse_advert(good)["name"] == "X1" and M.parse_advert(good)["hops"] == 0
+assert M.parse_advert(good[:60]) is None and M.parse_advert(bytes([(5 << 2) | 1]) + good[1:]) is None
+assert M.parse_advert(good[:-2] + b"\xff\xfe") is None and M.parse_advert(good.replace(bytes([0x82]), bytes([0x89]))) is None
+tr = bytes([(4 << 2) | 0, 1, 2, 3, 4, 0x41, 0xaa, 0xbb]) + good[2:]                        # Transport-Codes, 2-Byte-Kürzel
+p = M.parse_advert(tr); assert p and p["hops"] == 1 and p["path"] == ["aabb"] and p["name"] == "X1", p
+M.store_nodes([{"key": "44" * 32, "name": "DL1ABC Handy", "type": 1, "lat": None, "lon": None, "last_advert": 0}])
+n = next(x for x in M.nodes(25) if x["name"] == "DL1ABC Handy")
+assert n["adverts"]["count"] == 1 and n["adverts"]["best_snr"] == -2.0 and n["adverts"]["hops"] == 2, n
+src = Path(sys.argv[1]); html = (src / "web" / "index.html").read_text(); js = (src / "web" / "app.js").read_text()
+assert 'id="meshAdverts"' in html and '<select id="meshAdvPer"><option selected>25</option>' in html and "'meshadv.per'," in (src / "web" / "prefs.js").read_text()
+assert "&alimit=${meshAdvPage.per}&aoffset=${meshAdvPage.offset}" in js and "DELETE FROM mesh_advert" in (src / "bin" / "mesh.py").read_text()
+PY
+pkill -f "mesh_fake.py $MF" 2>/dev/null; rm -rf "$MF"
 
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

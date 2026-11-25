@@ -2744,6 +2744,15 @@
   $('meshNodesPer').addEventListener('change', e => { meshNodesPage.per = Number(e.target.value); meshNodesPage.offset = 0; localStorage.setItem('meshnodes.per', e.target.value); loadMesh(); });
   $('meshNodesPrev').addEventListener('click', () => { meshNodesPage.offset = Math.max(0, meshNodesPage.offset - meshNodesPage.per); loadMesh(); });
   $('meshNodesNext').addEventListener('click', () => { meshNodesPage.offset += meshNodesPage.per; loadMesh(); });
+  // empfangene Adverts seitenweise (1.8.58), „pro Seite“ im Ansicht-Profil (meshadv.per)
+  const meshAdvPage = { offset: 0, per: [25, 50, 100, 250].includes(Number(localStorage.getItem('meshadv.per'))) ? Number(localStorage.getItem('meshadv.per')) : 25 };
+  $('meshAdvPer').value = String(meshAdvPage.per);
+  $('meshAdvPer').addEventListener('change', e => { meshAdvPage.per = Number(e.target.value); meshAdvPage.offset = 0; localStorage.setItem('meshadv.per', e.target.value); loadMesh(); });
+  $('meshAdvPrev').addEventListener('click', () => { meshAdvPage.offset = Math.max(0, meshAdvPage.offset - meshAdvPage.per); loadMesh(); });
+  $('meshAdvNext').addEventListener('click', () => { meshAdvPage.offset += meshAdvPage.per; loadMesh(); });
+  const meshWay = (hops, via) => hops == null ? '–' : !hops ? (EN ? 'direct' : 'direkt')
+    : `${hops} ${EN ? (hops === 1 ? 'hop' : 'hops') : (hops === 1 ? 'Hop' : 'Hops')}${via && via.length ? ` <small class="muted no-i18n">${EN ? 'via' : 'über'} ${via.map(esc).join(' › ')}</small>` : ''}`;
+  const meshSnr = v => v == null ? '–' : `${v > 0 ? '+' : ''}${Number(v).toFixed(1).replace('.', DS)} dB`;
   // Abweichung der Node-Uhr lesbar: −300 → „5 min nach“ / „5 min slow“
   const meshDrift = d => { const a = Math.abs(d), v = a >= 7200 ? `${Math.round(a / 3600)} h` : a >= 120 ? `${Math.round(a / 60)} min` : `${a} s`;
     return EN ? `${v} ${d < 0 ? 'slow' : 'fast'}` : `${v} ${d < 0 ? 'nach' : 'vor'}`; };
@@ -2879,7 +2888,7 @@
     loadMesh();
   }
   async function loadMesh() {
-    let d; try { d = await api(`/api/mesh?limit=${meshPage.per}&offset=${meshPage.offset}&chan=${encodeURIComponent($('meshChan').value)}&nlimit=${meshNodesPage.per}&noffset=${meshNodesPage.offset}`); } catch (e) { return; }
+    let d; try { d = await api(`/api/mesh?limit=${meshPage.per}&offset=${meshPage.offset}&chan=${encodeURIComponent($('meshChan').value)}&nlimit=${meshNodesPage.per}&noffset=${meshNodesPage.offset}&alimit=${meshAdvPage.per}&aoffset=${meshAdvPage.offset}`); } catch (e) { return; }
     const st = d.status, me = st.self || {}, dev = st.device || {};
     // ohne Node und ohne Daten bleibt die Karte weg (nicht jeder Pi hat einen)
     const servers = st.servers || [];
@@ -2959,8 +2968,17 @@
     const km = n => { if (!home || n.lat == null) return '–'; const p1 = home[0] * rad, p2 = n.lat * rad, dl = (n.lon - home[1]) * rad;
       return Math.round(6371 * Math.acos(Math.max(-1, Math.min(1, Math.sin(p1) * Math.sin(p2) + Math.cos(p1) * Math.cos(p2) * Math.cos(dl))))) + ' km'; };
     $('meshNodes').innerHTML = d.nodes.map(n => `<tr><td><b class="no-i18n">${esc(n.name || n.key)}</b></td><td>${esc(meshType(n.type))}</td><td class="mono-num">${km(n)}</td>`
-      + `<td class="mono-num">${n.last_advert ? fmtTime(n.last_advert) : '–'}</td><td class="mono-num">${fmtTime(n.last_seen)}</td></tr>`).join('')
-      || `<tr><td colspan="5" class="muted">${EN ? 'No nodes heard yet.' : 'Noch keine Nodes gehört.'}</td></tr>`;
+      + `<td class="mono-num">${n.last_advert ? fmtTime(n.last_advert) : '–'}</td><td class="mono-num">${fmtTime(n.last_seen)}</td>`
+      + (n.adverts ? `<td class="mono-num">${n.adverts.count}</td><td class="mono-num">${meshSnr(n.adverts.best_snr)} / ${meshSnr(n.adverts.last_snr)}</td><td>${meshWay(n.adverts.hops, n.adverts.via)}</td>`
+        : '<td class="muted">–</td><td class="muted">–</td><td class="muted">–</td>') + '</tr>').join('')
+      || `<tr><td colspan="8" class="muted">${EN ? 'No nodes heard yet.' : 'Noch keine Nodes gehört.'}</td></tr>`;
+    // empfangene Adverts
+    $('meshAdverts').innerHTML = (d.adverts || []).map(a => `<tr><td class="mono-num">${fmtTime(a.time)}</td><td><b class="no-i18n">${esc(a.name)}</b></td><td>${esc(meshType(a.type))}</td>`
+      + `<td class="mono-num">${meshSnr(a.snr)}</td><td class="mono-num">${a.rssi != null ? a.rssi + ' dBm' : '–'}</td><td>${meshWay(a.hops, a.via)}</td><td class="mono-num">${km(a)}</td></tr>`).join('')
+      || `<tr><td colspan="7" class="muted">${EN ? 'No adverts received yet – they appear as soon as the node reports received packets.' : 'Noch keine Adverts empfangen – sie erscheinen, sobald der Node empfangene Pakete meldet.'}</td></tr>`;
+    { const t = d.adverts_total || 0, a = t ? meshAdvPage.offset + 1 : 0, b = Math.min(t, meshAdvPage.offset + meshAdvPage.per);
+      $('meshAdvPos').textContent = EN ? `${a}–${b} of ${t}` : `${a}–${b} von ${t}`;
+      $('meshAdvPrev').disabled = meshAdvPage.offset === 0; $('meshAdvNext').disabled = b >= t; }
     { const a = d.nodes_total ? meshNodesPage.offset + 1 : 0, b = Math.min(d.nodes_total, meshNodesPage.offset + meshNodesPage.per);
       $('meshNodesPos').textContent = EN ? `${a}–${b} of ${d.nodes_total}` : `${a}–${b} von ${d.nodes_total}`;
       $('meshNodesPrev').disabled = meshNodesPage.offset === 0; $('meshNodesNext').disabled = b >= d.nodes_total; }

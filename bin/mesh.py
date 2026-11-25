@@ -39,6 +39,7 @@ NODE_TYPES = {1: "Companion", 2: "Repeater", 3: "Room", 4: "Sensor"}
 PAYLOAD_TYPES = ["REQ", "RESPONSE", "TEXT_MSG", "ACK", "ADVERT", "GRP_TXT", "GRP_DATA", "ANON_REQ", "PATH",
                  "TRACE", "MULTIPART", "CONTROL"]
 KEEP_DAYS = 90                                   # Nachrichten älter als das werden einmal am Tag gelöscht
+ADVERT_DAYS = 30                                 # empfangene Ankündigungen älter als das ebenso
 
 STATUS = {"state": "off", "port": "", "error": "", "since": None, "self": {}, "device": {}, "channels": {},
           "last_rx": None, "nodes_known": 0, "stats": {}, "clock": {}}
@@ -74,6 +75,11 @@ def ensure_tables(db):
         id INTEGER PRIMARY KEY AUTOINCREMENT, time TEXT, sender_ts INTEGER, kind TEXT, channel INTEGER,
         channel_name TEXT, sender TEXT, text TEXT, snr REAL, hops INTEGER, UNIQUE(kind, channel, sender_ts, text))""")
     db.execute("CREATE INDEX IF NOT EXISTS mesh_msg_time ON mesh_msg(time)")
+    # empfangene Ankündigungen (1.8.58) – je Node und Ankündigung einmal (Wiederholungen über andere Wege zählen nicht)
+    db.execute("""CREATE TABLE IF NOT EXISTS mesh_advert (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, time TEXT, key TEXT, adv_ts INTEGER, name TEXT, type INTEGER,
+        lat REAL, lon REAL, snr REAL, rssi INTEGER, hops INTEGER, path TEXT, UNIQUE(key, adv_ts))""")
+    db.execute("CREATE INDEX IF NOT EXISTS mesh_advert_key ON mesh_advert(key, id)")
 
 
 def _db():
@@ -456,6 +462,10 @@ class Session:
             with _LOCK:
                 STATUS["last_rx"] = {"time": _iso(t), "snr": _s8(f[1]) / 4, "rssi": _s8(f[2]),
                                      "type": PAYLOAD_TYPES[pt] if pt < len(PAYLOAD_TYPES) else str(pt)}
+            if pt == 4:                                      # Ankündigung: auswerten (Name, Art, Position, Weg)
+                adv = parse_advert(f[3:])
+                if adv:
+                    store_advert(dict(adv, snr=_s8(f[1]) / 4, rssi=_s8(f[2])))
 
     def loop(self, stop):
         t_sync, t_contacts, t_stats, t_clock = 0, time.time(), time.time(), time.time()
@@ -566,6 +576,105 @@ def store_nodes(nodes):
 _seen = {}
 
 
+def parse_advert(pkt):
+    """Rohes MeshCore-Paket (aus dem Paket-Log 0x88) als Ankündigung lesen. Aufbau: Kopf (Wegart Bit 0–1, Nutzlast-
+    Typ Bit 2–5), bei Wegart 0/3 vier Bytes Transport-Codes, Weglänge (Bit 0–5 Anzahl, Bit 6–7 Bytes je Eintrag − 1),
+    Weg, Nutzlast: Schlüssel (32), Zeit (4), Signatur (64), Flags (Art Bit 0–3, 0x10 Position, 0x20/0x40 je 2 Bytes
+    Zusatz, 0x80 Name), Breite/Länge (int32 · 10⁻⁶), Name. Passt etwas nicht, None – lieber nichts als Unsinn."""
+    try:
+        if len(pkt) < 2 or (pkt[0] >> 2) & 0x0F != 4:
+            return None
+        i = 1 + (4 if pkt[0] & 3 in (0, 3) else 0)
+        pl = pkt[i]
+        n, size = pl & 0x3F, (pl >> 6) + 1
+        path = pkt[i + 1:i + 1 + n * size]
+        p = pkt[i + 1 + n * size:]
+        if len(path) != n * size or len(p) < 101:
+            return None
+        key, ts, flags = p[:32].hex(), int.from_bytes(p[32:36], "little"), p[100]
+        typ, j = flags & 0x0F, 101
+        if typ not in NODE_TYPES or not any(p[:32]):
+            return None
+        lat = lon = None
+        if flags & 0x10:
+            if len(p) < j + 8:
+                return None
+            la, lo = int.from_bytes(p[j:j + 4], "little", signed=True) / 1e6, int.from_bytes(p[j + 4:j + 8], "little", signed=True) / 1e6
+            j += 8
+            if abs(la) <= 90 and abs(lo) <= 180 and (la or lo):
+                lat, lon = la, lo
+        j += (2 if flags & 0x20 else 0) + (2 if flags & 0x40 else 0)
+        name = ""
+        if flags & 0x80:
+            name = p[j:].split(b"\0")[0].decode("utf-8")
+            if not name or len(name) > 32 or not name.isprintable():
+                return None
+        return {"key": key, "adv_ts": ts, "type": typ, "lat": lat, "lon": lon, "name": name, "hops": n,
+                "path": [path[k:k + size].hex() for k in range(0, len(path), size)], "route": "flood" if pkt[0] & 3 in (0, 1) else "direct"}
+    except (IndexError, UnicodeDecodeError):
+        return None
+
+
+def store_advert(a):
+    """Empfangene Ankündigung eintragen – dieselbe Ankündigung über einen weiteren Weg wird nicht noch einmal
+    geschrieben (SD-Karte); gezählt wird je Node, wie oft er sich gemeldet hat."""
+    db = _db()
+    try:
+        ensure_tables(db)
+        cur = db.execute("""INSERT OR IGNORE INTO mesh_advert (time, key, adv_ts, name, type, lat, lon, snr, rssi, hops, path)
+                            VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                         (_iso(), a["key"], a["adv_ts"], a["name"], a["type"], a["lat"], a["lon"], a["snr"], a["rssi"],
+                          a["hops"], " ".join(a["path"])))
+        db.commit()
+        return cur.rowcount > 0
+    finally:
+        db.close()
+
+
+def _via(db, path):
+    """Weg einer Ankündigung lesbar: Repeater-Kürzel (erste Bytes des Schlüssels) → Name, wenn eindeutig."""
+    out = []
+    for h in (path or "").split():
+        r = db.execute("SELECT name FROM mesh_node WHERE key LIKE ? AND type = 2 LIMIT 2", (h + "%",)).fetchall()
+        out.append(r[0][0] if len(r) == 1 and r[0][0] else h.upper())
+    return out
+
+
+def adverts(limit=25, offset=0):
+    """Empfangene Ankündigungen, neueste zuerst, mit Gesamtzahl."""
+    db = _db()
+    try:
+        ensure_tables(db)
+        rows = db.execute("""SELECT time, key, name, type, lat, lon, snr, rssi, hops, path FROM mesh_advert
+                             ORDER BY id DESC LIMIT ? OFFSET ?""", (int(limit), int(offset))).fetchall()
+        total = db.execute("SELECT COUNT(*) FROM mesh_advert").fetchone()[0]
+        out = [{"time": t, "key": k[:12], "name": n or k[:8], "type": NODE_TYPES.get(ty, str(ty)), "lat": la, "lon": lo,
+                "snr": sn, "rssi": rs, "hops": h, "via": _via(db, p)} for t, k, n, ty, la, lo, sn, rs, h, p in rows]
+    finally:
+        db.close()
+    return {"adverts": out, "total": total}
+
+
+def advert_stats(keys):
+    """Je Node (Schlüsselanfang, 12 Zeichen): Ankündigungen der letzten 30 Tage, bestes und letztes SNR, letzter Weg."""
+    if not keys:
+        return {}
+    db = _db()
+    try:
+        ensure_tables(db)
+        out = {}
+        for k in keys:
+            rng = (k, k + "g")                               # Schlüssel in Hex: Bereich statt LIKE, nutzt den Index
+            r = db.execute("SELECT COUNT(*), MAX(snr) FROM mesh_advert WHERE key >= ? AND key < ?", rng).fetchone()
+            if not r[0]:
+                continue
+            last = db.execute("SELECT snr, hops, path FROM mesh_advert WHERE key >= ? AND key < ? ORDER BY id DESC LIMIT 1", rng).fetchone()
+            out[k] = {"count": r[0], "best_snr": r[1], "last_snr": last[0], "hops": last[1], "via": _via(db, last[2])}
+        return out
+    finally:
+        db.close()
+
+
 def store_seen(key):
     """„Hat sich gemeldet“ höchstens alle 10 min je Node schreiben (und melden)."""
     if time.time() - _seen.get(key, 0) < 600:
@@ -619,6 +728,7 @@ def prune():
     try:
         ensure_tables(db)
         db.execute("DELETE FROM mesh_msg WHERE time < ?", (_iso(time.time() - KEEP_DAYS * 86400),))
+        db.execute("DELETE FROM mesh_advert WHERE time < ?", (_iso(time.time() - ADVERT_DAYS * 86400),))
         db.commit()
     finally:
         db.close()
@@ -685,8 +795,9 @@ def nodes(limit=1000, offset=0, total=None):
             total.append(db.execute("SELECT COUNT(*) FROM mesh_node").fetchone()[0])
     finally:
         db.close()
+    st = advert_stats([r[0][:12] for r in rows])          # Ankündigungen je Node (1.8.58)
     return [{"key": k[:12], "name": n, "type": NODE_TYPES.get(t, str(t)), "lat": la, "lon": lo,
-             "last_advert": _iso(adv) if adv else None, "first_seen": fs, "last_seen": ls}
+             "last_advert": _iso(adv) if adv else None, "first_seen": fs, "last_seen": ls, "adverts": st.get(k[:12])}
             for k, n, t, la, lo, adv, fs, ls in rows]
 
 

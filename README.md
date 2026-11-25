@@ -615,8 +615,13 @@ makers are tried; GPS receivers and other serial devices are left alone) and sho
 
 - messages in the node's channels (e.g. *Public*) and direct messages to the node, with SNR and hops – page by
   page, 25 (default), 50, 100 or 250 per page, filtered by channel,
-- the nodes it has heard (name, type, distance, last advert), page by page like the messages – nodes with a
-  position also on the map (*Mesh*),
+- the nodes it has heard (name, type, distance, last advert), page by page like the messages – with the number of
+  adverts of the last 30 days, best / last SNR and the path of the last one ("direct" or "2 hops via DB0XYZ › 7F") –
+  nodes with a position also on the map (*Mesh*),
+- *Received adverts*: every advert the node receives, read from the node's packet log – time, name, type, SNR,
+  RSSI, path (repeaters by name when their short code is unique, otherwise the code) and distance; the same advert
+  arriving over another path is not stored again; kept for 30 days, page by page (needs a companion firmware that
+  reports received packets; packets that do not parse cleanly are dropped),
 - the radio settings of the node and how many packets it received in the last hour.
 - alerts by mail/push through the watchlist (*Settings → Watchlist*): *Mesh node (name)* – a node announces
   itself or writes in a channel (`*` as wildcard, e.g. `DB0FRK*`); *Mesh keyword* – a word in a message;

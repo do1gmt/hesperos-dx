@@ -118,6 +118,11 @@ def main(d, mode="companion"):
         if not pushed and time.time() - t0 > 3:              # nach dem Start: Paket-Log, neue Ankündigung, Hinweis
             pushed = True
             os.write(m, frame(bytes([0x88, 28, 0xA6, (5 << 2) | 1, 0, 1, 2])))
+            # Ankündigung im Paket-Log (1.8.58): Flood über zwei Repeater (22, 33), Companion mit Position und Name
+            adv = (b"\x44" * 32 + now.to_bytes(4, "little") + bytes(64) + bytes([0x80 | 0x10 | 1])
+                   + int(49.45e6).to_bytes(4, "little", signed=True) + int(11.08e6).to_bytes(4, "little", signed=True) + "DL1ABC Handy".encode())
+            os.write(m, frame(bytes([0x88, 0xF8, 0xA0, (4 << 2) | 1, 2, 0x22, 0x33]) + adv))
+            os.write(m, frame(bytes([0x88, 0x10, 0xB0, (4 << 2) | 1, 1, 0x22]) + adv))      # dieselbe über einen anderen Weg
             os.write(m, frame(bytes([0x8A]) + contact(b"\x22" * 32, 2, "DB0FRK Repeater", now, 49.79, 9.93)[1:]))
             queue.append(bytes([17, 20, 0, 0, 0, 1, 0]) + (now + 1).to_bytes(4, "little") + "Tom: zweite Nachricht".encode())
             os.write(m, frame(bytes([0x83])))

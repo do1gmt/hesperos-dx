@@ -257,12 +257,21 @@
     </div>
     <h3 class="sub">Gehörte Nodes</h3>
     <div class="table-wrap"><table class="table mesh-nodes">
-      <thead><tr><th>Name</th><th>Art</th><th>Entfernung</th><th>Letzte Ankündigung (<span class="tzl">UTC</span>)</th><th>Zuletzt gehört (<span class="tzl">UTC</span>)</th></tr></thead>
+      <thead><tr><th>Name</th><th>Art</th><th>Entfernung</th><th>Letzte Ankündigung (<span class="tzl">UTC</span>)</th><th>Zuletzt gehört (<span class="tzl">UTC</span>)</th><th title="Ankündigungen der letzten 30 Tage">Adverts</th><th title="bestes / letztes SNR einer Ankündigung">SNR</th><th>Weg</th></tr></thead>
       <tbody id="meshNodes"></tbody></table></div>
     <div class="row pager-row">
       <label class="field"><span>Pro Seite</span><select id="meshNodesPer"><option selected>25</option><option>50</option><option>100</option><option>250</option></select></label>
       <button type="button" class="btn btn-small" id="meshNodesPrev">◀</button><span class="hint" id="meshNodesPos"></span><button type="button" class="btn btn-small" id="meshNodesNext">▶</button>
     </div>
+    <h3 class="sub">Empfangene Adverts</h3>
+    <div class="table-wrap"><table class="table mesh-adverts">
+      <thead><tr><th>Zeit (<span class="tzl">UTC</span>)</th><th>Name</th><th>Art</th><th>SNR</th><th>RSSI</th><th>Weg</th><th>Entfernung</th></tr></thead>
+      <tbody id="meshAdverts"></tbody></table></div>
+    <div class="row pager-row">
+      <label class="field"><span>Pro Seite</span><select id="meshAdvPer"><option selected>25</option><option>50</option><option>100</option><option>250</option></select></label>
+      <button type="button" class="btn btn-small" id="meshAdvPrev">◀</button><span class="hint" id="meshAdvPos"></span><button type="button" class="btn btn-small" id="meshAdvNext">▶</button>
+    </div>
+    <p class="hint">Jede Ankündigung (Advert), die der Node empfängt: Name, Art, Position, Signal und Weg – „direkt“ oder über welche Repeater (Name, wenn bekannt, sonst ihr Kürzel). Dieselbe Ankündigung über einen weiteren Weg zählt nicht noch einmal. Bleiben 30 Tage. Braucht eine Companion-Firmware, die empfangene Pakete meldet.</p>
     <details class="mesh-setup" id="meshSetup"><summary>Node einstellen</summary>
       <p class="hint" id="meshRadio">–</p>
       <div class="mesh-set-row">

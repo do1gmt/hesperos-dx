@@ -7,7 +7,7 @@
  */
 (function () {
   'use strict';
-  var EXACT = ['layout.v1', 'theme', 'lang', 'view', 'dnr', 'practice', 'runs.per', 'hits.per', 'stations.per', 'log.per', 'meshnodes.per', 'meshmsgs.per', 'histHours', 'mapMode', 'mapH',
+  var EXACT = ['layout.v1', 'theme', 'lang', 'view', 'dnr', 'practice', 'runs.per', 'hits.per', 'stations.per', 'log.per', 'meshnodes.per', 'meshmsgs.per', 'meshadv.per', 'histHours', 'mapMode', 'mapH',
                'satCollapsed', 'satShowPast', 'satShowAll', 'liveVol', 'liveGain'];
   function synced(k) { k = String(k); return EXACT.indexOf(k) >= 0 || k.indexOf('f.') === 0; }
   var LS = null;
