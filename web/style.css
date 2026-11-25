@@ -898,3 +898,10 @@ body.dragging-card, body.dragging-card * { user-select: none; -webkit-user-selec
 .board-badge { color: var(--accent); font-size: .78em; font-weight: 600; margin-left: .4rem; }
 .mesh-board tr.row-new td { background: color-mix(in srgb, var(--accent) 16%, transparent); }
 @media (prefers-reduced-motion: reduce) { .panel.board-new { animation: none; } }
+
+/* MeshCore-Kanäle farbig (1.8.57): Schild in der Kanalspalte, leichter Streifen am Zeilenanfang */
+.chan-tag { display: inline-block; padding: .05rem .5rem; border-radius: 999px; font-weight: 600; font-size: .85em; white-space: nowrap;
+            background: hsl(var(--ch) 70% 50% / .18); border: 1px solid hsl(var(--ch) 70% 50% / .55); }
+.mesh-table tbody tr[style] > td:first-child { box-shadow: inset 3px 0 0 hsl(var(--ch) 70% 50% / .7); }
+.chan-m { display: none; }
+@media (max-width: 599px) { .chan-m { display: inline-block; margin: 0 .4rem .15rem 0; } }   /* Handy: Kanalspalte fehlt – Schild vor dem Text */

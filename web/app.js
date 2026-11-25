@@ -1252,11 +1252,25 @@
     infoPop = document.createElement('div'); infoPop.className = 'info-pop'; infoPop.__btn = b;
     infoPop.textContent = I18N.t ? I18N.t(b.dataset.info) : b.dataset.info;
     document.body.appendChild(infoPop);
-    const r = b.getBoundingClientRect(), w = Math.min(360, window.innerWidth - 16);
-    infoPop.style.width = w + 'px';
-    infoPop.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + window.scrollX + 'px';
-    infoPop.style.top = r.bottom + 6 + window.scrollY + 'px';
+    infoPop.__t = Date.now(); placeInfo(b);
   }, true);
+  // Im sichtbaren Bereich halten (1.8.57): unter dem Knopf, wenn es passt, sonst darüber, sonst oben mit eigenem
+  // Rollbalken – nie unter die Reiterleiste am unteren Rand (Handy) und nie über den Bildschirmrand hinaus
+  function placeInfo(b) {
+    const vv = window.visualViewport, vw = vv ? vv.width : window.innerWidth, vh = vv ? vv.height : window.innerHeight;
+    let bottom = vh - 8;
+    const nav = document.querySelector('.tabs-main'), nr = nav && nav.getBoundingClientRect();
+    if (nr && nr.height && nr.top > vh / 2) bottom = Math.min(bottom, nr.top - 6);   // Reiter unten (Handy)
+    let top0 = 8;
+    const hd = document.querySelector('.topbar, header'), hr = hd && getComputedStyle(hd).position.match(/fixed|sticky/) && hd.getBoundingClientRect();
+    if (hr && hr.bottom > 0 && hr.bottom < vh / 3) top0 = hr.bottom + 6;
+    const r = b.getBoundingClientRect(), w = Math.min(360, vw - 16);
+    infoPop.style.position = 'fixed'; infoPop.style.width = w + 'px'; infoPop.style.maxHeight = (bottom - top0) + 'px'; infoPop.style.overflowY = 'auto';
+    infoPop.style.left = Math.max(8, Math.min(vw - w - 8, r.left + r.width / 2 - w / 2)) + 'px';
+    const h = infoPop.offsetHeight;
+    infoPop.style.top = (r.bottom + 6 + h <= bottom ? r.bottom + 6 : r.top - 6 - h >= top0 ? r.top - 6 - h : top0) + 'px';
+  }
+  window.addEventListener('scroll', () => { if (infoPop && Date.now() - infoPop.__t > 500) closeInfo(); }, { passive: true });   // ausrollendes Scrollen nach dem Antippen nicht
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeInfo(); });
   window.addEventListener('resize', closeInfo);
   $('filterInterf').checked = filter.interf;
@@ -2308,9 +2322,12 @@
     $('suListBox').hidden = !pk.length;
     $('suListSum').textContent = (EN ? 'Pending packages' : 'Anstehende Pakete') + ` (${pk.length})`;
     $('suList').innerHTML = pk.slice(0, 300).map(x => `<tr><td class="no-i18n">${esc(x.pkg)}</td><td class="muted no-i18n">${esc(x.old || (EN ? 'new' : 'neu'))}</td><td class="no-i18n">→ ${esc(x.new)}</td></tr>`).join('');
-    $('suRun').disabled = !d.helper || run || d.requested;
+    // nichts anstehend (geprüft, ohne Fehler): Knopf aus – erst „Jetzt prüfen“ holt den neuen Stand (1.8.57)
+    const nothing = !!st.checked && !st.error && !pk.length && !run && !d.requested;
+    $('suRun').disabled = !d.helper || run || d.requested || nothing || !!d.checking;
     $('suRun').textContent = run ? (EN ? 'Update running …' : 'Update läuft …') : d.requested ? (EN ? 'Waiting for a free moment …' : 'Wartet auf eine freie Minute …')
-      : (EN ? 'Update system' : 'System aktualisieren');
+      : nothing ? (EN ? 'Nothing to update' : 'Nichts zu aktualisieren') : (EN ? 'Update system' : 'System aktualisieren');
+    $('suRun').title = nothing ? (EN ? 'Up to date at the last check – "Check now" looks again.' : 'Beim letzten Prüfen aktuell – „Jetzt prüfen“ sieht erneut nach.') : '';
     $('suCheck').disabled = !d.helper || d.checking || run;
     $('suCancel').hidden = !d.requested || run;
     const STEP = { Platz: EN ? 'checking free space' : 'Platz prüfen', Reparatur: EN ? 'repairing' : 'Reparatur', Paketlisten: EN ? 'fetching package lists' : 'Paketlisten holen',
@@ -2957,11 +2974,18 @@
       ps.value = d.port_setting;
     }
   }
+  // Kanal als farbiges Schild (1.8.57): jeder Kanal behält seine Farbe (aus dem Namen errechnet), Direktnachrichten eigene
+  const chanHue = n => { let h = 0; for (const c of String(n)) h = (h * 31 + c.codePointAt(0)) % 360; return h; };
+  function chanTag(m) {
+    const n = m.kind === 'dm' ? (EN ? 'direct' : 'direkt') : (m.channel_name || ('#' + m.channel));
+    const h = m.kind === 'dm' ? 280 : chanHue(m.channel_name || m.channel);
+    return `<span class="chan-tag no-i18n" style="--ch:${h}">${esc(n)}</span>`;
+  }
   function renderMeshMsgs() {
     const rows = meshPage.rows, total = meshPage.total;
-    $('meshMsgs').innerHTML = rows.map(m => `<tr${m.kind === 'dm' ? ' class="mesh-dm"' : ''}><td class="mono-num">${fmtTime(m.time)}</td>`
-      + `<td>${m.kind === 'dm' ? (EN ? 'direct' : 'direkt') : esc(m.channel_name || ('#' + m.channel))}</td><td><b class="no-i18n">${esc(m.sender || '?')}</b></td>`
-      + `<td class="wrap no-i18n">${esc(m.text)}</td><td class="mono-num">${m.snr != null ? m.snr + ' dB' : '–'}</td><td class="mono-num">${m.hops ?? '–'}</td></tr>`).join('')
+    $('meshMsgs').innerHTML = rows.map(m => `<tr${m.kind === 'dm' ? ' class="mesh-dm"' : ''} style="--ch:${m.kind === 'dm' ? 280 : chanHue(m.channel_name || m.channel)}"><td class="mono-num">${fmtTime(m.time)}</td>`
+      + `<td>${chanTag(m)}</td><td><b class="no-i18n">${esc(m.sender || '?')}</b></td>`
+      + `<td class="wrap no-i18n">${chanTag(m).replace('chan-tag', 'chan-tag chan-m')}${esc(m.text)}</td><td class="mono-num">${m.snr != null ? m.snr + ' dB' : '–'}</td><td class="mono-num">${m.hops ?? '–'}</td></tr>`).join('')
       || `<tr><td colspan="6" class="muted">${EN ? 'No messages yet.' : 'Noch keine Nachrichten.'}</td></tr>`;
     const a = total ? meshPage.offset + 1 : 0, b = Math.min(total, meshPage.offset + meshPage.per);
     $('meshPos').textContent = EN ? `${a}–${b} of ${total} messages` : `${a}–${b} von ${total} Nachrichten`;

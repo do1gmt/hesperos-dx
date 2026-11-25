@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.8.57 – 2026-11-25
+
+- **Fix: info boxes (ⓘ) outside the visible area on phones.** The box always opened below its button – near the
+  bottom of the screen it ended under the tab bar or below the screen edge. It now stays on screen: below the
+  button if it fits, otherwise above it, otherwise at the top with its own scroll bar; never under the tab bar or
+  the top bar. Scrolling the page closes it.
+- **System updates:** *Update system* is greyed out and reads *Nothing to update* when the last check found
+  nothing (and did not fail); *Check now* looks again.
+- **MeshCore channels in colour:** in the message list every channel gets its own light colour (a tag in the
+  channel column and a stripe at the start of the row), direct messages their own; the colour follows from the
+  channel name, so it stays the same. On phones, where the channel column is hidden, the tag stands before the text.
+- Self-test section 119.
+
 ## 1.8.56 – 2026-11-25
 
 - **MeshCore messages page by page like the heard nodes:** the message list of the *MeshCore node (companion)*

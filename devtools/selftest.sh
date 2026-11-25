@@ -4457,5 +4457,16 @@ assert '<select id="meshMsgsPer"><option selected>25</option>' in html and "'mes
 assert "limit=${meshPage.per}&offset=${meshPage.offset}&chan=" in js and "meshMore" not in html + js
 PY
 
+echo "== 119 Handy: Info-Kästen im sichtbaren Bereich; „System aktualisieren“ aus, wenn nichts ansteht"
+(timeout 30 python3 - "$SRC" <<'PY') && ok "Info-Kasten fest im Bild (unter, über oder oben mit Rollbalken, nie unter der Reiterleiste); Update-Knopf ohne anstehende Pakete gesperrt; MeshCore-Kanäle farbig" || bad "Info-Kästen/Update-Knopf"
+import sys
+from pathlib import Path
+js = (Path(sys.argv[1]) / "web" / "app.js").read_text()
+f = js[js.index("function placeInfo(b)"):js.index("function placeInfo(b)") + 1500]
+assert "infoPop.style.position = 'fixed'" in f and "nr.top - 6" in f and "infoPop.style.maxHeight" in f and "r.top - 6 - h >= top0" in f
+assert "function chanTag(m)" in js and "chan-tag chan-m" in js and ".chan-tag {" in (Path(sys.argv[1]) / "web" / "style.css").read_text()
+assert "const nothing = !!st.checked && !st.error && !pk.length" in js and "|| nothing ||" in js and "'Nichts zu aktualisieren'" in js
+PY
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi
