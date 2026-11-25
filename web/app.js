@@ -2667,7 +2667,7 @@
           <div><b>${fmtTime(S.first)}</b><span>zuerst gehört</span></div>
           <div><b>${fmtTime(S.last)}</b><span>zuletzt gehört</span></div>
           <div><b>${snr(S.best_snr)}</b><span>bestes SNR</span></div>
-          <div><b class="no-i18n">${esc(S.grid || '–')}</b><span>Standort auf der Karte${S.distance_km != null ? ` · ${S.distance_km} km ${S.bearing}°` : ''}</span></div>
+          <div><b class="no-i18n"${S.grid_ext && !S.grid ? ` title="${esc(extTip(S.grid_ext))}"` : ''}>${S.grid ? esc(S.grid) : S.grid_ext ? '≈ ' + esc(S.grid_ext.loc) : '–'}</b><span>Standort auf der Karte${S.distance_km != null ? ` · ${S.grid_ext && !S.grid ? '≈ ' : ''}${S.distance_km} km ${S.bearing}°` : ''}${S.grid_ext && !S.grid ? `<br>${esc(extTip(S.grid_ext))} ${aftSrc(d.qth_sources)}` : ''}</span></div>
         </div>
         <h3>Gesendete Locatoren</h3>
         ${d.grids.length ? `<div class="table-wrap"><table class="table"><thead><tr><th>Locator</th><th>Anzahl</th><th>Entfernung</th><th>Zeitraum</th><th>Beispiel</th></tr></thead><tbody>${gridRows}</tbody></table></div>
@@ -3931,10 +3931,9 @@
     const at = [];
     at.push(`<div class="stat ${s.activity === 'idle' ? '' : 'act-on'}"><b>${ACT_TEXT[s.activity] || s.activity}</b><span>gerade</span></div>`);
     if (hw) {
-      // nicht angesteckt ist ein Zustand, kein Fehler: nur gelb, wenn gar kein Empfänger da ist
-      const none = !hw.rtlsdr.present && !hw.pmsdr.present;
-      at.push(`<div class="stat ${hw.rtlsdr.present ? '' : none ? 'warn' : 'idle'}"><b>${hw.rtlsdr.present ? 'steckt' : 'nicht angesteckt'}</b><span>Haupt-Stick${hw.rtlsdr.label ? ': <span class="no-i18n">' + esc(hw.rtlsdr.label) + '</span>' : ''}</span></div>`);
-      at.push(`<div class="stat ${hw.pmsdr.present ? '' : none ? 'warn' : 'idle'}"><b>${hw.pmsdr.present ? 'steckt' : hw.pmsdr.usb ? 'ohne Soundkarte' : 'nicht angesteckt'}</b><span>PMSDR (Kurzwelle)</span></div>`);
+      // angesteckt = grün, nicht angesteckt = grau – ein Zustand, kein Fehler (1.8.66: nie mehr rot/gelb)
+      at.push(`<div class="stat ${hw.rtlsdr.present ? 'plugged' : 'idle'}"><b>${hw.rtlsdr.present ? 'steckt' : 'nicht angesteckt'}</b><span>Haupt-Stick${hw.rtlsdr.label ? ': <span class="no-i18n">' + esc(hw.rtlsdr.label) + '</span>' : ''}</span></div>`);
+      at.push(`<div class="stat ${hw.pmsdr.present ? 'plugged' : hw.pmsdr.usb ? 'warn' : 'idle'}"><b>${hw.pmsdr.present ? 'steckt' : hw.pmsdr.usb ? 'ohne Soundkarte' : 'nicht angesteckt'}</b><span>PMSDR (Kurzwelle)</span></div>`);
     }
     $('sysActivity').innerHTML = at.join('');
     const procs = s.procs || [];

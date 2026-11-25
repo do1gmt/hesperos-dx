@@ -74,6 +74,9 @@ shortwave.
 - Map of heard stations (per callsign or per locator square, fine zoom), overview per station,
   activity overview by band and hour, optional reporting of FT8/FT4 spots to [PSK Reporter](https://pskreporter.info).
 - FT8/FT4 decodes on the network in the **WSJT-X UDP format** – for OpenHamClock, GridTracker, JTAlert & co.
+- Optional with a free [afu.tools](https://afu.tools/api) key: **repeaters** around your locator (named on hits on
+  their output, one click to scan them as own frequency) and **locations of heard stations** that do not send a
+  locator themselves (from PSK Reporter / RBN) – see [afu.tools](#afutools-optional).
 
 **Satellites (RTL-SDR)**
 - Switched on and off with the band chip *Satellites*; passes are only recorded while the RTL-SDR is the
@@ -150,6 +153,9 @@ same daily for hits older than the chosen age.
 
 ![Map of heard stations: locator squares across Europe, North America and beyond](docs/screenshots/map.png)
 *Map of heard stations over one month (FT8 scans on 80–15 m with an HF-360 vertical from JN59), here as locator squares: the more stations, the stronger the square; switch to one point per callsign above the map.*
+
+![One station in detail: receptions, locators sent, bands and modes](docs/screenshots/station-detail.png)
+*One station in detail (click a callsign): number of receptions, first and last heard, best SNR, location with distance and bearing; every locator it sent with an example message, bands and modes, and every single reception – with antenna and a link to the hit or "Live". Stations without an own locator show the location from afu.tools with "≈".*
 
 <img src="docs/screenshots/tmc.png" width="560" alt="Live FM reception with RDS and TMC traffic messages">
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.8.66 – 2026-11-25
+
+- **Fold-out areas look like buttons.** *Map*, *Antennas*, *Network share*, *Add schedule*, *Manage favourites*,
+  *Advanced* and the other `details` toggles had no frame and looked like a word lying around. They now have a
+  frame, a background and an arrow ▸/▾ (turns when open) and react to the mouse – everywhere at once, one rule in
+  the style sheet; cards and log lines are unchanged.
+- **System → Hesperos DX:** a stick that is plugged in is green, one that is not plugged in is grey with a dashed
+  frame – no longer yellow/red as if something were broken. Only "PMSDR on USB without sound card" stays yellow.
+- **Station detail** shows the location from afu.tools too ("≈ locator", distance, source and age).
+- Documentation: screenshot of the station detail, afu.tools in the feature list.
+- Self-test section 124.
+
 ## 1.8.65 – 2026-11-25
 
 - **Fix: afu.tools key not saved the first time** ("Error: Radius: 10, 25, 50, 100, 200 km"). When the page was

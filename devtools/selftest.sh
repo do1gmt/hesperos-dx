@@ -4617,6 +4617,8 @@ try:
     assert by["DL1ABC-9"]["grid_ext"]["src"] == "RBN" and by["DL1ABC-9"]["grid_ext"]["age_days"] == 3 and "grid_ext" not in by["XX9NONE"]
     assert by["DF1OWN"]["grid"] == "JO31" and "grid_ext" not in by["DF1OWN"]
     assert "PSK Reporter" in json.dumps(d["qth_sources"]) and d["qth_sources"]["sources"][0]["name"] == "afu.tools"
+    sd = W.station_detail("DK0ND"); assert sd["summary"]["grid_ext"]["loc"] == "JN59" and sd["summary"]["distance_km"] is not None and sd["qth_sources"]
+    assert "grid_ext" not in W.station_detail("DF1OWN")["summary"]
     m = W.stations_map()
     ext = [p for p in m["points"] if len(p) > 8]
     assert m["ext"] == 3 and sorted(p[0] for p in ext) == ["DK0ND", "DL1ABC-9", "EA8XYZ/P"] and ext[0][8].split(" · ")[0] in ("PSK Reporter", "RBN")
@@ -4630,6 +4632,18 @@ src = Path(sys.argv[1]); js = (src / "web" / "app.js").read_text()
 assert "function extTip(e)" in js and "dashArray: ext ? '2 3' : null" in js and "'afutools_qth': 'afu.tools: Locator nachgefragt'" in js and 'id="stExtSrc"' in (src / "web" / "index.html").read_text()
 PY
 pkill -f "afutools_fake.py 8098" 2>/dev/null; rm -f "$AFL"
+
+echo "== 124 Aufklapp-Bereiche als Knopf, Sticks grün/grau"
+(timeout 30 python3 - "$SRC" <<'PY') && ok "alle details-Zusammenfassungen mit Rahmen, Fläche und Pfeil (Protokollzeilen ausgenommen); Stick angesteckt grün, nicht angesteckt grau statt gelb/rot" || bad "Knöpfe/Stick-Farben"
+import sys, re
+from pathlib import Path
+src = Path(sys.argv[1]); css = (src / "web" / "style.css").read_text(); js = (src / "web" / "app.js").read_text(); html = (src / "web" / "index.html").read_text()
+r = css[css.index("details:not(.collapsible) > summary {"):]
+assert "border: 1px solid var(--line)" in r[:400] and "details:not(.collapsible) > summary::before { content: '▸'" in css and ".loglist li details > summary::before { content: none; }" in css
+assert len(re.findall(r"<details", html)) >= 12 and 'class="collapsible' not in html
+assert """at.push(`<div class="stat ${hw.rtlsdr.present ? 'plugged' : 'idle'}">""" in js and ".sysgrid .stat.plugged { border: 1px solid var(--green); }" in css and "none ? 'warn'" not in js
+assert (src / "docs" / "screenshots" / "station-detail.png").stat().st_size > 10000 and "station-detail.png" in (src / "README.md").read_text()
+PY
 
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

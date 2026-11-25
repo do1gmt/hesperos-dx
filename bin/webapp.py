@@ -1358,6 +1358,8 @@ def station_detail(call, limit=200, offset=0):
     total = db.execute("SELECT COUNT(*) FROM heard WHERE call=?", (call,)).fetchone()[0]
     rows = [dict(r) for r in db.execute("""SELECT time, band, freq_hz, mode, snr, grid, info, antenna, peak_id FROM heard
                                            WHERE call=? ORDER BY time DESC LIMIT ? OFFSET ?""", (call, limit, offset))]
+    import afutools as AFT
+    ext = None if summary.get("grid") else AFT.qth_for(db, [call]).get(call)   # Standort laut afu.tools (1.8.66)
     db.close()
     loc = load_settings().get("my_locator", "")
     for g in grids:
@@ -1365,12 +1367,16 @@ def station_detail(call, limit=200, offset=0):
         g["lat"], g["lon"] = ST._latlon(g["grid"])
     summary.pop("grids", None)
     summary["distance_km"], summary["bearing"] = ST.distance_bearing(summary["grid"], loc) if summary.get("grid") and loc else (None, None)
+    if ext:
+        summary["grid_ext"] = ext
+        summary["distance_km"], summary["bearing"] = ST.distance_bearing(ext["loc"], loc) if loc else (None, None)
     for r in rows:
         r["source"] = "live" if (r.get("peak_id") or 0) < 0 else "scan"
         if r["source"] == "live":
             r["peak_id"] = None
     return {"call": call, "found": True, "summary": summary, "grids": grids, "per_band": per,
-            "receptions": rows, "total": total, "limit": limit, "offset": offset}
+            "receptions": rows, "total": total, "limit": limit, "offset": offset,
+            "qth_sources": AFT.qth_attribution() if ext else None}
 
 
 def _period_days(qs, default_days):

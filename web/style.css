@@ -303,8 +303,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .more-bands { margin-top: .5rem; }
 .more-bands > summary { list-style: none; min-height: 0; display: inline-flex; align-items: center; gap: .3rem; font-size: .78rem; color: var(--muted); opacity: .7; padding: .2rem 0; }
 .more-bands > summary::-webkit-details-marker { display: none; }
-.more-bands > summary::after { content: "›"; transition: transform .15s; }
-.more-bands[open] > summary::after { transform: rotate(90deg); }
+/* Pfeil kommt jetzt einheitlich von details > summary::before (1.8.66) */
 .more-bands > summary:hover { opacity: 1; }
 .more-bands[open] > .chips { margin-top: .4rem; }
 .more-bands .segment-list { margin-top: .5rem; }
@@ -923,3 +922,22 @@ body.dragging-card, body.dragging-card * { user-select: none; -webkit-user-selec
   .rep-m { display: block; font-size: .78em; } .own-rep td:first-child { white-space: normal; } }
 .src-note a { color: inherit; }
 .ext-loc { font-style: italic; opacity: .8; cursor: help; }
+
+/* System → Hesperos DX: Stick angesteckt grün, nicht angesteckt grau (1.8.66) */
+.sysgrid .stat.plugged { border: 1px solid var(--green); } .sysgrid .stat.plugged b { color: var(--green); }
+.sysgrid .stat.idle { border: 1px dashed var(--line); opacity: .8; }
+
+/* Aufklapp-Bereiche (details) als Knopf erkennbar (1.8.66): Rahmen, Fläche, Pfeil ▸/▾ – bisher sah z. B. „Karte“
+   oder „Antennen“ aus wie ein Wort, das da herumsteht. Ausgenommen: Karten (.collapsible) und Protokollzeilen. */
+details:not(.collapsible) > summary { list-style: none; display: inline-flex; align-items: center; gap: .45rem; flex-wrap: wrap;
+  min-height: 36px; padding: .3rem .8rem; margin: .3rem 0; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2);
+  color: var(--text); font-weight: 600; cursor: pointer; user-select: none; transition: border-color .15s; }
+details:not(.collapsible) > summary::-webkit-details-marker { display: none; }
+details:not(.collapsible) > summary::before { content: '▸'; color: var(--accent); font-size: .9em; transition: transform .15s; }
+details[open]:not(.collapsible) > summary::before { transform: rotate(90deg); }
+details:not(.collapsible) > summary:hover, details:not(.collapsible) > summary:focus-visible { border-color: var(--accent); }
+details:not(.collapsible) > summary b { font-weight: 600; }
+.loglist li details > summary { display: block; min-height: 0; padding: 0; margin: 0; border: 0; background: none; font-weight: normal; }
+.loglist li details > summary::before { content: none; }
+.more-bands > summary { opacity: 1; font-size: .8rem; min-height: 0; padding: .15rem .6rem; }
+.stick-more > summary { font-size: .85rem; min-height: 0; padding: .2rem .7rem; color: var(--text); }
