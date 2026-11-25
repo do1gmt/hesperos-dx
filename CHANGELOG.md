@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.8.60 – 2026-11-25
+
+- **MeshCore: writing from the dashboard.** The companion card has an input above the message list: choose a
+  channel (or a direct message) and send. ↩ next to a message answers – in the channel with `@[name]`, or directly
+  to the sender of a direct message; ✉ next to a heard companion starts a direct message. Own messages appear in the
+  list (tinted, "me → recipient" for direct ones) with ✓✓ once the recipient confirms, ✗ after 2 minutes without a
+  confirmation. Length counter (150 bytes; channel messages minus the node name). Refused sends say why (recipient
+  not in the node's contacts, too long, unknown channel). Logged as *Mesh: message sent*.
+- **Announce now:** sends the node's advert to the direct neighbours or across the mesh (via repeaters); logged as
+  *Mesh: node announced*.
+- **Unreadable messages** (another key, binary data) are shown as *(not readable)* instead of garbled characters;
+  the raw text is in the tooltip.
+- Database: `mesh_msg` gets the columns `outgoing`, `ack`, `delivered` (added automatically).
+- Self-test section 121; the simulated node accepts messages, confirms direct ones and announces.
+
 ## 1.8.59 – 2026-11-25
 
 - **MeshCore: "Node settings" is now "Node configuration" (*Konfiguration Node*)** and sits as a button right below

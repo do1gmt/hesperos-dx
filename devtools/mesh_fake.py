@@ -108,7 +108,7 @@ def main(d, mode="companion"):
         bytes([17, 40, 0, 0, 0, 2, 0]) + now.to_bytes(4, "little") + "DL1ABC Mobil: Hallo Mesh aus Franken".encode(),
         bytes([16, 0xF4, 0, 0]) + bytes.fromhex("aabbccddeeff") + bytes([1, 0]) + (now - 5).to_bytes(4, "little") + "Direkt an dich".encode(),
     ]
-    buf, pushed = b"", False
+    buf, pushed, sent = b"", False, []
     me = {"name": "DO1GMT Pi", "lat": 49.8, "lon": 9.9}
     chans = {0: "Public", 1: "#franken"}
     offset = -300                                            # Uhr des Nodes geht 5 min nach
@@ -193,6 +193,18 @@ def main(d, mode="companion"):
                 os.write(m, frame(bytes([4]) + (1001).to_bytes(4, "little")))
             elif c == 0x0A:
                 os.write(m, frame(queue.pop(0) if queue else bytes([10])))
+            elif c == 0x02:                                  # Direktnachricht senden (1.8.60): nur an bekannte Kontakte
+                if p[7:13] == b"\xaa\xbb\xcc\xdd\xee\xff":
+                    os.write(m, frame(bytes([6, 1]) + bytes.fromhex("0badf00d") + (5000).to_bytes(4, "little")))
+                    os.write(m, frame(bytes([0x82]) + bytes.fromhex("0badf00d") + (1800).to_bytes(4, "little")))   # bestätigt
+                else:
+                    os.write(m, frame(bytes([1, 2])))                                                             # nicht gefunden
+            elif c == 0x03:                                  # Kanalnachricht senden
+                os.write(m, frame(bytes([0]) if p[2] in chans else bytes([1, 2])))
+                sent.append((p[2], p[7:].decode()))
+            elif c == 0x07:                                  # sich ankündigen (0 = direkt, 1 = Flood)
+                sent.append(("advert", p[1]))
+                os.write(m, frame(bytes([0])))
             else:
                 os.write(m, frame(bytes([1, 1])))
 

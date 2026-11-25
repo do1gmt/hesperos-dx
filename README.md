@@ -629,7 +629,15 @@ makers are tried; GPS receivers and other serial devices are left alone) and sho
   itself or writes in a channel (`*` as wildcard, e.g. `DB0FRK*`); *Mesh keyword* – a word in a message;
   *Event → Mesh: direct message to my node*.
 
-Nothing is sent into the mesh; the node decodes, the Pi just reads a few bytes. *Node configuration* (the button right below the
+**Writing:** above the message list you write into a channel of the node or – after ↩ on a direct message or ✉
+next to a heard companion – directly to a node. Your own messages appear in the list (tinted); a direct message
+gets ✓✓ when the recipient confirms it, ✗ if no confirmation came within 2 minutes. ↩ on a channel message answers
+in that channel with `@[name]`. *Announce now* sends the node's advert to its direct neighbours or across the mesh
+(via repeaters). The length counter allows 150 bytes (channel messages minus the node name the node puts in
+front). Every send is logged. Messages that cannot be decoded (another key, binary data) are shown as
+*(not readable)* instead of garbled characters.
+
+Apart from that nothing is sent into the mesh; the node decodes, the Pi just reads a few bytes. *Node configuration* (the button right below the
 status line of the card) changes the node's name, its position (approximately from your locator – the centre of the 6-character square –
 or none) and the public #channels it listens to; the Pi keeps the node's clock right (when connecting and daily,
 if it is more than 10 s off). The radio settings stay as they are. Battery, uptime, noise floor and airtime of

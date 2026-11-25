@@ -909,3 +909,11 @@ body.dragging-card, body.dragging-card * { user-select: none; -webkit-user-selec
 .mesh-table tbody tr[style] > td:first-child { box-shadow: inset 3px 0 0 hsl(var(--ch) 70% 50% / .7); }
 .chan-m { display: none; }
 @media (max-width: 599px) { .chan-m { display: inline-block; margin: 0 .4rem .15rem 0; } }   /* Handy: Kanalspalte fehlt – Schild vor dem Text */
+
+/* MeshCore schreiben (1.8.60) */
+.mesh-compose { margin: .3rem 0 .6rem; padding: .5rem .7rem; border: 1px solid var(--border, #8884); border-radius: 8px; }
+.mesh-compose .mesh-text { flex: 1 1 18rem; } .mesh-compose .mesh-text input { width: 100%; }
+.mesh-table tr.mesh-out td { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.mesh-reply { padding: 0 .4rem; min-height: 0; line-height: 1.4; margin-left: .3rem; opacity: .75; } .mesh-reply:hover { opacity: 1; }
+.ok-text { color: var(--green); }
+.mesh-compose #meshAdvertHow { width: auto; flex: 0 1 auto; max-width: 100%; }

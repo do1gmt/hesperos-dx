@@ -4504,5 +4504,39 @@ assert "&alimit=${meshAdvPage.per}&aoffset=${meshAdvPage.offset}" in js and "DEL
 PY
 pkill -f "mesh_fake.py $MF" 2>/dev/null; rm -rf "$MF"
 
+echo "== 121 MeshCore: schreiben (Kanal, direkt mit Bestätigung), antworten, jetzt ankündigen; unlesbare Nachrichten markiert"
+MF=$(mktemp -d); (python3 "$SRC/devtools/mesh_fake.py" "$MF" > "$MF/out" 2>&1 &); sleep 1
+(cd bin && HSP_MESH_DEV_GLOB="$MF/by-id/*" HSP_MESH_SYS_TTY="$MF/sys" timeout 60 python3 - "$SRC" <<'PY') && ok "Kanalnachricht gesendet und als eigene eingetragen, Direktnachricht vom Empfänger bestätigt (✓✓), unbekannter Empfänger/zu lang/leer abgelehnt, Ankündigung direkt und übers Mesh, Protokoll; Zeichensalat als „nicht lesbar“; Dashboard: Eingabe, ↩, ✉" || bad "MeshCore schreiben"
+import sys, time, threading, tempfile
+from pathlib import Path
+import mesh as M
+M.DB = Path(tempfile.mkdtemp()) / "t.db"
+logs, stop = [], [False]
+threading.Thread(target=M.run, args=(lambda: "auto", lambda *a, **k: logs.append((a, k)), None, lambda: stop[0], 2), daemon=True).start()
+for _ in range(40):
+    time.sleep(0.5)
+    if M.status()["state"] == "connected" and M.messages()["total"] >= 3:
+        break
+assert M.command("send", channel=0, text="Hallo aus Hesperos DX")["ok"]
+r = M.command("send", to="aabbccddeeff", text="Direkt zurück"); assert r["ok"], r
+assert M.command("send", to="010203040506", text="x")["error"].startswith("Node kennt den Empfänger nicht")
+assert M.command("send", channel=0, text="x" * 200)["error"].startswith("Zu lang")
+assert M.command("send", channel=0, text="  ")["error"] == "Kein Text" and M.command("send", channel=9, text="x")["error"] == "Diesen Kanal gibt es nicht"
+assert M.command("advert", flood=True)["ok"] and M.command("advert", flood=False)["ok"]
+time.sleep(2)
+ms = M.messages()["messages"]; stop[0] = True
+out = [m for m in ms if m["outgoing"]]
+assert [m["text"] for m in out] == ["Direkt zurück", "Hallo aus Hesperos DX"], out
+assert out[1]["kind"] == "chan" and out[1]["channel_name"] == "Public" and out[1]["sender"] == "DO1GMT Pi"
+assert out[0]["kind"] == "dm" and out[0]["sender"] == "DL1ABC Mobil" and out[0]["key"] == "aabbccddeeff" and out[0]["delivered"], out[0]
+ev = [a[2] for a, k in logs]
+assert ev.count("mesh_sent") == 2 and ev.count("mesh_advert_sent") == 2, ev
+assert M._unreadable("�l��� T�A ���") and not M._unreadable("Grüße aus Prebitz 😀") and not M._unreadable("")
+src = Path(sys.argv[1]); html = (src / "web" / "index.html").read_text(); js = (src / "web" / "app.js").read_text(); w = (src / "bin" / "webapp.py").read_text()
+assert 'id="meshCompose"' in html and 'id="meshAdvert"' in html and 'elif cmd == "send":' in w and 'elif cmd == "advert":' in w
+assert "data-reply=" in js and "data-dm=" in js and "'mesh_sent': 'Mesh: Nachricht gesendet'" in js and "m.unreadable" in js
+PY
+pkill -f "mesh_fake.py $MF" 2>/dev/null; rm -rf "$MF"
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

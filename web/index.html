@@ -265,6 +265,18 @@
       <div class="save-note" id="meshSetNote" aria-live="polite"></div>
       <p class="hint">Wirkt sofort im Node (wie in der MeshCore-App). Die Uhr des Nodes stellt der Pi selbst – beim Verbinden und täglich, wenn sie mehr als 10 s danebenliegt. Position: Andere sehen deinen Node damit auf ihrer Karte; „ungefähr“ nimmt die Mitte deines Locator-Felds. Öffentliche #Kanäle haben ihren Schlüssel im Namen – wer den Namen kennt, liest mit. Die Funkdaten (Frequenz, SF, Bandbreite) bleiben, wie sie im Node eingestellt sind.</p>
     </details>
+    <div class="mesh-compose" id="meshCompose" hidden>
+      <div class="mesh-set-row">
+        <label class="field"><span>An</span><select id="meshTo"></select></label>
+        <label class="field mesh-text"><span>Nachricht <small class="muted" id="meshLen"></small></span><input id="meshText" type="text" maxlength="200" autocomplete="off" enterkeyhint="send"></label>
+        <button type="button" class="btn" id="meshSend">Senden</button>
+      </div>
+      <div class="mesh-set-row">
+        <button type="button" class="btn btn-small" id="meshAdvert">Jetzt ankündigen</button>
+        <select id="meshAdvertHow" aria-label="Reichweite der Ankündigung"><option value="0">nur direkte Nachbarn</option><option value="1">übers ganze Mesh (über Repeater)</option></select>
+        <span class="save-note" id="meshSendNote" aria-live="polite"></span>
+      </div>
+    </div>
     <div class="row filter-row">
       <label class="field"><span>Kanal</span><select id="meshChan"><option value="">alle</option></select></label>
     </div>
@@ -294,7 +306,7 @@
     <p class="hint">Jede Ankündigung (Advert), die der Node empfängt: Name, Art, Position, Signal und Weg – „direkt“ oder über welche Repeater (Name, wenn bekannt, sonst ihr Kürzel). Dieselbe Ankündigung über einen weiteren Weg zählt nicht noch einmal. Bleiben 30 Tage. Braucht eine Companion-Firmware, die empfangene Pakete meldet.</p>
     <label class="field mesh-port"><span>Node am USB</span><select id="meshPort"><option value="auto">automatisch erkennen (alle Geräte)</option><option value="off">aus</option></select></label>
     <div class="save-note" id="meshNote" aria-live="polite"></div>
-    <p class="hint">Ein MeshCore-Node mit der Firmware „Companion Radio (USB)“ (z. B. Heltec V3/V4, RAK) am USB des Pi: Hesperos DX liest mit, was er empfängt – Nachrichten in seinen Kanälen, Direktnachrichten an ihn und die Nodes in Reichweite. Ins Mesh gesendet wird nichts; am Node geändert wird nur, was du unter „Konfiguration Node“ wählst, und die Uhr. Nachrichten bleiben 90 Tage, Positionen zeigt die Karte oben unter „Mesh“.</p>
+    <p class="hint">Ein MeshCore-Node mit der Firmware „Companion Radio (USB)“ (z. B. Heltec V3/V4, RAK) am USB des Pi: Hesperos DX liest mit, was er empfängt – Nachrichten in seinen Kanälen, Direktnachrichten an ihn und die Nodes in Reichweite. Ins Mesh gesendet wird nur, was du oben schreibst oder ankündigst; am Node geändert wird nur, was du unter „Konfiguration Node“ wählst, und die Uhr. Nachrichten bleiben 90 Tage, Positionen zeigt die Karte oben unter „Mesh“.</p>
   </section>
   <section class="panel" id="panel-meshsrv" hidden>
     <h2 id="meshSrvTitle">MeshCore Room-Server</h2>

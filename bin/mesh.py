@@ -39,6 +39,7 @@ NODE_TYPES = {1: "Companion", 2: "Repeater", 3: "Room", 4: "Sensor"}
 PAYLOAD_TYPES = ["REQ", "RESPONSE", "TEXT_MSG", "ACK", "ADVERT", "GRP_TXT", "GRP_DATA", "ANON_REQ", "PATH",
                  "TRACE", "MULTIPART", "CONTROL"]
 KEEP_DAYS = 90                                   # Nachrichten älter als das werden einmal am Tag gelöscht
+MAX_DM, MAX_CHAN = 150, 150                       # Nutzlast einer Textnachricht (Bytes) – mit Abstand zur Grenze der Firmware
 ADVERT_DAYS = 30                                 # empfangene Ankündigungen älter als das ebenso
 
 STATUS = {"state": "off", "port": "", "error": "", "since": None, "self": {}, "device": {}, "channels": {},
@@ -67,6 +68,9 @@ def _iso(t=None):
     return datetime.fromtimestamp(t if t is not None else time.time(), timezone.utc).isoformat(timespec="seconds")
 
 
+_MIGRATED = []
+
+
 def ensure_tables(db):
     db.execute("""CREATE TABLE IF NOT EXISTS mesh_node (
         key TEXT PRIMARY KEY, name TEXT, type INTEGER, lat REAL, lon REAL, last_advert INTEGER,
@@ -75,6 +79,12 @@ def ensure_tables(db):
         id INTEGER PRIMARY KEY AUTOINCREMENT, time TEXT, sender_ts INTEGER, kind TEXT, channel INTEGER,
         channel_name TEXT, sender TEXT, text TEXT, snr REAL, hops INTEGER, UNIQUE(kind, channel, sender_ts, text))""")
     db.execute("CREATE INDEX IF NOT EXISTS mesh_msg_time ON mesh_msg(time)")
+    if not _MIGRATED:                                    # 1.8.60: eigene Nachrichten (Richtung, Bestätigung)
+        cols = {r[1] for r in db.execute("PRAGMA table_info(mesh_msg)")}
+        for c, t in (("outgoing", "INTEGER DEFAULT 0"), ("ack", "TEXT"), ("delivered", "TEXT")):
+            if c not in cols:
+                db.execute(f"ALTER TABLE mesh_msg ADD COLUMN {c} {t}")
+        _MIGRATED.append(1)
     # empfangene Ankündigungen (1.8.58) – je Node und Ankündigung einmal (Wiederholungen über andere Wege zählen nicht)
     db.execute("""CREATE TABLE IF NOT EXISTS mesh_advert (
         id INTEGER PRIMARY KEY AUTOINCREMENT, time TEXT, key TEXT, adv_ts INTEGER, name TEXT, type INTEGER,
@@ -400,7 +410,56 @@ class Session:
             r = self.request(b"\x20" + bytes([idx]) + bytes(32) + bytes(16), (0, 1))
             self.read_channels()
             return {"ok": ok(r)}
+        if name == "send":                                   # Nachricht ins Mesh (1.8.60)
+            return self.send_text(kw)
+        if name == "advert":                                 # Jetzt ankündigen: 0 = nur direkte Nachbarn, 1 = übers Mesh
+            flood = bool(kw.get("flood"))
+            r = self.request(b"\x07" + bytes([1 if flood else 0]), (0, 1))
+            if ok(r):
+                self.log("INFO", "mesh", "mesh_advert_sent", flood=flood)
+            return {"ok": ok(r)} if ok(r) else {"ok": False, "error": "Node hat die Ankündigung abgelehnt"}
         return {"ok": False, "error": "unbekannter Auftrag"}
+
+    def send_text(self, kw):
+        """Kanalnachricht (channel = Nummer) oder Direktnachricht (to = Schlüsselanfang, 12 Zeichen) senden und als
+        eigene Nachricht eintragen. Bei Direktnachrichten merkt sich der Pi den Bestätigungscode des Nodes."""
+        text = str(kw.get("text", "")).strip()
+        me = STATUS.get("self", {}).get("name") or "?"
+        ts = int(time.time())
+        if not text:
+            return {"ok": False, "error": "Kein Text"}
+        if "\n" in text or not text.isprintable():
+            return {"ok": False, "error": "Nur eine Zeile ohne Steuerzeichen"}
+        if kw.get("to"):
+            to = str(kw["to"]).lower()
+            if len(to) != 12 or any(c not in "0123456789abcdef" for c in to):
+                return {"ok": False, "error": "Empfänger unbekannt"}
+            if len(text.encode("utf-8")) > MAX_DM:
+                return {"ok": False, "error": f"Zu lang – höchstens {MAX_DM} Byte"}
+            r = self.request(b"\x02\x00\x00" + ts.to_bytes(4, "little") + bytes.fromhex(to) + text.encode("utf-8"), (6, 1), timeout=6)
+            if not r or r[0] != 6:
+                return {"ok": False, "error": "Node kennt den Empfänger nicht (nicht in seinen Kontakten)" if r else "Node antwortet nicht"}
+            ack = r[2:6].hex() if len(r) >= 6 else None
+            store_msg({"sender_ts": ts, "kind": "dm", "channel": -1, "channel_name": "", "sender": to, "text": text,
+                       "snr": None, "hops": None}, outgoing=True, ack=ack)
+            self.log("INFO", "mesh", "mesh_sent", kind="dm", to=_dm_name(to), flood=bool(r[1]) if len(r) > 1 else None)
+            return {"ok": True, "flood": bool(r[1]) if len(r) > 1 else None}
+        try:
+            ch = int(kw.get("channel"))
+        except (TypeError, ValueError):
+            return {"ok": False, "error": "Kanal wählen"}
+        if ch not in STATUS["channels"]:
+            return {"ok": False, "error": "Diesen Kanal gibt es nicht"}
+        room = MAX_CHAN - len(me.encode("utf-8")) - 2           # der Node setzt „Name: “ davor
+        if len(text.encode("utf-8")) > room:
+            return {"ok": False, "error": f"Zu lang – höchstens {room} Byte"}
+        r = self.request(b"\x03\x00" + bytes([ch]) + ts.to_bytes(4, "little") + text.encode("utf-8"), (0, 1), timeout=6)
+        if not r or r[0] != 0:
+            return {"ok": False, "error": "Node hat die Nachricht abgelehnt" if r else "Node antwortet nicht"}
+        store_msg({"sender_ts": ts, "kind": "chan", "channel": ch, "channel_name": STATUS["channels"][ch], "sender": me,
+                   "text": text, "snr": None, "hops": None}, outgoing=True)
+        self.log("INFO", "mesh", "mesh_sent", kind="chan", channel=STATUS["channels"][ch])
+        return {"ok": True}
 
     def contacts(self):
         self.l.send(b"\x04" + (self.contacts_mod.to_bytes(4, "little") if self.contacts_mod else b""))
@@ -451,6 +510,8 @@ class Session:
                              admin=bool(c == 0x85 and len(f) > 1 and f[1] & 1), tried=time.time())
                     self.log("INFO" if c == 0x85 else "WARN", "mesh", "mesh_room_login" if c == 0x85 else "mesh_room_login_failed",
                              room=r.get("name"))
+        elif c == 0x82 and len(f) >= 5:                      # Direktnachricht vom Empfänger bestätigt
+            mark_delivered(f[1:5].hex(), _u32(f[5:9]) if len(f) >= 9 else None)
         elif c == 0x8A:                                      # neue Ankündigung (ganzer Kontakt)
             store_nodes([parse_contact(f)])
         elif c == 0x80:                                      # bekannter Node hat sich gemeldet
@@ -504,20 +565,36 @@ class Session:
 _BOARD = {}                                          # letzter Beitrag am schwarzen Brett (für /api/status, 1.8.54)
 
 
-def store_msg(m):
+def store_msg(m, outgoing=False, ack=None):
     db = _db()
     try:
         ensure_tables(db)
-        cur = db.execute("""INSERT OR IGNORE INTO mesh_msg (time, sender_ts, kind, channel, channel_name, sender, text, snr, hops)
-                            VALUES (?,?,?,?,?,?,?,?,?)""",
+        cur = db.execute("""INSERT OR IGNORE INTO mesh_msg (time, sender_ts, kind, channel, channel_name, sender, text, snr, hops, outgoing, ack)
+                            VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
                          (_iso(), m["sender_ts"], m["kind"], m["channel"], m.get("channel_name", ""), m["sender"],
-                          m["text"], m["snr"], m["hops"]))
+                          m["text"], m["snr"], m["hops"], 1 if outgoing else 0, ack))
         db.commit()
         if cur.rowcount > 0 and m["kind"] == "room":
             _BOARD.update(id=cur.lastrowid, board=m.get("channel_name", ""), sender=m["sender"], text=m["text"][:200])
         return cur.rowcount > 0
     finally:
         db.close()
+
+
+def mark_delivered(ack, rtt_ms=None):
+    db = _db()
+    try:
+        ensure_tables(db)
+        db.execute("UPDATE mesh_msg SET delivered = ? WHERE ack = ? AND outgoing = 1 AND delivered IS NULL", (_iso(), ack))
+        db.commit()
+    finally:
+        db.close()
+
+
+def _unreadable(t):
+    """Zeichensalat (Nachricht mit fremdem Schlüssel oder Binärdaten): mehrere Ersatz-/Steuerzeichen."""
+    bad = sum(1 for c in t or "" if c == "\ufffd" or (not c.isprintable() and c not in "\n\t"))
+    return bad >= 2 and bad >= 0.15 * len(t)
 
 
 def board_latest():
@@ -756,7 +833,7 @@ def messages(limit=100, before=None, kind=None, not_kind=None, offset=0, channel
     db = _db()
     try:
         ensure_tables(db)
-        q, a, w = "SELECT id, time, kind, channel, channel_name, sender, text, snr, hops FROM mesh_msg", [], []
+        q, a, w = "SELECT id, time, kind, channel, channel_name, sender, text, snr, hops, outgoing, delivered FROM mesh_msg", [], []
         if kind:
             w.append("kind = ?")
             a.append(kind)
@@ -776,11 +853,13 @@ def messages(limit=100, before=None, kind=None, not_kind=None, offset=0, channel
     finally:
         db.close()
     out = []
-    for i, t, kind, ch, chn, sender, text, snr, hops in rows:
+    for i, t, kind, ch, chn, sender, text, snr, hops, outg, dlv in rows:
+        key = sender if kind == "dm" else None                 # Direktnachricht: Schlüsselanfang zum Antworten
         if kind == "dm" and sender:
             sender = names.get(sender, sender)               # Direktnachricht: Name aus der Node-Liste
-        out.append({"id": i, "time": t, "kind": kind, "channel": ch, "channel_name": chn, "sender": sender,
-                    "text": text, "snr": snr, "hops": hops})
+        out.append({"id": i, "time": t, "kind": kind, "channel": ch, "channel_name": chn, "sender": sender, "key": key,
+                    "text": text, "snr": snr, "hops": hops, "outgoing": bool(outg), "delivered": dlv,
+                    "unreadable": _unreadable(text)})
     return {"messages": out, "total": total}
 
 

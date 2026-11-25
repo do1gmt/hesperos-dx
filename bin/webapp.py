@@ -3330,11 +3330,17 @@ class Handler(BaseHTTPRequestHandler):
                     res = MESH.command("channel_add", name=str(data.get("name", "")))
                 elif cmd == "channel_delete":
                     res = MESH.command("channel_delete", index=int(data.get("index", -1)))
+                elif cmd == "send":                              # Nachricht ins Mesh (Kanal oder direkt, 1.8.60)
+                    res = MESH.command("send", text=str(data.get("text", ""))[:400], channel=data.get("channel"),
+                                       to=str(data.get("to") or "")[:12] or None)
+                elif cmd == "advert":                            # Jetzt ankündigen
+                    res = MESH.command("advert", flood=bool(data.get("flood")))
                 else:
                     return self.send_json({"ok": False, "error": "unbekannter Befehl"}, 400)
-                APPLOG.log("INFO" if res.get("ok") else "WARN", "mesh", "mesh_set" if res.get("ok") else "mesh_set_failed",
-                           what=cmd, **{k: v for k, v in data.items() if k in ("name", "where", "index")},
-                           **({"error": res.get("error")} if not res.get("ok") else {}))
+                if not (res.get("ok") and cmd in ("send", "advert")):   # Gesendetes protokolliert mesh.py selbst (mesh_sent …)
+                    APPLOG.log("INFO" if res.get("ok") else "WARN", "mesh", "mesh_set" if res.get("ok") else "mesh_set_failed",
+                               what=cmd, **{k: v for k, v in data.items() if k in ("name", "where", "index")},
+                               **({"error": res.get("error")} if not res.get("ok") else {}))
                 return self.send_json(dict(res, status=MESH.status()), 200 if res.get("ok") else 400)
             if path == "/api/own-frequencies":                 # Einstellungen → Eigene Frequenzen
                 try:

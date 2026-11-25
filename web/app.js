@@ -1587,7 +1587,7 @@
     // 1.8.53
     'own_frequencies_set': 'Eigene Frequenzen geändert',
     // 1.8.42: Ereignisse ohne Beschreibung (sonst stand im Protokoll der Rohname)
-    'mesh_connected': 'Mesh: verbunden', 'mesh_lost': 'Mesh: Verbindung weg', 'mesh_no_access': 'Mesh: kein Zugriff auf den Node', 'mesh_no_answer': 'Mesh: Gerät antwortet nicht', 'mesh_stopped': 'Mesh: beendet', 'mesh_msg': 'Mesh-Nachricht', 'mesh_open_failed': 'Mesh: Gerät ließ sich nicht öffnen', 'mesh_start_failed': 'Mesh ließ sich nicht starten', 'mesh_port_set': 'Mesh: Anschluss gewählt', 'mesh_alert_failed': 'Mesh-Warnung ließ sich nicht melden', 'mesh_set': 'Mesh-Node eingestellt', 'mesh_set_failed': 'Mesh-Node ließ sich nicht einstellen', 'mesh_clock_set': 'Mesh: Uhr des Nodes gestellt', 'mesh_clock_failed': 'Mesh: Uhr ließ sich nicht stellen', 'mesh_server_connected': 'Mesh: Repeater/Room-Server verbunden', 'mesh_room_login': 'Mesh: am Room-Server angemeldet', 'mesh_room_login_failed': 'Mesh: Anmeldung am Room-Server abgelehnt', 'mesh_server_set': 'Mesh: Server eingestellt', 'mesh_server_set_failed': 'Mesh: Server ließ sich nicht einstellen',
+    'mesh_connected': 'Mesh: verbunden', 'mesh_lost': 'Mesh: Verbindung weg', 'mesh_no_access': 'Mesh: kein Zugriff auf den Node', 'mesh_no_answer': 'Mesh: Gerät antwortet nicht', 'mesh_stopped': 'Mesh: beendet', 'mesh_msg': 'Mesh-Nachricht', 'mesh_open_failed': 'Mesh: Gerät ließ sich nicht öffnen', 'mesh_start_failed': 'Mesh ließ sich nicht starten', 'mesh_port_set': 'Mesh: Anschluss gewählt', 'mesh_alert_failed': 'Mesh-Warnung ließ sich nicht melden', 'mesh_set': 'Mesh-Node eingestellt', 'mesh_set_failed': 'Mesh-Node ließ sich nicht einstellen', 'mesh_clock_set': 'Mesh: Uhr des Nodes gestellt', 'mesh_sent': 'Mesh: Nachricht gesendet', 'mesh_advert_sent': 'Mesh: Node angekündigt', 'mesh_clock_failed': 'Mesh: Uhr ließ sich nicht stellen', 'mesh_server_connected': 'Mesh: Repeater/Room-Server verbunden', 'mesh_room_login': 'Mesh: am Room-Server angemeldet', 'mesh_room_login_failed': 'Mesh: Anmeldung am Room-Server abgelehnt', 'mesh_server_set': 'Mesh: Server eingestellt', 'mesh_server_set_failed': 'Mesh: Server ließ sich nicht einstellen',
     'analysis_skipped': 'Auswertung übersprungen', 'auto_backup': 'Automatische Sicherung', 'backup_now': 'Sicherung von Hand', 'decode_skipped': 'Dekodieren übersprungen', 'stick_main_auto': 'Stick automatisch Haupt-Stick', 'stick_new': 'Neuer Stick erkannt', 'stick_serial_written': 'Seriennummer geschrieben', 'stick_unsupported': 'Gerät nicht unterstützt', 'check_failed': 'Prüfung fehlgeschlagen', 'internet_back': 'Internet wieder da', 'network_changed': 'Netz gewechselt', 'live_gap': 'Live: Lücke im Empfang', 'live_heard_failed': 'Live: Gehörte nicht gespeichert', 'live_recorded': 'Live: Aufnahme gespeichert', 'live.start_failed': 'Live ließ sich nicht starten', 'watch_loop_failed': 'Dauerwache: Fehler', 'watch_off': 'Dauerwache aus', 'watch_on': 'Dauerwache an', 'watch_restarted': 'Dauerwache neu gestartet', 'outbox_sent': 'Nachgeholte Nachrichten verschickt', 'test_mail_sent': 'Test-Mail verschickt', 'test_push_sent': 'Test-Push verschickt', 'sstv_upload_failed': 'SSTV-Bild: Upload fehlgeschlagen', 'sstv_uploaded': 'SSTV-Bild hochgeladen', 'rds_decoded': 'RDS dekodiert', 'rds_failed': 'RDS: Fehler', 'rundir_recreated': 'Arbeitsordner neu angelegt', 'pass_stick_restart': 'Überflug: Stick neu gestartet', 'publish_prepare_failed': 'Überflug: Webseiten-Upload nicht vorbereitet', 'waterfall_failed': 'Wasserfall ließ sich nicht erzeugen', 'band_summary_failed': 'Bandübersicht: Fehler', 'fm_watch_failed': 'UKW-Beobachtung: Fehler', 'pmsdr_fifo_reconnect': 'PMSDR: Datenstrom neu verbunden', 'pmsdr_input_set': 'PMSDR: Eingang umgestellt', 'rtl_orphans_killed': 'Verwaiste RTL-Prozesse beendet', 'run_exception': 'Scan: unerwarteter Fehler', 'scan_yielded': 'Scan gibt den Stick frei', 'health_failed': 'Selbstprüfung: Fehler', 'publish_failed': 'Webseiten-Upload: Fehler', 'restore_done': 'Sicherung eingespielt', 'restore_failed': 'Einspielen fehlgeschlagen', 'restore_stick_adopt_failed': 'Einspielen: Stick nicht übernommen', 'restore_stick_adopted': 'Einspielen: Stick übernommen', 'satellite_arming': 'Satelliten werden scharfgeschaltet', 'satellite_watchdog': 'Überflug hängt – beendet', 'scan_yield_requested': 'Scan soll den Stick freigeben', 'settings_unreadable': 'Einstellungen nicht lesbar', 'sticks_failed': 'Sticks: Fehler', 'sysmon_failed': 'Systemwerte: Fehler', 'reboot_requested': 'Neustart angefordert', 'restart_requested': 'Dienst-Neustart angefordert', 'dir_move_failed': 'Programmordner nicht umgezogen', 'dir_move_skipped': 'Programmordner-Umzug ausgelassen', 'dir_moved': 'Programmordner umgezogen', 'hostname_change_failed': 'Rechnername nicht geändert', 'hostname_changed': 'Rechnername geändert', 'hostname_notice_failed': 'Rechnername: Hinweis fehlgeschlagen', 'services_rename_failed': 'Dienste nicht umbenannt', 'services_renamed': 'Dienste umbenannt', 'backup_dir_move_failed': 'Sicherungsordner nicht umgezogen', 'backup_dir_rename_failed': 'Sicherungsordner nicht umbenannt', 'backup_dir_renamed': 'Sicherungsordner umbenannt', 'update_failed': 'Update fehlgeschlagen', 'auto_backup_set': 'Automatische Sicherung eingestellt', 'backup_downloaded': 'Sicherung heruntergeladen', 'backup_from_target': 'Sicherung vom Ziel eingespielt', 'backup_target_nas': 'Sicherungsziel: Netzwerkfreigabe', 'backup_target_nas_removed': 'Netzwerkfreigabe entfernt', 'backup_target_usb': 'Sicherungsziel: USB-Stick', 'backup_uploaded': 'Sicherung hochgeladen', 'backup_usb_ejected': 'USB-Stick ausgeworfen', 'diagnose_downloaded': 'Diagnose heruntergeladen', 'eibi_refresh_failed': 'EiBi: Herunterladen fehlgeschlagen', 'eibi_uploaded': 'EiBi-Liste hochgeladen', 'follow_updated': 'Satelliten-Nachführung eingestellt', 'hf_device_updated': 'Kurzwellengerät eingestellt', 'interference_changed': 'Störlinie geändert', 'live_favorites_saved': 'Live-Favoriten gespeichert', 'location_confirmed': 'Standort bestätigt', 'publish_set': 'Webseiten-Upload eingestellt', 'restore_requested': 'Einspielen angefordert', 'satellites_armed_now': 'Satelliten sofort scharf', 'satellites_arming': 'Satelliten in 1 Minute scharf', 'scan_stop_requested': 'Scan-Abbruch angefordert', 'scheduler_dead_fallback': 'Zeitplaner antwortet nicht – Scan direkt gestartet', 'sstv_event_added': 'SSTV-Termin eingetragen', 'sstv_event_deleted': 'SSTV-Termin gelöscht', 'sstv_events_failed': 'SSTV-Termine: Abruf fehlgeschlagen', 'sstv_manual_queued': 'SSTV-Bild für die Webseite vorgemerkt', 'stick_updated': 'Stick-Einstellungen gespeichert', 'time_mode_set': 'Zeitangaben umgestellt', 'ui_prefs_failed': 'Ansicht-Profil: Fehler', 'update_started': 'Update gestartet', 'watchdog_ping_failed': 'Watchdog-Meldung fehlgeschlagen', 'webapp_stall': 'Dashboard hing kurz', 'webapp_stall_probe_failed': 'Dashboard-Hänger: Prüfung fehlgeschlagen', 'wifi_fallback_added': 'Ersatz-WLAN eingetragen', 'wifi_fallback_removed': 'Ersatz-WLAN entfernt', 'wsjtx_udp_set': 'Weitergabe im Netz (WSJT-X) eingestellt',
     'notice_raised': 'Hinweis gemeldet', 'notice_resolved': 'Hinweis behoben', 'notice_event': 'Ereignis gemeldet', 'update_done': 'Update fertig', 'rescue.start': 'Notfallseite gestartet', 'sysupdate_checked': 'Systemupdates geprüft', 'sysupgrade_requested': 'Systemupdate angefordert', 'sysupgrade_started': 'Systemupdate gestartet', 'sysupgrade_done': 'Systemupdate fertig', 'sysupgrade_failed': 'Systemupdate fehlgeschlagen', 'sysupgrade_waiting': 'Systemupdate wartet auf eine freie Minute', 'sysupgrade_cancelled': 'Systemupdate nicht mehr angefordert', 'sysupgrade_start_failed': 'Systemupdate ließ sich nicht starten', 'reboot_after_update': 'Neustart nach Systemupdate', 'reboot_postponed': 'Neustart verschoben', 'reboot_done': 'Neustart nach Systemupdate erledigt', 'sysupdate_settings': 'Systemupdates eingestellt', 'sysupdate_failed': 'Systemupdates: Fehler', 'foreign_request_blocked': 'Anfrage einer fremden Webseite abgewiesen', 'backup_key_set': 'Passwort der Zugangsdaten gesetzt', 'backup_key_cleared': 'Passwort der Zugangsdaten gelöscht', 'live_image_keep': 'Bild aus Live behalten (★)', 'live_image_unkeep': 'Bild aus Live nicht mehr behalten', 'live_image_delete': 'Bild aus Live gelöscht', 'live_image_publish': 'Bild aus Live für die Webseite vorgemerkt', 'ui_prefs_replaced': 'Ansicht-Profil übernommen', 'ui_prefs_copied': 'Ansicht-Profil kopiert', 'backup_dir_moved': 'Sicherungsordner umgezogen', 'writewatch_failed': 'Schreib-Zählung: Fehler', 'db_keeper_failed': 'Ruhende Datenbank-Verbindung: Fehler', 'live_yield': 'Live hält kurz an', 'live_resumed': 'Live läuft weiter', 'auth_none': 'Dashboard ohne Passwort', 'live_thumb_failed': 'Vorschaubild ließ sich nicht erzeugen',
     run_start: 'Scan gestartet', run_done: 'Scan fertig', run_failed: 'Scan fehlgeschlagen', run_cancelled: 'Scan abgebrochen',
@@ -2934,6 +2934,7 @@
     // Konfiguration Node
     const on = st.state === 'connected';
     $('meshSetup').hidden = !on;
+    meshLast = d; meshCanSend = on; $('meshCompose').hidden = !on; if (on) meshTargets(st);   // Schreiben (1.8.60)
     if (on) {
       const ck = st.clock || {};
       $('meshRadio').textContent = (EN ? 'Radio: ' : 'Funk: ') + [radio, me.sf ? `CR ${me.cr}` : '', me.tx_power != null ? `${me.tx_power} dBm (max ${me.max_tx_power})` : ''].filter(Boolean).join(' · ')
@@ -2967,7 +2968,7 @@
     const rad = Math.PI / 180, home = d.home;
     const km = n => { if (!home || n.lat == null) return '–'; const p1 = home[0] * rad, p2 = n.lat * rad, dl = (n.lon - home[1]) * rad;
       return Math.round(6371 * Math.acos(Math.max(-1, Math.min(1, Math.sin(p1) * Math.sin(p2) + Math.cos(p1) * Math.cos(p2) * Math.cos(dl))))) + ' km'; };
-    $('meshNodes').innerHTML = d.nodes.map(n => `<tr><td><b class="no-i18n">${esc(n.name || n.key)}</b></td><td>${esc(meshType(n.type))}</td><td class="mono-num">${km(n)}</td>`
+    $('meshNodes').innerHTML = d.nodes.map(n => `<tr><td><b class="no-i18n">${esc(n.name || n.key)}</b>${on && n.type === 'Companion' ? ` <button type="button" class="btn btn-small mesh-reply" data-dm="${esc(n.key)}" data-name="${esc(n.name || n.key)}" title="${EN ? 'direct message' : 'Direktnachricht'}">✉</button>` : ''}</td><td>${esc(meshType(n.type))}</td><td class="mono-num">${km(n)}</td>`
       + `<td class="mono-num">${n.last_advert ? fmtTime(n.last_advert) : '–'}</td><td class="mono-num">${fmtTime(n.last_seen)}</td>`
       + (n.adverts ? `<td class="mono-num">${n.adverts.count}</td><td class="mono-num">${meshSnr(n.adverts.best_snr)} / ${meshSnr(n.adverts.last_snr)}</td><td>${meshWay(n.adverts.hops, n.adverts.via)}</td>`
         : '<td class="muted">–</td><td class="muted">–</td><td class="muted">–</td>') + '</tr>').join('')
@@ -2999,17 +3000,79 @@
     const h = m.kind === 'dm' ? 280 : chanHue(m.channel_name || m.channel);
     return `<span class="chan-tag no-i18n" style="--ch:${h}">${esc(n)}</span>`;
   }
+  // Von-Spalte: eigene Nachrichten (1.8.60) mit Empfänger und Bestätigung
+  function meshFrom(m) {
+    if (!m.outgoing) return `<b class="no-i18n">${esc(m.sender || '?')}</b>`;
+    const me = `<b class="no-i18n">${esc(((meshLast.status || {}).self || {}).name || (EN ? 'me' : 'ich'))}</b>`;
+    if (m.kind !== 'dm') return me;
+    const age = (Date.now() - new Date(m.time).getTime()) / 1000;
+    const st = m.delivered ? `<span class="ok-text" title="${EN ? 'confirmed by the recipient' : 'vom Empfänger bestätigt'}">✓✓</span>`
+      : age < 120 ? `<span class="muted" title="${EN ? 'waiting for confirmation' : 'wartet auf Bestätigung'}">…</span>`
+      : `<span class="warn-text" title="${EN ? 'no confirmation – the recipient may not have got it' : 'keine Bestätigung – vielleicht nicht angekommen'}">✗</span>`;
+    return `${me} → <b class="no-i18n">${esc(m.sender || '?')}</b> ${st}`;
+  }
   function renderMeshMsgs() {
     const rows = meshPage.rows, total = meshPage.total;
-    $('meshMsgs').innerHTML = rows.map(m => `<tr${m.kind === 'dm' ? ' class="mesh-dm"' : ''} style="--ch:${m.kind === 'dm' ? 280 : chanHue(m.channel_name || m.channel)}"><td class="mono-num">${fmtTime(m.time)}</td>`
-      + `<td>${chanTag(m)}</td><td><b class="no-i18n">${esc(m.sender || '?')}</b></td>`
-      + `<td class="wrap no-i18n">${chanTag(m).replace('chan-tag', 'chan-tag chan-m')}${esc(m.text)}</td><td class="mono-num">${meshSnr(m.snr)}</td><td class="mono-num">${m.hops ?? '–'}</td></tr>`).join('')
+    $('meshMsgs').innerHTML = rows.map(m => `<tr class="${m.kind === 'dm' ? 'mesh-dm' : ''}${m.outgoing ? ' mesh-out' : ''}" style="--ch:${m.kind === 'dm' ? 280 : chanHue(m.channel_name || m.channel)}"><td class="mono-num">${fmtTime(m.time)}</td>`
+      + `<td>${chanTag(m)}</td><td>${meshFrom(m)}</td>`
+      + `<td class="wrap no-i18n">${chanTag(m).replace('chan-tag', 'chan-tag chan-m')}${m.unreadable ? `<i class="muted" title="${esc(m.text)}">${EN ? '(not readable – probably another key or binary data)' : '(nicht lesbar – vermutlich anderer Schlüssel oder Binärdaten)'}</i>` : esc(m.text)}`
+      + `${!m.outgoing && !m.unreadable && meshCanSend ? ` <button type="button" class="btn btn-small mesh-reply" data-reply="${m.id}" title="${EN ? 'reply' : 'antworten'}">↩</button>` : ''}</td>`
+      + `<td class="mono-num">${meshSnr(m.snr)}</td><td class="mono-num">${m.hops ?? '–'}</td></tr>`).join('')
       || `<tr><td colspan="6" class="muted">${EN ? 'No messages yet.' : 'Noch keine Nachrichten.'}</td></tr>`;
     const a = total ? meshPage.offset + 1 : 0, b = Math.min(total, meshPage.offset + meshPage.per);
     $('meshPos').textContent = EN ? `${a}–${b} of ${total} messages` : `${a}–${b} von ${total} Nachrichten`;
     $('meshMsgsPrev').disabled = meshPage.offset === 0; $('meshMsgsNext').disabled = b >= total;
   }
   $('meshChan').addEventListener('change', () => { meshPage.offset = 0; loadMesh(); });
+  // Schreiben (1.8.60): Ziel = Kanal oder Direktnachricht an einen Node; ↩ an jeder Nachricht, ✉ an jedem Companion
+  let meshCanSend = false, meshDm = null, meshLast = {};
+  function meshTargets(st) {
+    const sel = $('meshTo'), cur = sel.value;
+    const ch = Object.entries(st.channels || {}).map(([i, n]) => `<option value="c${i}">${EN ? 'Channel' : 'Kanal'} ${esc(n)}</option>`).join('');
+    const dm = meshDm ? `<option value="d${meshDm.key}">${EN ? 'Direct to' : 'Direkt an'} ${esc(meshDm.name)}</option>` : '';
+    const html = ch + dm;
+    if (sel.innerHTML !== html) { sel.innerHTML = html; if ([...sel.options].some(o => o.value === cur)) sel.value = cur; }
+    meshLen();
+  }
+  function meshLen() {
+    const t = $('meshText').value, me = ((meshLast.status || {}).self || {}).name || '';
+    const max = $('meshTo').value.startsWith('d') ? 150 : 150 - new TextEncoder().encode(me).length - 2;
+    const n = new TextEncoder().encode(t).length;
+    $('meshLen').textContent = `${n}/${max}`; $('meshLen').classList.toggle('warn-text', n > max);
+    $('meshSend').disabled = !t.trim() || n > max || !$('meshTo').value;
+  }
+  $('meshText').addEventListener('input', meshLen); $('meshTo').addEventListener('change', meshLen);
+  $('meshText').addEventListener('keydown', e => { if (e.key === 'Enter' && !$('meshSend').disabled) { e.preventDefault(); $('meshSend').click(); } });
+  $('meshSend').addEventListener('click', async () => {
+    const to = $('meshTo').value, body = { cmd: 'send', text: $('meshText').value.trim() };
+    if (to.startsWith('d')) body.to = to.slice(1); else body.channel = Number(to.slice(1));
+    $('meshSend').disabled = true; note($('meshSendNote'), EN ? 'sending …' : 'wird gesendet …');
+    try { const r = await post('/api/mesh/cmd', body); $('meshText').value = '';
+      note($('meshSendNote'), body.to ? (EN ? '✓ sent – ✓✓ appears when the recipient confirms' : '✓ gesendet – ✓✓ erscheint, sobald der Empfänger bestätigt') : (EN ? '✓ sent' : '✓ gesendet'));
+      meshPage.offset = 0; loadMesh(); }
+    catch (e) { note($('meshSendNote'), (EN ? 'Error: ' : 'Fehler: ') + I18N.t(e.message), true); }
+    meshLen();
+  });
+  $('meshAdvert').addEventListener('click', async () => {
+    const flood = $('meshAdvertHow').value === '1';
+    note($('meshSendNote'), EN ? 'announcing …' : 'wird angekündigt …');
+    try { await post('/api/mesh/cmd', { cmd: 'advert', flood }); note($('meshSendNote'), flood ? (EN ? '✓ announced across the mesh' : '✓ übers Mesh angekündigt') : (EN ? '✓ announced to direct neighbours' : '✓ bei den direkten Nachbarn angekündigt')); }
+    catch (e) { note($('meshSendNote'), (EN ? 'Error: ' : 'Fehler: ') + I18N.t(e.message), true); }
+  });
+  function meshStartDm(key, name) {
+    meshDm = { key, name }; meshTargets((meshLast.status || {})); $('meshTo').value = 'd' + key; meshLen();
+    $('meshCompose').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); $('meshText').focus();
+  }
+  $('meshMsgs').addEventListener('click', e => {
+    const b = e.target.closest('[data-reply]'); if (!b) return;
+    const m = meshPage.rows.find(x => String(x.id) === b.dataset.reply); if (!m) return;
+    if (m.kind === 'dm' && m.key) { meshStartDm(m.key, m.sender); return; }
+    const idx = Object.entries((meshLast.status || {}).channels || {}).find(([, n]) => n === m.channel_name);
+    if (idx) $('meshTo').value = 'c' + idx[0];
+    $('meshText').value = `@[${m.sender}] `; meshLen();
+    $('meshCompose').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); $('meshText').focus();
+  });
+  $('meshNodes').addEventListener('click', e => { const b = e.target.closest('[data-dm]'); if (b) meshStartDm(b.dataset.dm, b.dataset.name); });
   async function meshCmd(body, okText) {
     note($('meshSetNote'), EN ? 'sending to the node …' : 'an den Node …');
     try { await post('/api/mesh/cmd', body); note($('meshSetNote'), okText || (EN ? '✓ done' : '✓ erledigt')); }
