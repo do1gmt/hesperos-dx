@@ -1226,7 +1226,7 @@ def clean_watchlist(items):
                     "label": str(it.get("label") or "").strip()[:60],
                     "enabled": bool(it.get("enabled", True)), "mail": bool(it.get("mail", True)),
                     "tolerance_khz": max(0.5, min(100.0, float(it.get("tolerance_khz") or 5))),
-                    "quiet_min": max(0, min(1440, int(it.get("quiet_min") or 30)))})
+                    "quiet_min": max(0, min(1440, int(30 if it.get("quiet_min") in (None, "") else it.get("quiet_min"))))})   # 0 = jedes Mal
     return out
 
 
@@ -2736,6 +2736,7 @@ class Handler(BaseHTTPRequestHandler):
                     st_["version"] = (BASE / "VERSION").read_text().strip()
                 except OSError:
                     pass
+                st_["mesh_board"] = MESH.board_latest()      # neuer Beitrag am schwarzen Brett → Hervorhebung/Hinweis
                 return self.send_json(st_)
             if path == "/api/sat/passes":
                 return self.send_json(sat_passes())

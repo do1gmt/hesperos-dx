@@ -706,6 +706,7 @@
     if (!((s.live_active || s.live_watch) && !busy)) setPill(busy ? `${humanState(s)} ${s.progress}%` : humanState(s), s.state === 'error' ? 'error' : busy ? 'running' : (s.state === 'done' ? 'done' : ''));
     const btn = $('scanNow'); btn.disabled = busy; btn.textContent = busy ? 'Scan läuft …' : 'Jetzt scannen';
     lastStatus = s;
+    meshBoardTick(s.mesh_board || {});
     const pend = (s.hardware && s.hardware.rtlsdr && s.hardware.rtlsdr.pending) || 0;
     const tsys = document.querySelector('.tabs-main [data-view=system]');
     if (tsys) { const n = tsys.querySelector('.n'); if (pend && !n) tsys.insertAdjacentHTML('beforeend', '<span class="n">!</span>'); if (!pend && n) n.remove(); }
@@ -2738,6 +2739,7 @@
         el.innerHTML = `<b class="sv-title"></b><div class="hint sv-info"></div><div class="hint sv-stats"></div>
           ${room ? `<h4 class="sub">${EN ? 'Notice board' : 'Schwarzes Brett'}</h4><p class="hint sv-login"></p>
           <div class="table-wrap"><table class="table mesh-board"><thead><tr><th>${EN ? 'Time' : 'Zeit'} (<span class="tzl">UTC</span>)</th><th>${EN ? 'Author' : 'Von'}</th><th>${EN ? 'Post' : 'Beitrag'}</th></tr></thead><tbody class="sv-board"></tbody></table></div>
+          <label class="check"><input type="checkbox" class="sv-notify"> ${EN ? 'Report new posts by mail / push / Telegram' : 'Neue Beiträge per Mail / Push / Telegram melden'}</label>
           <div class="mesh-set-row"><label class="field"><span>${EN ? 'Post as the server' : 'Beitrag als Server schreiben'}</span><input type="text" class="sv-post" maxlength="140" autocomplete="off"></label>
             <button type="button" class="btn" data-sv="post">${EN ? 'Post' : 'Posten'}</button></div>` : ''}
           <details class="mesh-setup"><summary>${EN ? 'Administration' : 'Verwalten'}</summary>
@@ -2752,6 +2754,7 @@
         box.appendChild(el);
         el.querySelectorAll('[data-sv]').forEach(b => b.addEventListener('click', () => meshServerAction(el, b.dataset.sv)));
         el.querySelector('.sv-ro') && el.querySelector('.sv-ro').addEventListener('change', e => meshServerAction(el, 'ro', e.target.checked));
+        el.querySelector('.sv-notify') && el.querySelector('.sv-notify').addEventListener('change', e => boardNotify(e.target.checked, el.querySelector('.sv-note')));
       }
       const t = x.stats || {}, c = x.clock || {};
       const radioS = x.freq_mhz ? `${x.freq_mhz.toFixed(3)} MHz · SF${x.sf} · ${x.bw_khz} kHz · CR ${x.cr}${x.tx_power != null ? ` · ${x.tx_power} dBm` : ''}` : '';
@@ -2771,6 +2774,7 @@
       if (!room) continue;
       el.querySelector('.sv-pw').placeholder = x.guest_password_set ? (EN ? 'set – empty = no password' : 'gesetzt – leer = kein Passwort') : (EN ? 'none set' : 'keins gesetzt');
       el.querySelector('.sv-ro').checked = !!x.read_only;
+      el.querySelector('.sv-notify').checked = boardRules().some(r => r.enabled !== false);
       // Anmeldung des Companion am Server (damit die Beiträge hierher kommen)
       const r = (st.rooms || []).find(q => q.key === x.key) || {};
       el.querySelector('.sv-login').textContent = st.state !== 'connected'
@@ -2780,10 +2784,53 @@
         : r.no_contact ? (EN ? 'The companion does not know this server yet – the server sent an advert, logging in again shortly.' : 'Der Companion kennt diesen Server noch nicht – der Server hat sich angekündigt, gleich neuer Versuch.')
         : r.failed ? (EN ? 'Login failed – guest password?' : 'Anmeldung abgelehnt – Gast-Passwort?') : (EN ? 'Not logged in yet.' : 'Noch nicht angemeldet.');
       const posts = board.filter(m => m.channel_name === x.name || !servers.some(y => y.name === m.channel_name));
-      el.querySelector('.sv-board').innerHTML = posts.map(m => `<tr><td class="mono-num">${fmtTime(m.time)}</td><td><b class="no-i18n">${esc(m.sender || '?')}</b></td><td class="wrap no-i18n">${esc(m.text)}</td></tr>`).join('')
+      const hl = boardHl && Date.now() < boardHl.until ? boardHl.seen : Infinity;
+      el.querySelector('.sv-board').innerHTML = posts.map(m => `<tr${m.id > hl ? ' class="row-new"' : ''}><td class="mono-num">${fmtTime(m.time)}</td><td><b class="no-i18n">${esc(m.sender || '?')}</b></td><td class="wrap no-i18n">${esc(m.text)}</td></tr>`).join('')
         || `<tr><td colspan="3" class="muted">${EN ? 'No posts yet.' : 'Noch keine Beiträge.'}</td></tr>`;
     }
   }
+  // Schwarzes Brett (1.8.54): neuer Beitrag → Einblendung, Karte und Reiter hervorgehoben, auch zugeklappt oder auf
+  // einem anderen Reiter. Gelesen ist er, sobald die Karte offen im Blick ist; der Stand gilt je Browser.
+  let boardHl = null, boardLast = null;
+  const boardVisible = () => { const v = document.querySelector('.view[data-view="stations"]'), p = $('panel-meshsrv');
+    return v && !v.hidden && !p.hidden && !p.classList.contains('folded') && document.visibilityState === 'visible'; };
+  function meshBoardTick(b) {
+    const id = Number(b.id || 0); if (!id) return;
+    let seen = Number(localStorage.getItem('meshboard.seen') || 0);
+    if (!seen) { seen = id; try { localStorage.setItem('meshboard.seen', String(id)); } catch (e) { /* privat */ } }   // erster Besuch: Altes ist nicht neu
+    if (boardLast !== null && id > boardLast) {
+      toast(`📌 ${EN ? 'New post on the notice board' : 'Neuer Beitrag am schwarzen Brett'} ${b.board || ''}: ${b.sender || '?'}: ${b.text || ''}`, 10000, false);
+    }
+    boardLast = id;
+    const unread = id > seen;
+    if (unread && boardVisible()) {                       // offen im Blick: als gelesen merken, neue Zeilen 2 min markiert
+      boardHl = { seen, until: Date.now() + 120000 };
+      try { localStorage.setItem('meshboard.seen', String(id)); } catch (e) { /* privat */ }
+      loadMesh();
+    }
+    const p = $('panel-meshsrv'), h = p.querySelector(':scope > h2'), show = unread && !p.hidden && !boardVisible();   // ohne Room-Server am USB keine Karte
+    p.classList.toggle('board-new', show);
+    let bd = h.querySelector('.board-badge');
+    if (show && !bd) { bd = document.createElement('span'); bd.className = 'board-badge no-i18n'; h.insertBefore(bd, h.querySelector('.card-status')); }
+    if (bd) { if (show) bd.textContent = `● ${EN ? 'new' : 'neu'}: ${b.sender || '?'}`; else bd.remove(); }
+    const tb = document.querySelector('.tabs-main [data-view=stations]');
+    if (tb) { let n = tb.querySelector('.n.board-n'); if (show && !n) tb.insertAdjacentHTML('beforeend', `<span class="n board-n" title="${EN ? 'new post on the notice board' : 'neuer Beitrag am schwarzen Brett'}">📌</span>`); else if (!show && n) n.remove(); }
+    document.title = (show ? '📌 ' : '') + document.title.replace(/^📌 /, '');
+  }
+  const boardRules = () => ((settings && settings.watchlist) || []).filter(r => r.type === 'event' && r.value === 'mesh_room');
+  async function boardNotify(on, n) {                     // Häkchen an der Karte = Regel in der Beobachtungsliste
+    const rest = ((settings && settings.watchlist) || []).filter(r => !(r.type === 'event' && r.value === 'mesh_room'));
+    const own = boardRules();
+    const list = on ? rest.concat(own.length ? own.map(r => ({ ...r, enabled: true, mail: true }))
+      : [{ type: 'event', value: 'mesh_room', label: EN ? 'Notice board' : 'Schwarzes Brett', quiet_min: 0, mail: true, enabled: true }])
+      : rest.concat(own.map(r => ({ ...r, enabled: false })));
+    try {
+      const d = await post('/api/settings', { watchlist: list }); settings.watchlist = d.settings.watchlist; renderWatch();
+      note(n, on ? (EN ? '✓ new posts are reported (Settings → Watchlist, channels under Notifications)' : '✓ neue Beiträge werden gemeldet (Einstellungen → Beobachtungsliste, Wege unter Benachrichtigungen)')
+        : (EN ? '✓ no longer reported' : '✓ wird nicht mehr gemeldet'));
+    } catch (e) { note(n, (EN ? 'Error: ' : 'Fehler: ') + I18N.t(e.message), true); }
+  }
+
   async function meshServerAction(el, what, val) {
     const key = el.dataset.key, n = el.querySelector('.sv-note');
     const body = { key, ...({ name: { cmd: 'name', name: el.querySelector('.sv-name').value.trim() }, 'pos-loc': { cmd: 'position', where: 'locator' },
@@ -2823,6 +2870,9 @@
     }
     const any = st.state === 'connected' || d.total > 0 || d.nodes_total > 0 || d.port_setting !== 'auto' || st.error;
     $('panel-mesh').hidden = !any; $('mapMeshChip').hidden = !d.nodes_total;
+    // Repeater/Room-Server am USB (Text-Konsole): Zustand, Funk, Statistik, Uhr, schwarzes Brett, Verwaltung –
+    // auch ohne Companion (sonst blieb die Karte leer, 1.8.54)
+    renderMeshServers(servers, st, d.board || []);
     if (!any) return;
     const rx = st.last_rx;
     const radio = me.freq_mhz ? `${me.freq_mhz.toFixed(3)} MHz · SF${me.sf} · ${me.bw_khz} kHz` : '';
@@ -2872,8 +2922,6 @@
     $('meshState').classList.toggle('warn-text', st.state === 'error');
     cardStatus('panel-mesh', st.state === 'connected' ? (EN ? `connected · ${st.packets_hour} packets/h · ${d.total} messages` : `verbunden · ${st.packets_hour} Pakete/h · ${d.total} Nachrichten`)
       : st.state === 'off' ? (EN ? 'off' : 'aus') : (EN ? 'no node' : 'kein Node'), st.state === 'error');
-    // Repeater/Room-Server am USB (Text-Konsole): Zustand, Funk, Statistik, Uhr, schwarzes Brett, Verwaltung
-    renderMeshServers(servers, st, d.board || []);
     // Kanäle zur Auswahl
     const chSel = $('meshChan'), cur = chSel.value, names = Object.values(st.channels || {});
     const want = ['', ...names, 'dm'];

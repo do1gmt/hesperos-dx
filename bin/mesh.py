@@ -491,6 +491,9 @@ class Session:
 
 # ---------- Speichern ----------
 
+_BOARD = {}                                          # letzter Beitrag am schwarzen Brett (für /api/status, 1.8.54)
+
+
 def store_msg(m):
     db = _db()
     try:
@@ -500,9 +503,31 @@ def store_msg(m):
                          (_iso(), m["sender_ts"], m["kind"], m["channel"], m.get("channel_name", ""), m["sender"],
                           m["text"], m["snr"], m["hops"]))
         db.commit()
+        if cur.rowcount > 0 and m["kind"] == "room":
+            _BOARD.update(id=cur.lastrowid, board=m.get("channel_name", ""), sender=m["sender"], text=m["text"][:200])
         return cur.rowcount > 0
     finally:
         db.close()
+
+
+def board_latest():
+    """Neuester Beitrag am schwarzen Brett: {id, board, sender, text} oder {} – das Dashboard fragt das alle 2 s mit
+    dem Scan-Zustand ab und hebt neue Beiträge hervor, auch wenn die Karte zugeklappt ist. Die Datenbank wird nur
+    einmal gelesen (nach dem Start), danach merkt sich store_msg den letzten Beitrag."""
+    if "id" not in _BOARD:
+        try:
+            db = _db()
+            try:
+                ensure_tables(db)
+                r = db.execute("SELECT id, channel_name, sender, text FROM mesh_msg WHERE kind='room' ORDER BY id DESC LIMIT 1").fetchone()
+            finally:
+                db.close()
+            _BOARD.setdefault("id", r[0] if r else 0)
+            if r:
+                _BOARD.setdefault("board", r[1]); _BOARD.setdefault("sender", r[2]); _BOARD.setdefault("text", (r[3] or "")[:200])
+        except Exception:
+            return {}
+    return dict(_BOARD) if _BOARD.get("id") else {}
 
 
 def store_nodes(nodes):

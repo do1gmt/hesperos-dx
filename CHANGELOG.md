@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.8.54 – 2026-11-25
+
+- **Notice board: new posts are noticed even with the card folded.** The board was only refreshed while its card
+  was open on the *Stations* tab, so a new post went unnoticed. Now the dashboard learns of a new post with the
+  regular status query (every 2 s, the Pi keeps the latest post in memory – no extra database reads) and shows it
+  everywhere: a notice with author and text, a coloured frame and "● new: author" on the card (also folded), a 📌
+  on the *Stations* tab and in the browser tab title. It counts as read once the card is open in view
+  (remembered per browser); the new rows stay marked for 2 minutes.
+- **Mail/push/Telegram for the board in one click:** *Report new posts by mail / push / Telegram* on the room
+  server card switches the watchlist rule *Mesh: new post on the notice board* on or off – without quiet time, so
+  every post is reported.
+- **Fix: watchlist quiet time 0 became 30 minutes** when saved; 0 now means "report every time".
+- **Fix: room server card empty without a companion on USB** – the card appeared with its title only.
+- Self-test section 117.
+
 ## 1.8.53 – 2026-11-25
 
 - **Own frequencies** (*Settings → Own frequencies*): name, frequency in MHz and mode, up to 50 entries. Each one

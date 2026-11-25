@@ -4417,5 +4417,26 @@ assert "satCollapse" not in html and "collapse-btn" not in html[html.index('id="
 assert "http-equiv=refresh" not in r and "onsubmit=\"return diag()\"" in r
 PY
 
+echo "== 117 Schwarzes Brett: neuer Beitrag auch bei zugeklappter Karte, Meldung per Häkchen, Ruhezeit 0"
+(cd bin && timeout 30 python3 - "$SRC" <<'PY') && ok "letzter Beitrag im Speicher (Status ohne Datenbank), Hervorhebung von Karte, Reiter und Titel, Häkchen setzt die Regel ohne Ruhezeit; Ruhezeit 0 bleibt 0; Room-Server-Karte auch ohne Companion" || bad "Schwarzes Brett neu"
+import sys, tempfile
+from pathlib import Path
+import mesh as M
+M.DB = Path(tempfile.mkdtemp()) / "t.db"
+assert M.board_latest() == {}
+M.store_msg({"sender_ts": 1, "kind": "room", "channel": -2, "channel_name": "Ansbach", "sender": "DL1ABC", "text": "Treffen 19 Uhr", "snr": 5, "hops": 0})
+b = M.board_latest(); assert b["sender"] == "DL1ABC" and b["board"] == "Ansbach" and b["id"] >= 1, b
+M.store_msg({"sender_ts": 2, "kind": "chan", "channel": 0, "channel_name": "Public", "sender": "X", "text": "y", "snr": 5, "hops": 0})
+assert M.board_latest()["id"] == b["id"]
+M._BOARD.clear(); assert M.board_latest()["text"] == "Treffen 19 Uhr"         # nach Neustart einmal aus der Datenbank
+import webapp as W
+r = W.clean_watchlist([{"type": "event", "value": "mesh_room", "quiet_min": 0}, {"type": "event", "value": "mesh_room"}])
+assert r[0]["quiet_min"] == 0 and r[1]["quiet_min"] == 30
+src = Path(sys.argv[1]); js = (src / "web" / "app.js").read_text(); w = (src / "bin" / "webapp.py").read_text()
+assert 'st_["mesh_board"] = MESH.board_latest()' in w and "meshBoardTick(s.mesh_board || {});" in js
+assert "p.classList.toggle('board-new', show)" in js and "board-n" in js and "'meshboard.seen'" in js and "sv-notify" in js
+assert js.index("renderMeshServers(servers, st, d.board || []);") < js.index("    if (!any) return;")
+PY
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

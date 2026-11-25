@@ -641,8 +641,12 @@ room server (with the guest password read from the server's console – never sh
 restart of the server and every 6 hours; if the companion does not know the server yet, the server sends an
 advert first). The server then pushes every post to the companion – the card shows the **notice board** live
 (refreshed every 15 s, new posts arrive within seconds) and *Post as the server* writes a post into the room
-(firmware with `room.post`). For alerts by mail/push/Telegram add a watchlist rule *Event → Mesh: new post on the
-notice board* (or *Mesh keyword* for posts containing a word). *Administration* changes name, position, owner
+(firmware with `room.post`). A new post is also shown when the card is folded or another tab is open: a notice
+pops up, the card gets a coloured frame with "● new: author", the *Stations* tab a 📌 and the browser tab title a
+📌 – until the card is open in view (remembered per browser); new rows stay marked for 2 minutes. For alerts by
+mail/push/Telegram tick *Report new posts by mail / push / Telegram* on the card – that adds the watchlist rule
+*Event → Mesh: new post on the notice board* without quiet time, so every post is reported (or add *Mesh keyword*
+for posts containing a word). *Administration* changes name, position, owner
 info, guest password, "read-only guests", sends an advert, shows the access list (who may read/write, "this Pi")
 and restarts the server.
 
