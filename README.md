@@ -665,8 +665,9 @@ pops up, the card gets a coloured frame with "● new: author", the *Stations* t
 📌 – until the card is open in view (remembered per browser); new rows stay marked for 2 minutes. For alerts by
 mail/push/Telegram tick *Report new posts by mail / push / Telegram* on the card – that adds the watchlist rule
 *Event → Mesh: new post on the notice board* without quiet time, so every post is reported (or add *Mesh keyword*
-for posts containing a word). *Administration* changes name, position, owner
-info, guest password, "read-only guests", sends an advert, shows the access list (who may read/write, "this Pi")
+for posts containing a word). *Room server configuration* (*Konfiguration Room-Server*, or *Repeater configuration*;
+the button right below the status lines of the server) changes name, position, owner info, guest password,
+"read-only guests", sends an advert (*Send advert*), shows the access list (who may read/write, "this Pi")
 and restarts the server.
 
 ## Data sources

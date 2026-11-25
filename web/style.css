@@ -95,7 +95,7 @@ a { color: var(--accent); }
 .row { display: flex; flex-wrap: wrap; gap: .6rem; align-items: flex-end; margin-top: .6rem; }
 .field { display: flex; flex-direction: column; gap: .25rem; font-size: .8rem; color: var(--muted); }
 .field.grow { flex: 1 1 160px; }
-select, input[type=search], input[type=text], input[type=number], input[type=password], input[type=email], input[type=time] { font: inherit; color: var(--text); background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; min-height: var(--tap); padding: .4rem .7rem; width: 100%; }
+select, textarea, input[type=search], input[type=text], input[type=number], input[type=password], input[type=email], input[type=time] { font: inherit; color: var(--text); background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; min-height: var(--tap); padding: .4rem .7rem; width: 100%; }
 .check { display: inline-flex; align-items: center; flex-wrap: wrap; gap: .4rem; min-height: var(--tap); color: var(--muted); font-size: .9rem; }
 .check input[type=number] { width: 5em; min-height: 36px; padding: .2rem .4rem; }
 .check input { width: 20px; height: 20px; }

@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.8.62 – 2026-11-25
+
+- MeshCore room server / repeater on USB, same as the companion: *Administration* (*Verwalten*) is now called
+  *Room server configuration* (*Konfiguration Room-Server*, or *Konfiguration Repeater*) and sits as a button
+  right below the server's status lines instead of under the notice board. *Send advert* is called *Advert
+  versenden* in German, like on the companion card.
+- The result of an action (posted, saved, error) now shows below the card even when the configuration is folded.
+- Text areas (e.g. *Owner info*) look like the other input fields (font, colours, frame).
+- Self-test section 110 checks name and place.
+
 ## 1.8.61 – 2026-11-25
 
 - MeshCore: the button *Announce now* (*Jetzt ankündigen*) is now called *Send advert* (*Advert versenden*); the log

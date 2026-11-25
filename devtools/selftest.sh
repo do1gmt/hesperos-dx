@@ -4276,6 +4276,8 @@ assert not M.server_command(k, "post", text="")["ok"] and M.server_command("0000
 stop[0] = True
 src = Path(sys.argv[1]); wa = (src / "bin" / "webapp.py").read_text(); js = (src / "web" / "app.js").read_text()
 assert 'if path == "/api/mesh/server":' in wa and "Passwörter nie ins Protokoll" in wa and '"board": MESH.messages(50, kind="room")' in wa
+assert "'Konfiguration Room-Server' : 'Konfiguration Repeater'" in js and "'Advert versenden'" in js and "Verwalten" not in js and "Ankündigung senden" not in js
+t = js[js.index("function renderMeshServers"):]; assert t.index('<details class="mesh-setup">') < t.index("sv-board") < t.index('class="save-note sv-note"')
 assert "function renderMeshServers(" in js and "post('/api/mesh/server', body)" in js
 assert "mesh_room" in ST.EVENTS
 PY

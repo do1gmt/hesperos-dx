@@ -2768,20 +2768,21 @@
       if (!el) {
         el = document.createElement('div'); el.className = 'mesh-server'; el.dataset.key = x.key || x.port;
         el.innerHTML = `<b class="sv-title"></b><div class="hint sv-info"></div><div class="hint sv-stats"></div>
-          ${room ? `<h4 class="sub">${EN ? 'Notice board' : 'Schwarzes Brett'}</h4><p class="hint sv-login"></p>
-          <div class="table-wrap"><table class="table mesh-board"><thead><tr><th>${EN ? 'Time' : 'Zeit'} (<span class="tzl">UTC</span>)</th><th>${EN ? 'Author' : 'Von'}</th><th>${EN ? 'Post' : 'Beitrag'}</th></tr></thead><tbody class="sv-board"></tbody></table></div>
-          <label class="check"><input type="checkbox" class="sv-notify"> ${EN ? 'Report new posts by mail / push / Telegram' : 'Neue Beiträge per Mail / Push / Telegram melden'}</label>
-          <div class="mesh-set-row"><label class="field"><span>${EN ? 'Post as the server' : 'Beitrag als Server schreiben'}</span><input type="text" class="sv-post" maxlength="140" autocomplete="off"></label>
-            <button type="button" class="btn" data-sv="post">${EN ? 'Post' : 'Posten'}</button></div>` : ''}
-          <details class="mesh-setup"><summary>${EN ? 'Administration' : 'Verwalten'}</summary>
+          <details class="mesh-setup"><summary>${EN ? (room ? 'Room server configuration' : 'Repeater configuration') : (room ? 'Konfiguration Room-Server' : 'Konfiguration Repeater')}</summary>
             <div class="mesh-set-row"><label class="field"><span>Name</span><input type="text" class="sv-name" maxlength="31" autocomplete="off"></label><button type="button" class="btn" data-sv="name">${EN ? 'Save name' : 'Name speichern'}</button></div>
             <div class="mesh-set-row"><span class="hint sv-pos"></span><button type="button" class="btn" data-sv="pos-loc">${EN ? 'Position from the locator (approximate)' : 'Position aus dem Locator (ungefähr)'}</button><button type="button" class="btn" data-sv="pos-none">${EN ? 'No position' : 'Keine Position'}</button></div>
             <div class="mesh-set-row"><label class="field"><span>${EN ? 'Owner info' : 'Angaben zum Betreiber'}</span><textarea class="sv-owner" rows="2" maxlength="119"></textarea></label><button type="button" class="btn" data-sv="owner">${EN ? 'Save' : 'Speichern'}</button></div>
             ${room ? `<div class="mesh-set-row"><label class="field"><span>${EN ? 'Guest password (to read and write)' : 'Gast-Passwort (lesen und schreiben)'}</span><input type="password" class="sv-pw" maxlength="15" autocomplete="new-password"></label><button type="button" class="btn" data-sv="pw">${EN ? 'Set' : 'Setzen'}</button></div>
             <label class="check"><input type="checkbox" class="sv-ro"> ${EN ? 'others without password may read (read-only guests)' : 'ohne Passwort nur lesen erlaubt (Gäste)'}</label>` : ''}
-            <div class="actions"><button type="button" class="btn" data-sv="advert">${EN ? 'Send advert' : 'Ankündigung senden'}</button><button type="button" class="btn" data-sv="acl">${EN ? 'Access list' : 'Zugriffsliste'}</button><button type="button" class="btn btn-danger" data-sv="reboot">${EN ? 'Restart' : 'Neu starten'}</button></div>
-            <div class="sv-acl"></div><div class="save-note sv-note" aria-live="polite"></div>
-          </details>`;
+            <div class="actions"><button type="button" class="btn" data-sv="advert">${EN ? 'Send advert' : 'Advert versenden'}</button><button type="button" class="btn" data-sv="acl">${EN ? 'Access list' : 'Zugriffsliste'}</button><button type="button" class="btn btn-danger" data-sv="reboot">${EN ? 'Restart' : 'Neu starten'}</button></div>
+            <div class="sv-acl"></div>
+          </details>
+          ${room ? `<h4 class="sub">${EN ? 'Notice board' : 'Schwarzes Brett'}</h4><p class="hint sv-login"></p>
+          <div class="table-wrap"><table class="table mesh-board"><thead><tr><th>${EN ? 'Time' : 'Zeit'} (<span class="tzl">UTC</span>)</th><th>${EN ? 'Author' : 'Von'}</th><th>${EN ? 'Post' : 'Beitrag'}</th></tr></thead><tbody class="sv-board"></tbody></table></div>
+          <label class="check"><input type="checkbox" class="sv-notify"> ${EN ? 'Report new posts by mail / push / Telegram' : 'Neue Beiträge per Mail / Push / Telegram melden'}</label>
+          <div class="mesh-set-row"><label class="field"><span>${EN ? 'Post as the server' : 'Beitrag als Server schreiben'}</span><input type="text" class="sv-post" maxlength="140" autocomplete="off"></label>
+            <button type="button" class="btn" data-sv="post">${EN ? 'Post' : 'Posten'}</button></div>` : ''}
+          <div class="save-note sv-note" aria-live="polite"></div>`;
         box.appendChild(el);
         el.querySelectorAll('[data-sv]').forEach(b => b.addEventListener('click', () => meshServerAction(el, b.dataset.sv)));
         el.querySelector('.sv-ro') && el.querySelector('.sv-ro').addEventListener('change', e => meshServerAction(el, 'ro', e.target.checked));
