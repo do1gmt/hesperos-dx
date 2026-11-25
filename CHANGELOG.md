@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.8.63 – 2026-11-25
+
+- **afu.tools, step 1 – repeaters.** New card *Settings → afu.tools*: API key (free, from an afu.tools account)
+  and radius. Once a day the Pi fetches the repeaters around the own locator from afu.tools (sources repeatermap.de
+  and FM-FunkNetz) and caches them. Hits on a repeater output get a 📡 badge and a line with callsign, site,
+  distance, mode and tone; *Own frequencies* gets *Repeaters nearby* with ★ *add*. The sources each answer names
+  are shown wherever the data appears, as afu.tools requires.
+- The key is never shown, never logged, not in the simple backup (only in the encrypted credentials) and is removed
+  together with the cached data. Logged: *afu.tools: setting changed / repeaters fetched / fetch failed*.
+- Test helpers: `devtools/afutools_fake.py` and `devtools/afutools_fixture.json` (part of a real answer).
+- Self-test section 122.
+
 ## 1.8.62 – 2026-11-25
 
 - MeshCore room server / repeater on USB, same as the companion: *Administration* (*Verwalten*) is now called

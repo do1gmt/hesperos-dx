@@ -917,3 +917,8 @@ body.dragging-card, body.dragging-card * { user-select: none; -webkit-user-selec
 .mesh-reply { padding: 0 .4rem; min-height: 0; line-height: 1.4; margin-left: .3rem; opacity: .75; } .mesh-reply:hover { opacity: 1; }
 .ok-text { color: var(--green); }
 .mesh-compose #meshAdvertHow { width: auto; flex: 0 1 auto; max-width: 100%; }
+.rep-m { display: none; }
+@media (max-width: 599px) {   /* Handy: Relais-Liste schmal – Ort, Entfernung, Ton unter dem Rufzeichen */
+  .own-rep th:nth-child(2), .own-rep td:nth-child(2), .own-rep th:nth-child(5), .own-rep td:nth-child(5), .own-rep th:nth-child(6), .own-rep td:nth-child(6) { display: none; }
+  .rep-m { display: block; font-size: .78em; } .own-rep td:first-child { white-space: normal; } }
+.src-note a { color: inherit; }

@@ -1,0 +1,293 @@
+{
+ "quellenangabe": {
+  "nennung": "Quellen: afu.tools; repeatermap.de; FM-FunkNetz (Dashboard und Status-MQTT)",
+  "hinweis": "Wer diese Daten weitergibt oder anzeigt, nennt die hier aufgeführten Quellen sichtbar für den, der das Ergebnis sieht: die ursprüngliche Quelle und afu.tools.",
+  "doku": "https://afu.tools/api#quellenangabe",
+  "zusammenstellung": {
+   "name": "afu.tools",
+   "url": "https://afu.tools",
+   "lizenz": "Nennung von afu.tools"
+  },
+  "datensaetze": [
+   {
+    "id": "repeaters",
+    "datensatz": "Relaisliste",
+    "wofuer": "Relais im Umkreis, CSV für das Funkgerät, Sichtlinie",
+    "stand": "2026-11-25T17:08:18Z",
+    "quellen": [
+     {
+      "name": "repeatermap.de",
+      "url": "https://repeatermap.de",
+      "lizenz": null
+     },
+     {
+      "name": "FM-FunkNetz (Dashboard und Status-MQTT)",
+      "url": "https://fm-funknetz.de",
+      "lizenz": null
+     }
+    ]
+   }
+  ]
+ },
+ "generated": "2026-11-25T17:07:26Z",
+ "sources": [
+  "fm-funknetz.de",
+  "repeatermap.de"
+ ],
+ "tone_note": "Tonangaben stammen aus den Freitextfeldern der Quellen und sind von den Betreibern gepflegt. Nicht jeder Eintrag ist aktuell.",
+ "count": 9,
+ "repeaters": [
+  {
+   "callsign": "DB0FUE",
+   "rx_mhz": 145.6375,
+   "tx_mhz": 145.0375,
+   "offset_mhz": -0.6,
+   "tone_hz": 88.5,
+   "tone_mode": "tone",
+   "dcs": null,
+   "call_1750": false,
+   "tone_raw": "88.5Hz nur in Aussendung",
+   "mode": "FM",
+   "netz": null,
+   "band": "2m",
+   "qth": "Fürth (Hardhöhe)",
+   "locator": "JN59LL",
+   "keeper": null,
+   "talkgroups": null,
+   "remarks": null,
+   "url": "http://www.db0fue.de",
+   "lat": 49.48064,
+   "lon": 10.95699,
+   "source": "repeatermap.de",
+   "sources": [
+    "repeatermap.de"
+   ],
+   "distance_km": 3.8,
+   "bearing_deg": 235
+  },
+  {
+   "callsign": "DB0FUE",
+   "rx_mhz": 438.625,
+   "tx_mhz": 431.025,
+   "offset_mhz": -7.6,
+   "tone_hz": 88.5,
+   "tone_mode": "tone",
+   "dcs": null,
+   "call_1750": false,
+   "tone_raw": "88.5Hz",
+   "mode": "FM",
+   "netz": null,
+   "band": "70cm",
+   "qth": "Fürth (Hardhöhe)",
+   "locator": "JN59LL",
+   "keeper": null,
+   "talkgroups": null,
+   "remarks": "wieder in Betrieb",
+   "url": "http://www.db0fue.de",
+   "lat": 49.48064,
+   "lon": 10.95699,
+   "source": "repeatermap.de",
+   "sources": [
+    "repeatermap.de"
+   ],
+   "distance_km": 3.8,
+   "bearing_deg": 235
+  },
+  {
+   "callsign": "DB0FUE",
+   "rx_mhz": 439.85,
+   "tx_mhz": 430.45,
+   "offset_mhz": -9.4,
+   "tone_hz": null,
+   "tone_mode": null,
+   "dcs": null,
+   "call_1750": false,
+   "tone_raw": null,
+   "mode": "DMR",
+   "netz": null,
+   "band": "70cm",
+   "qth": "Fürth (Hardhöhe)",
+   "locator": "JN59LL",
+   "keeper": null,
+   "talkgroups": null,
+   "remarks": null,
+   "url": "http://www.db0fue.de/",
+   "lat": 49.48064,
+   "lon": 10.95699,
+   "source": "repeatermap.de",
+   "sources": [
+    "repeatermap.de"
+   ],
+   "distance_km": 3.8,
+   "bearing_deg": 235
+  },
+  {
+   "callsign": "DB0UN",
+   "rx_mhz": 145.65,
+   "tx_mhz": 145.05,
+   "offset_mhz": -0.6,
+   "tone_hz": null,
+   "tone_mode": null,
+   "dcs": null,
+   "call_1750": false,
+   "tone_raw": null,
+   "mode": "FM",
+   "netz": null,
+   "band": "2m",
+   "qth": "Nürnberg Paniersplatz",
+   "locator": "JN59MK",
+   "keeper": null,
+   "talkgroups": null,
+   "remarks": "Wieder dauerhaft im FM-Modus",
+   "url": "https://www.afuwatch.de/relaisstellen/db0un/",
+   "lat": 49.45817,
+   "lon": 11.08067,
+   "source": "repeatermap.de",
+   "sources": [
+    "repeatermap.de"
+   ],
+   "distance_km": 7.5,
+   "bearing_deg": 129
+  },
+  {
+   "callsign": "DB0SCS",
+   "rx_mhz": 10220,
+   "tx_mhz": 2335,
+   "offset_mhz": -7885,
+   "tone_hz": null,
+   "tone_mode": null,
+   "dcs": null,
+   "call_1750": false,
+   "tone_raw": null,
+   "mode": "ATV",
+   "netz": null,
+   "band": "3cm",
+   "qth": "Nürnberg FMT",
+   "locator": "JN59MK",
+   "keeper": null,
+   "talkgroups": null,
+   "remarks": null,
+   "url": "http://db0fhn.efi.fh-nuernberg.de/doku.php?id=radio:db0vox",
+   "lat": 49.42584,
+   "lon": 11.03924,
+   "source": "repeatermap.de",
+   "sources": [
+    "repeatermap.de"
+   ],
+   "distance_km": 8.7,
+   "bearing_deg": 161
+  },
+  {
+   "callsign": "DB0VOX",
+   "rx_mhz": 439.25,
+   "tx_mhz": 431.65,
+   "offset_mhz": -7.6,
+   "tone_hz": 74.4,
+   "tone_mode": "tone",
+   "dcs": null,
+   "call_1750": false,
+   "tone_raw": "Echolink  Node -Nr # 71665 - POCSAG-Funkruf­sender DB0VOX (439,9875 MHz) APRS-Digipeater DB0VOX (144,800 MHz)",
+   "mode": "FM",
+   "netz": null,
+   "band": "70cm",
+   "qth": "Nürnberg FMT",
+   "locator": "JN59MK",
+   "keeper": null,
+   "talkgroups": null,
+   "remarks": "Echolink  Node -Nr # 71665 - POCSAG-Funkruf­sender DB0VOX (439,9875 MHz) APRS-Digipeater DB0VOX (144,800 MHz)",
+   "url": "http://db0fhn.efi.fh-nuernberg.de/doku.php?id=radio:db0vox",
+   "lat": 49.42584,
+   "lon": 11.03924,
+   "source": "repeatermap.de",
+   "sources": [
+    "repeatermap.de"
+   ],
+   "distance_km": 8.7,
+   "bearing_deg": 161
+  },
+  {
+   "callsign": "DB0VOX",
+   "rx_mhz": 439.525,
+   "tx_mhz": 431.925,
+   "offset_mhz": -7.6,
+   "tone_hz": null,
+   "tone_mode": null,
+   "dcs": null,
+   "call_1750": false,
+   "tone_raw": null,
+   "mode": "DStar",
+   "netz": null,
+   "band": "70cm",
+   "qth": "Nürnberg FMT",
+   "locator": "JN59MK",
+   "keeper": null,
+   "talkgroups": null,
+   "remarks": null,
+   "url": "http://db0fhn.efi.fh-nuernberg.de/doku.php?id=radio:db0vox",
+   "lat": 49.42584,
+   "lon": 11.03924,
+   "source": "repeatermap.de",
+   "sources": [
+    "repeatermap.de"
+   ],
+   "distance_km": 8.7,
+   "bearing_deg": 161
+  },
+  {
+   "callsign": "DM0SC",
+   "rx_mhz": 438.9625,
+   "tx_mhz": 431.3625,
+   "offset_mhz": -7.6,
+   "tone_hz": null,
+   "tone_mode": null,
+   "dcs": null,
+   "call_1750": false,
+   "tone_raw": null,
+   "mode": "DMR",
+   "netz": null,
+   "band": "70cm",
+   "qth": "Schwabach",
+   "locator": "JN59MH",
+   "keeper": null,
+   "talkgroups": null,
+   "remarks": null,
+   "url": "https://brandmeister.network/?page=device&id=262163",
+   "lat": 49.31431,
+   "lon": 11.05159,
+   "source": "repeatermap.de",
+   "sources": [
+    "repeatermap.de"
+   ],
+   "distance_km": 21.0,
+   "bearing_deg": 170
+  },
+  {
+   "callsign": "DM0SC",
+   "rx_mhz": 438.9875,
+   "tx_mhz": 431.3875,
+   "offset_mhz": -7.6,
+   "tone_hz": null,
+   "tone_mode": null,
+   "dcs": null,
+   "call_1750": false,
+   "tone_raw": null,
+   "mode": "FM",
+   "netz": null,
+   "band": "70cm",
+   "qth": "Schwabach",
+   "locator": "JN59MH",
+   "keeper": null,
+   "talkgroups": null,
+   "remarks": null,
+   "url": "http://www.dk0sc.de/amateurfunk/Relais-Nuernberg-Schwabach.aspx",
+   "lat": 49.31431,
+   "lon": 11.05159,
+   "source": "repeatermap.de",
+   "sources": [
+    "repeatermap.de"
+   ],
+   "distance_km": 21.0,
+   "bearing_deg": 170
+  }
+ ]
+}

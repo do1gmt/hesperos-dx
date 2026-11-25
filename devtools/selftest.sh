@@ -4541,5 +4541,50 @@ assert 'id="meshAdvert">Advert versenden</button>' in html and "'mesh_advert_sen
 PY
 pkill -f "mesh_fake.py $MF" 2>/dev/null; rm -rf "$MF"
 
+echo "== 122 afu.tools: Relais im Umkreis (Schlüssel geheim, einmal am Tag, Quellen genannt), Relais an Treffern, übernehmen"
+AFL=$(mktemp); (python3 "$SRC/devtools/afutools_fake.py" 8097 "$AFL" > /dev/null 2>&1 &); sleep 1
+(cd bin && HSP_AFUTOOLS_URL=http://127.0.0.1:8097/api/v1 timeout 60 python3 - "$SRC" "$AFL" <<'PY') && ok "Relais mit X-API-Key geholt (9, Quellen afu.tools/repeatermap.de/FM-FunkNetz), am nächsten Tag erst wieder, nach Umkreis-Änderung sofort; falscher Schlüssel: verständlicher Fehler; Treffer 145,6375 → DB0FUE Fürth 3,8 km; Schlüssel nie im Dashboard, nicht im einfachen Backup, nur verschlüsselt; Einstellungskarte, Liste, Protokoll" || bad "afu.tools"
+import sys, json, time
+from pathlib import Path
+import afutools as AFT, webapp as W, backup as BK
+logf = Path(sys.argv[2]); logs = []
+log = lambda *a, **k: logs.append((a, k))
+bak = W.SETTINGS.read_text()
+try:
+    st = json.loads(bak); st["my_locator"] = "JN59LL"; st["afutools"] = {"api_key": "afu_test", "km": 50}
+    W.SETTINGS.write_text(json.dumps(st))
+    d = AFT.refresh(st, log)
+    assert not d["error"] and len(d["repeaters"]) == 9, d.get("error")
+    q = [json.loads(l) for l in logf.read_text().splitlines()]
+    assert q[-1]["key"] == "afu_test" and q[-1]["qs"]["near"] == ["JN59LL"] and q[-1]["qs"]["km"] == ["50"]
+    assert [x["name"] for x in d["attribution"]["sources"]] == ["afu.tools", "repeatermap.de", "FM-FunkNetz (Dashboard und Status-MQTT)"]
+    AFT.refresh(st, log); assert len(logf.read_text().splitlines()) == 1          # am selben Tag nicht noch einmal
+    st["afutools"]["km"] = 25; AFT.refresh(st, log); assert len(logf.read_text().splitlines()) == 2
+    r = AFT.repeater_at(145637500 + 1500); assert r["call"] == "DB0FUE" and r["qth"].startswith("Fürth") and r["km"] == 3.8 and r["tone_hz"] == 88.5
+    assert AFT.repeater_at(145612500) is None and W._rep_brief(145650000)["call"] == "DB0UN"
+    assert [e[0][2] for e in logs].count("afutools_repeaters") == 2 and not any("afu_test" in json.dumps(e, default=str) for e in logs)
+    st2 = dict(st, afutools={"api_key": "falsch", "km": 50}); d2 = AFT.refresh(st2, log, force=True)
+    assert "401" in d2["error"] and "Schlüssel" in d2["error"] and len(d2["repeaters"]) == 9   # alte Liste bleibt
+    # Dashboard ohne Schlüssel, Speichern geprüft
+    W.SETTINGS.write_text(json.dumps(st))
+    ls = W.load_settings(); assert ls["afutools"]["has_key"] and "afu_test" not in json.dumps(ls)
+    for bad_ in ({"api_key": "a b"}, {"km": 33}):
+        try:
+            W.afutools_save(bad_); raise SystemExit(f"angenommen: {bad_}")
+        except ValueError:
+            pass
+    W.afutools_save({"km": 100}); assert json.loads(W.SETTINGS.read_text())["afutools"] == {"api_key": "afu_test", "km": 100}
+    # Backup: einfach ohne Schlüssel, verschlüsselte Zugangsdaten mit
+    cf = dict(BK._config_files()); ws = json.loads(cf["config/web_settings.json"])
+    assert "api_key" not in ws.get("afutools", {}) and BK.current_secrets()["afutools"]["api_key"] == "afu_test"
+    W.afutools_save({"clear_key": True}); assert "api_key" not in json.loads(W.SETTINGS.read_text())["afutools"] and AFT.cached() == {}
+finally:
+    W.SETTINGS.write_text(bak); AFT.forget()
+src = Path(sys.argv[1]); html = (src / "web" / "index.html").read_text(); js = (src / "web" / "app.js").read_text()
+assert 'id="panel-afutools"' in html and 'id="ownRepList"' in html and "data-rep=" in js and "h.repeater" in js and "function aftSrc(att)" in js
+assert "'afutools_repeaters': 'afu.tools: Relais abgerufen'" in js and '"X-API-Key": key' in (src / "bin" / "afutools.py").read_text()
+PY
+pkill -f "afutools_fake.py 8097" 2>/dev/null; rm -f "$AFL"
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

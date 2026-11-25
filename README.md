@@ -673,6 +673,25 @@ and restarts the server.
 ## Data sources
 
 - Orbital elements: [CelesTrak](https://celestrak.org) (fallback: AMSAT).
+- Repeaters (optional, with your own free key): [afu.tools](https://afu.tools/api), compiled from
+  [repeatermap.de](https://repeatermap.de) and [FM-FunkNetz](https://fm-funknetz.de). The sources each answer names
+  are shown wherever the data appears (hit card, repeater list).
+
+### afu.tools (optional)
+
+*Settings → afu.tools*: enter the free API key from your [afu.tools](https://afu.tools) account and a radius
+(10–200 km). Once a day the Pi fetches the repeaters around your locator (one request, cached in
+`data/afutools_repeaters.json`; again at once after changing key, locator or radius; after a failure at most once an
+hour). Then
+- a hit on a repeater output shows the repeater – callsign (linked), site, distance, mode, CTCSS tone – as a 📡 badge
+  and a line in the card, with the sources;
+- *Settings → Own frequencies* lists *Repeaters nearby* (band filter, 25 per page): ★ *add* takes one over as an own
+  frequency (FM as FM, DMR/D-Star/C4FM as digital voice; ATV and outside the band plan cannot be added).
+
+The key is sent as `X-API-Key`, never shown in the dashboard, never logged, not written into the simple backup
+(only into the encrypted credentials) and removed together with the cached repeaters by *Remove key*. Without a key
+nothing is fetched and everything works as before. Further afu.tools data (locators for heard callsigns, radio
+weather, contest calendar) will follow step by step.
 - TMC traffic messages: *Location Code List* LCL 22.0 and *Event Code List* ECL 4.01 of the
   Bundesanstalt für Straßenwesen (BASt), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/);
   converted to `share/tmc/` (see the README there).

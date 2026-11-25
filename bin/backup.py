@@ -86,6 +86,8 @@ def _config_files(secrets=False):
             d["notify"] = n
             if isinstance(d.get("publish"), dict):          # Anwendungspasswort der Webseite
                 d["publish"].pop("app_password", None)
+            if isinstance(d.get("afutools"), dict):         # Schlüssel für afu.tools (1.8.63)
+                d["afutools"].pop("api_key", None)
             out.append((f"config/{p.name}", json.dumps(d, indent=2, ensure_ascii=False).encode("utf-8")))
             continue
         out.append((f"config/{p.name}", p))
@@ -135,6 +137,9 @@ def current_secrets():
     n = {k: v for k, v in (st.get("notify") or {}).items() if k in SECRET_KEYS and v}
     pub = st.get("publish") if isinstance(st.get("publish"), dict) else {}
     out = {"notify": n, "publish": {"app_password": pub["app_password"]} if pub.get("app_password") else {}}
+    aft = st.get("afutools") if isinstance(st.get("afutools"), dict) else {}
+    if aft.get("api_key"):
+        out["afutools"] = {"api_key": aft["api_key"]}
     try:
         out["auth"] = (BASE / "config" / "auth.json").read_text(encoding="utf-8")
     except OSError:
@@ -185,6 +190,12 @@ def apply_secrets(sec, only_missing=False):
         pub = st.setdefault("publish", {})
         if isinstance(pub, dict) and not (only_missing and pub.get("app_password")):
             pub["app_password"] = ap
+            changed = True
+    ak = ((sec or {}).get("afutools") or {}).get("api_key")
+    if ak:
+        aft = st.setdefault("afutools", {})
+        if isinstance(aft, dict) and not (only_missing and aft.get("api_key")):
+            aft["api_key"] = ak
             changed = True
     if changed:
         tmp = p.with_suffix(".tmp")

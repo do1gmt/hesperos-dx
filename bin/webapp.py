@@ -355,6 +355,7 @@ def load_settings():
         "pskreporter": bool(data.get("pskreporter")),
         "watchlist": data.get("watchlist") or [],
         "own_frequencies": own_frequencies_out(data, plan),
+        "afutools": __import__("afutools").public_config(data),   # ohne Schlüssel
         "own_modes": __import__("bandplan").OWN_MODES,
         "schedules": data.get("schedules") or [],
         "watch_events": ST.EVENTS,
@@ -912,8 +913,52 @@ def list_hits(params, with_total=False):
             "watch": r["watch"] or "",
             "antenna": r["antenna"] or "",
             "pub": pst,
+            "repeater": _rep_brief(r["rf_hz"]) if r["band"] != "Satelliten" else None,
         })
     return (out, total) if with_total else out
+
+
+def _rep_brief(rf_hz):
+    """Relais auf der Frequenz eines Treffers (afu.tools, zwischengespeichert) – kurz für die Trefferkarte."""
+    try:
+        import afutools as AFT
+        r = AFT.repeater_at(rf_hz)
+    except Exception:
+        return None
+    if not r:
+        return None
+    return {k: r.get(k) for k in ("call", "qth", "km", "mode", "tone_hz", "offset_mhz", "url", "locator")}
+
+
+def afutools_save(data):
+    """Einstellungen → afu.tools: Schlüssel (nur bei echter Eingabe; leer mit clear_key = entfernen) und Umkreis.
+    Der Schlüssel wird nie zurückgegeben oder protokolliert."""
+    import afutools as AFT
+    st = read_json(SETTINGS, {})
+    c = dict(st.get("afutools") or {})
+    changed = []
+    if data.get("clear_key"):
+        c.pop("api_key", None)
+        AFT.forget()
+        changed.append("Schlüssel entfernt")
+    elif str(data.get("api_key") or "").strip():
+        k = str(data["api_key"]).strip()
+        if len(k) > 200 or not k.isprintable() or " " in k:
+            raise ValueError("Schlüssel sieht nicht richtig aus (eine Zeile ohne Leerzeichen)")
+        c["api_key"] = k
+        changed.append("Schlüssel gesetzt")
+    if "km" in data:
+        km = int(data["km"])
+        if km not in AFT.RADII:
+            raise ValueError("Umkreis: " + ", ".join(map(str, AFT.RADII)) + " km")
+        if km != c.get("km"):
+            c["km"] = km
+            changed.append(f"Umkreis {km} km")
+    st["afutools"] = c
+    write_json(SETTINGS, st)
+    if changed:
+        APPLOG.log("INFO", "webapp", "afutools_set", what=", ".join(changed))
+    return st
 
 
 _KIND = {"fm": "FM-Kanal (Sprache, Daten)", "linear": "Linear-Transponder (SSB/CW)", "probe": "Prüfsatellit (nur Pegel)"}
@@ -2768,6 +2813,15 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json({"hits": hits, "total": total, "server_time": now_iso(),
                                        "last_run": {"from": lf, "to": lt if lt != "9999" else None,
                                                     "status": (lr or {}).get("status")} if lf else None})
+            if path == "/api/afutools/repeaters":          # Relais in der Nähe (afu.tools, zwischengespeichert)
+                import afutools as AFT
+                d = AFT.repeaters()
+                own = {int(f.get("freq_hz", 0)) for f in read_json(SETTINGS, {}).get("own_frequencies") or []}
+                plan = bandplan()
+                for r in d["repeaters"]:
+                    r["own"] = any(abs(r["out_hz"] - o) <= AFT.MATCH_HZ for o in own)
+                    r["in_band"] = next((b["name"] for b in plan if not b.get("eibi") and b["start_hz"] <= r["out_hz"] <= b["stop_hz"]), None)
+                return self.send_json(d)
             if path == "/api/runs":
                 return self.send_json(list_runs(max(1, min(int(qs.get("limit", 25)), 500)),
                                                 max(0, int(qs.get("offset", 0)))))
@@ -3342,6 +3396,19 @@ class Handler(BaseHTTPRequestHandler):
                                what=cmd, **{k: v for k, v in data.items() if k in ("name", "where", "index")},
                                **({"error": res.get("error")} if not res.get("ok") else {}))
                 return self.send_json(dict(res, status=MESH.status()), 200 if res.get("ok") else 400)
+            if path == "/api/afutools":                        # Einstellungen → afu.tools
+                import afutools as AFT
+                try:
+                    st = afutools_save(data)
+                except ValueError as e:
+                    return self.send_json({"ok": False, "error": str(e)}, 400)
+                threading.Thread(target=AFT.refresh, args=(st, APPLOG.log), kwargs={"force": bool(data.get("refresh"))},
+                                 daemon=True).start()
+                return self.send_json({"ok": True, "settings": load_settings()})
+            if path == "/api/afutools/refresh":                # jetzt abrufen
+                import afutools as AFT
+                d = AFT.refresh(read_json(SETTINGS, {}), APPLOG.log, force=True)
+                return self.send_json({"ok": not d.get("error"), "error": d.get("error"), "settings": load_settings()})
             if path == "/api/own-frequencies":                 # Einstellungen → Eigene Frequenzen
                 try:
                     res = save_own_frequencies(data.get("items"))
@@ -3929,6 +3996,10 @@ def main():
                        lambda level, event, **d: APPLOG.log(level, "housekeeping", event, **d))
             except Exception as e:
                 APPLOG.log("WARN", "housekeeping", "housekeeping_failed", error=f"{type(e).__name__}: {e}")
+            try:                                             # afu.tools: Relais einmal am Tag (nur mit Schlüssel)
+                __import__("afutools").refresh(read_json(SETTINGS, {}), APPLOG.log)
+            except Exception as e:
+                APPLOG.log("WARN", "afutools", "afutools_failed", what="Relais", error=f"{type(e).__name__}: {e}")
             time.sleep(900)
     threading.Thread(target=housekeeping_loop, daemon=True).start()
 

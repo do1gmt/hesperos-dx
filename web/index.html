@@ -799,6 +799,30 @@
           <button type="button" class="btn" id="ownAdd">Hinzufügen</button>
         </div>
         <div class="save-note" id="ownNote" aria-live="polite"></div>
+        <div id="ownRepBox" hidden>
+          <h3 class="sub">Relais in der Nähe <small class="muted" id="ownRepMeta"></small></h3>
+          <div class="row filter-row">
+            <label class="field"><span>Band</span><select id="ownRepBand"><option value="">alle</option></select></label>
+          </div>
+          <div class="table-wrap"><table class="table own-rep">
+            <thead><tr><th>Relais</th><th>Ort</th><th>Ausgabe</th><th>Art</th><th>Ton</th><th>Entfernung</th><th></th></tr></thead>
+            <tbody id="ownRepList"></tbody></table></div>
+          <div class="row pager-row"><button type="button" class="btn btn-small" id="ownRepPrev">◀</button><span class="hint" id="ownRepPos"></span><button type="button" class="btn btn-small" id="ownRepNext">▶</button></div>
+          <p class="hint" id="ownRepNote"></p>
+          <p class="hint src-note" id="ownRepSrc"></p>
+        </div>
+      </section>
+      <section class="panel" id="panel-afutools">
+        <h2>afu.tools</h2>
+        <p class="hint">Offene Datenquelle für Amateurfunk (<a href="https://afu.tools/api" target="_blank" rel="noopener">afu.tools/api</a>). Mit einem kostenlosen Schlüssel aus deinem afu.tools-Konto holt Hesperos DX einmal am Tag die Relais im Umkreis deines Locators: Treffer auf einer Relaisausgabe zeigen dann Rufzeichen und Standort des Relais, und unter „Eigene Frequenzen“ lassen sich Relais in der Nähe mit einem Klick übernehmen. Der Schlüssel bleibt auf dem Pi – er wird nie angezeigt, nicht protokolliert und nicht ins einfache Backup geschrieben.</p>
+        <div class="mesh-set-row">
+          <label class="field"><span>Schlüssel</span><input type="password" id="aftKey" autocomplete="new-password" placeholder="afu_…"></label>
+          <label class="field"><span>Umkreis</span><select id="aftKm"></select></label>
+          <button type="button" class="btn btn-small" id="aftRefresh">Jetzt abrufen</button>
+          <button type="button" class="btn btn-small btn-danger" id="aftClear">Schlüssel entfernen</button>
+        </div>
+        <p class="hint" id="aftState"></p>
+        <div class="save-note" id="aftNote" aria-live="polite"></div>
       </section>
       <section class="panel" id="panel-raster">
         <h2>Frequenzraster</h2>

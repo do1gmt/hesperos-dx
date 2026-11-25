@@ -295,6 +295,7 @@
     renderSchedules();
     renderWatch();
     renderOwn();
+    renderAft();
     const o833 = $('liveStep').querySelector('option[value="8333"]');     // 8,33-kHz-Raster gibt es nur im Flugfunk
     if (o833) o833.hidden = o833.disabled = !settings.allow_restricted;
     renderDeviceSwitch();
@@ -909,7 +910,7 @@
   $('statNew').closest('.stat').addEventListener('click', () => setLastFilter(!filter.last));
 
   function badges(h) {
-    return `<span class="badge badge-band">${h.band}</span>${h.device === 'rtlsdr' ? `<span class="badge badge-device">${esc(devName('rtlsdr'))}</span>` : ''}<span class="badge badge-mode px ${h.mode}">${h.mode_label}${h.sideband ? ' ' + h.sideband : ''}</span>${h.audio === 'ton' ? '<span class="badge badge-audio">🔊 Ton</span>' : h.audio === 'traeger' ? '<span class="badge badge-quiet">nur Träger</span>' : ''}${h.is_new ? '<span class="badge badge-new">neu</span>' : ''}${h.protected ? '<span class="badge badge-prot">★ geschützt</span>' : ''}${h.watch ? `<span class="badge badge-watch px" title="Beobachtungsliste">🔔 ${esc(h.watch)}</span>` : ''}${(h.decodes || []).filter(d => d.ps).map(d => `<span class="badge badge-rds px" title="RDS-Sendername">📻 ${esc(d.ps)}</span>`).join('')}${h.interference ? '<span class="badge badge-interf" title="Gelernte Störlinie – siehe Stationen → Störlinien">⚡ Störlinie</span>' : ''}`;
+    return `<span class="badge badge-band">${h.band}</span>${h.device === 'rtlsdr' ? `<span class="badge badge-device">${esc(devName('rtlsdr'))}</span>` : ''}<span class="badge badge-mode px ${h.mode}">${h.mode_label}${h.sideband ? ' ' + h.sideband : ''}</span>${h.audio === 'ton' ? '<span class="badge badge-audio">🔊 Ton</span>' : h.audio === 'traeger' ? '<span class="badge badge-quiet">nur Träger</span>' : ''}${h.is_new ? '<span class="badge badge-new">neu</span>' : ''}${h.protected ? '<span class="badge badge-prot">★ geschützt</span>' : ''}${h.watch ? `<span class="badge badge-watch px" title="Beobachtungsliste">🔔 ${esc(h.watch)}</span>` : ''}${(h.decodes || []).filter(d => d.ps).map(d => `<span class="badge badge-rds px" title="RDS-Sendername">📻 ${esc(d.ps)}</span>`).join('')}${h.interference ? '<span class="badge badge-interf" title="Gelernte Störlinie – siehe Stationen → Störlinien">⚡ Störlinie</span>' : ''}${h.repeater ? `<span class="badge badge-watch px no-i18n" title="Relais (afu.tools)">📡 ${esc(h.repeater.call)}</span>` : ''}`;
   }
   function buildCard(h) {
     const el = document.createElement('article'); el.className = 'hit'; el.dataset.id = h.id;
@@ -990,6 +991,10 @@
       html += `</div>`;
     }
     if (h.offset_hz) html += `<p class="hint px"><b>Relais</b>: Ausgabe ${fmtMHz(h.rf_hz)} MHz, Eingabe ${fmtMHz(h.rf_hz + h.offset_hz)} MHz (Ablage ${(h.offset_hz / 1e6).toFixed(1)} MHz)</p>`;
+    if (h.repeater) { const r = h.repeater;                // Relais auf dieser Ausgabe (afu.tools, 1.8.63)
+      html += `<p class="hint px"><b>${EN ? 'Repeater' : 'Relais'} <span class="no-i18n">${r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.call)}</a>` : esc(r.call)}</span></b>`
+        + `${r.qth ? ` · <span class="no-i18n">${esc(r.qth)}</span>` : ''}${r.km != null ? ` · ${String(r.km).replace('.', DS)} km` : ''}${r.mode ? ` · ${esc(r.mode)}` : ''}${r.tone_hz ? ` · ${EN ? 'tone' : 'Ton'} ${String(r.tone_hz).replace('.', DS)} Hz` : ''}`
+        + `<br><small class="muted src-note">${aftSrc(((settings || {}).afutools || {}).attribution)}</small></p>`; }
     if (h.segment_note) html += `<p class="hint px">${esc(h.segment_note)}</p>`;
     const sat = h.band === 'Satelliten';
     html += `<div class="practice-bar"><button type="button" class="btn btn-small" data-act="reveal">Auflösen</button> <span class="hint">Übungsmodus: erst hören, dann auflösen</span></div>`;
@@ -1587,7 +1592,7 @@
     // 1.8.53
     'own_frequencies_set': 'Eigene Frequenzen geändert',
     // 1.8.42: Ereignisse ohne Beschreibung (sonst stand im Protokoll der Rohname)
-    'mesh_connected': 'Mesh: verbunden', 'mesh_lost': 'Mesh: Verbindung weg', 'mesh_no_access': 'Mesh: kein Zugriff auf den Node', 'mesh_no_answer': 'Mesh: Gerät antwortet nicht', 'mesh_stopped': 'Mesh: beendet', 'mesh_msg': 'Mesh-Nachricht', 'mesh_open_failed': 'Mesh: Gerät ließ sich nicht öffnen', 'mesh_start_failed': 'Mesh ließ sich nicht starten', 'mesh_port_set': 'Mesh: Anschluss gewählt', 'mesh_alert_failed': 'Mesh-Warnung ließ sich nicht melden', 'mesh_set': 'Mesh-Node eingestellt', 'mesh_set_failed': 'Mesh-Node ließ sich nicht einstellen', 'mesh_clock_set': 'Mesh: Uhr des Nodes gestellt', 'mesh_sent': 'Mesh: Nachricht gesendet', 'mesh_advert_sent': 'Mesh: Advert versendet', 'mesh_clock_failed': 'Mesh: Uhr ließ sich nicht stellen', 'mesh_server_connected': 'Mesh: Repeater/Room-Server verbunden', 'mesh_room_login': 'Mesh: am Room-Server angemeldet', 'mesh_room_login_failed': 'Mesh: Anmeldung am Room-Server abgelehnt', 'mesh_server_set': 'Mesh: Server eingestellt', 'mesh_server_set_failed': 'Mesh: Server ließ sich nicht einstellen',
+    'mesh_connected': 'Mesh: verbunden', 'mesh_lost': 'Mesh: Verbindung weg', 'mesh_no_access': 'Mesh: kein Zugriff auf den Node', 'mesh_no_answer': 'Mesh: Gerät antwortet nicht', 'mesh_stopped': 'Mesh: beendet', 'mesh_msg': 'Mesh-Nachricht', 'mesh_open_failed': 'Mesh: Gerät ließ sich nicht öffnen', 'mesh_start_failed': 'Mesh ließ sich nicht starten', 'mesh_port_set': 'Mesh: Anschluss gewählt', 'mesh_alert_failed': 'Mesh-Warnung ließ sich nicht melden', 'mesh_set': 'Mesh-Node eingestellt', 'mesh_set_failed': 'Mesh-Node ließ sich nicht einstellen', 'mesh_clock_set': 'Mesh: Uhr des Nodes gestellt', 'mesh_sent': 'Mesh: Nachricht gesendet', 'afutools_set': 'afu.tools: Einstellung geändert', 'afutools_repeaters': 'afu.tools: Relais abgerufen', 'afutools_failed': 'afu.tools: Abruf fehlgeschlagen', 'mesh_advert_sent': 'Mesh: Advert versendet', 'mesh_clock_failed': 'Mesh: Uhr ließ sich nicht stellen', 'mesh_server_connected': 'Mesh: Repeater/Room-Server verbunden', 'mesh_room_login': 'Mesh: am Room-Server angemeldet', 'mesh_room_login_failed': 'Mesh: Anmeldung am Room-Server abgelehnt', 'mesh_server_set': 'Mesh: Server eingestellt', 'mesh_server_set_failed': 'Mesh: Server ließ sich nicht einstellen',
     'analysis_skipped': 'Auswertung übersprungen', 'auto_backup': 'Automatische Sicherung', 'backup_now': 'Sicherung von Hand', 'decode_skipped': 'Dekodieren übersprungen', 'stick_main_auto': 'Stick automatisch Haupt-Stick', 'stick_new': 'Neuer Stick erkannt', 'stick_serial_written': 'Seriennummer geschrieben', 'stick_unsupported': 'Gerät nicht unterstützt', 'check_failed': 'Prüfung fehlgeschlagen', 'internet_back': 'Internet wieder da', 'network_changed': 'Netz gewechselt', 'live_gap': 'Live: Lücke im Empfang', 'live_heard_failed': 'Live: Gehörte nicht gespeichert', 'live_recorded': 'Live: Aufnahme gespeichert', 'live.start_failed': 'Live ließ sich nicht starten', 'watch_loop_failed': 'Dauerwache: Fehler', 'watch_off': 'Dauerwache aus', 'watch_on': 'Dauerwache an', 'watch_restarted': 'Dauerwache neu gestartet', 'outbox_sent': 'Nachgeholte Nachrichten verschickt', 'test_mail_sent': 'Test-Mail verschickt', 'test_push_sent': 'Test-Push verschickt', 'sstv_upload_failed': 'SSTV-Bild: Upload fehlgeschlagen', 'sstv_uploaded': 'SSTV-Bild hochgeladen', 'rds_decoded': 'RDS dekodiert', 'rds_failed': 'RDS: Fehler', 'rundir_recreated': 'Arbeitsordner neu angelegt', 'pass_stick_restart': 'Überflug: Stick neu gestartet', 'publish_prepare_failed': 'Überflug: Webseiten-Upload nicht vorbereitet', 'waterfall_failed': 'Wasserfall ließ sich nicht erzeugen', 'band_summary_failed': 'Bandübersicht: Fehler', 'fm_watch_failed': 'UKW-Beobachtung: Fehler', 'pmsdr_fifo_reconnect': 'PMSDR: Datenstrom neu verbunden', 'pmsdr_input_set': 'PMSDR: Eingang umgestellt', 'rtl_orphans_killed': 'Verwaiste RTL-Prozesse beendet', 'run_exception': 'Scan: unerwarteter Fehler', 'scan_yielded': 'Scan gibt den Stick frei', 'health_failed': 'Selbstprüfung: Fehler', 'publish_failed': 'Webseiten-Upload: Fehler', 'restore_done': 'Sicherung eingespielt', 'restore_failed': 'Einspielen fehlgeschlagen', 'restore_stick_adopt_failed': 'Einspielen: Stick nicht übernommen', 'restore_stick_adopted': 'Einspielen: Stick übernommen', 'satellite_arming': 'Satelliten werden scharfgeschaltet', 'satellite_watchdog': 'Überflug hängt – beendet', 'scan_yield_requested': 'Scan soll den Stick freigeben', 'settings_unreadable': 'Einstellungen nicht lesbar', 'sticks_failed': 'Sticks: Fehler', 'sysmon_failed': 'Systemwerte: Fehler', 'reboot_requested': 'Neustart angefordert', 'restart_requested': 'Dienst-Neustart angefordert', 'dir_move_failed': 'Programmordner nicht umgezogen', 'dir_move_skipped': 'Programmordner-Umzug ausgelassen', 'dir_moved': 'Programmordner umgezogen', 'hostname_change_failed': 'Rechnername nicht geändert', 'hostname_changed': 'Rechnername geändert', 'hostname_notice_failed': 'Rechnername: Hinweis fehlgeschlagen', 'services_rename_failed': 'Dienste nicht umbenannt', 'services_renamed': 'Dienste umbenannt', 'backup_dir_move_failed': 'Sicherungsordner nicht umgezogen', 'backup_dir_rename_failed': 'Sicherungsordner nicht umbenannt', 'backup_dir_renamed': 'Sicherungsordner umbenannt', 'update_failed': 'Update fehlgeschlagen', 'auto_backup_set': 'Automatische Sicherung eingestellt', 'backup_downloaded': 'Sicherung heruntergeladen', 'backup_from_target': 'Sicherung vom Ziel eingespielt', 'backup_target_nas': 'Sicherungsziel: Netzwerkfreigabe', 'backup_target_nas_removed': 'Netzwerkfreigabe entfernt', 'backup_target_usb': 'Sicherungsziel: USB-Stick', 'backup_uploaded': 'Sicherung hochgeladen', 'backup_usb_ejected': 'USB-Stick ausgeworfen', 'diagnose_downloaded': 'Diagnose heruntergeladen', 'eibi_refresh_failed': 'EiBi: Herunterladen fehlgeschlagen', 'eibi_uploaded': 'EiBi-Liste hochgeladen', 'follow_updated': 'Satelliten-Nachführung eingestellt', 'hf_device_updated': 'Kurzwellengerät eingestellt', 'interference_changed': 'Störlinie geändert', 'live_favorites_saved': 'Live-Favoriten gespeichert', 'location_confirmed': 'Standort bestätigt', 'publish_set': 'Webseiten-Upload eingestellt', 'restore_requested': 'Einspielen angefordert', 'satellites_armed_now': 'Satelliten sofort scharf', 'satellites_arming': 'Satelliten in 1 Minute scharf', 'scan_stop_requested': 'Scan-Abbruch angefordert', 'scheduler_dead_fallback': 'Zeitplaner antwortet nicht – Scan direkt gestartet', 'sstv_event_added': 'SSTV-Termin eingetragen', 'sstv_event_deleted': 'SSTV-Termin gelöscht', 'sstv_events_failed': 'SSTV-Termine: Abruf fehlgeschlagen', 'sstv_manual_queued': 'SSTV-Bild für die Webseite vorgemerkt', 'stick_updated': 'Stick-Einstellungen gespeichert', 'time_mode_set': 'Zeitangaben umgestellt', 'ui_prefs_failed': 'Ansicht-Profil: Fehler', 'update_started': 'Update gestartet', 'watchdog_ping_failed': 'Watchdog-Meldung fehlgeschlagen', 'webapp_stall': 'Dashboard hing kurz', 'webapp_stall_probe_failed': 'Dashboard-Hänger: Prüfung fehlgeschlagen', 'wifi_fallback_added': 'Ersatz-WLAN eingetragen', 'wifi_fallback_removed': 'Ersatz-WLAN entfernt', 'wsjtx_udp_set': 'Weitergabe im Netz (WSJT-X) eingestellt',
     'notice_raised': 'Hinweis gemeldet', 'notice_resolved': 'Hinweis behoben', 'notice_event': 'Ereignis gemeldet', 'update_done': 'Update fertig', 'rescue.start': 'Notfallseite gestartet', 'sysupdate_checked': 'Systemupdates geprüft', 'sysupgrade_requested': 'Systemupdate angefordert', 'sysupgrade_started': 'Systemupdate gestartet', 'sysupgrade_done': 'Systemupdate fertig', 'sysupgrade_failed': 'Systemupdate fehlgeschlagen', 'sysupgrade_waiting': 'Systemupdate wartet auf eine freie Minute', 'sysupgrade_cancelled': 'Systemupdate nicht mehr angefordert', 'sysupgrade_start_failed': 'Systemupdate ließ sich nicht starten', 'reboot_after_update': 'Neustart nach Systemupdate', 'reboot_postponed': 'Neustart verschoben', 'reboot_done': 'Neustart nach Systemupdate erledigt', 'sysupdate_settings': 'Systemupdates eingestellt', 'sysupdate_failed': 'Systemupdates: Fehler', 'foreign_request_blocked': 'Anfrage einer fremden Webseite abgewiesen', 'backup_key_set': 'Passwort der Zugangsdaten gesetzt', 'backup_key_cleared': 'Passwort der Zugangsdaten gelöscht', 'live_image_keep': 'Bild aus Live behalten (★)', 'live_image_unkeep': 'Bild aus Live nicht mehr behalten', 'live_image_delete': 'Bild aus Live gelöscht', 'live_image_publish': 'Bild aus Live für die Webseite vorgemerkt', 'ui_prefs_replaced': 'Ansicht-Profil übernommen', 'ui_prefs_copied': 'Ansicht-Profil kopiert', 'backup_dir_moved': 'Sicherungsordner umgezogen', 'writewatch_failed': 'Schreib-Zählung: Fehler', 'db_keeper_failed': 'Ruhende Datenbank-Verbindung: Fehler', 'live_yield': 'Live hält kurz an', 'live_resumed': 'Live läuft weiter', 'auth_none': 'Dashboard ohne Passwort', 'live_thumb_failed': 'Vorschaubild ließ sich nicht erzeugen',
     run_start: 'Scan gestartet', run_done: 'Scan fertig', run_failed: 'Scan fehlgeschlagen', run_cancelled: 'Scan abgebrochen',
@@ -3139,6 +3144,79 @@
     const items = (settings.own_frequencies || []).concat([{ name: $('ownName').value.trim(), mhz: $('ownMhz').value.trim(), mode: $('ownMode').value }]);
     if (await saveOwn(items, EN ? '✓ added – switch it on under Scan → Bands & modes' : '✓ hinzugefügt – unter Scan → Bänder & Betriebsarten einschalten')) { $('ownName').value = ''; $('ownMhz').value = ''; }
   });
+
+  // afu.tools (1.8.63): Schlüssel, Umkreis, Stand; Relais in der Nähe unter „Eigene Frequenzen“
+  function aftSrc(att) {                               // Pflicht-Nennung der Quellen (aus `quellenangabe` der Antwort)
+    if (!att) return '';
+    const l = (att.sources || []).map(x => x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.name)}</a>` : esc(x.name));
+    return l.length ? `${EN ? 'Sources' : 'Quellen'}: ${l.join('; ')}` : esc(att.text);
+  }
+  function renderAft() {
+    const a = settings.afutools || {};
+    if ($('aftKm').options.length !== (a.radii || []).length) $('aftKm').innerHTML = (a.radii || []).map(k => `<option value="${k}">${k} km</option>`).join('');
+    if (document.activeElement !== $('aftKm')) $('aftKm').value = String(a.km || 50);
+    $('aftKey').placeholder = a.has_key ? (EN ? 'set – leave empty to keep' : 'gesetzt – leer lassen = unverändert') : 'afu_…';
+    $('aftClear').hidden = !a.has_key; $('aftRefresh').hidden = !a.has_key;
+    $('aftState').innerHTML = !a.has_key ? (EN ? 'No key – nothing is fetched from afu.tools.' : 'Kein Schlüssel – von afu.tools wird nichts geholt.')
+      : !a.locator ? (EN ? 'Enter your locator (Settings → Station) – the repeaters are searched around it.' : 'Trag deinen Locator ein (Einstellungen → Station) – um ihn herum wird gesucht.')
+      : (a.fetched ? (EN ? `${a.count} repeaters within ${a.km_cached} km of ${esc(a.near)}, as of ${fmtTime(a.fetched)}.` : `${a.count} Relais im Umkreis von ${a.km_cached} km um ${esc(a.near)}, Stand ${fmtTime(a.fetched)}.`) : (EN ? 'Not fetched yet.' : 'Noch nicht abgerufen.'))
+        + (a.error ? ` <span class="warn-text">${EN ? 'Last attempt failed: ' : 'Letzter Abruf fehlgeschlagen: '}${esc(I18N.t(a.error))}</span>` : '');
+    $('ownRepBox').hidden = !(a.has_key && a.count);
+    if (!$('ownRepBox').hidden) loadOwnRep();
+  }
+  async function aftPost(body, okText) {
+    try { const d = await post('/api/afutools', body); settings = d.settings; $('aftKey').value = ''; renderAft(); note($('aftNote'), okText);
+      setTimeout(() => api('/api/settings').then(x => { settings = x; renderAft(); }).catch(() => {}), 6000); }
+    catch (e) { note($('aftNote'), (EN ? 'Error: ' : 'Fehler: ') + I18N.t(e.message), true); }
+  }
+  // wie überall: gespeichert wird beim Ändern (Schlüssel beim Verlassen des Feldes oder mit Enter)
+  const aftSave = () => { const b = { km: Number($('aftKm').value), refresh: true }; if ($('aftKey').value.trim()) b.api_key = $('aftKey').value.trim();
+    aftPost(b, EN ? '✓ saved – the repeaters are fetched in a few seconds' : '✓ gespeichert – die Relais werden in ein paar Sekunden geholt'); };
+  $('aftKm').addEventListener('change', aftSave);
+  $('aftKey').addEventListener('change', () => { if ($('aftKey').value.trim()) aftSave(); });
+  $('aftKey').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('aftKey').blur(); } });
+  $('aftClear').addEventListener('click', () => { if (confirm(EN ? 'Remove the afu.tools key? The stored repeaters are deleted too.' : 'afu.tools-Schlüssel entfernen? Die gespeicherten Relais werden mit gelöscht.'))
+    aftPost({ clear_key: true }, EN ? '✓ key removed' : '✓ Schlüssel entfernt'); });
+  $('aftRefresh').addEventListener('click', async () => { note($('aftNote'), EN ? 'fetching …' : 'wird abgerufen …');
+    try { const d = await post('/api/afutools/refresh', {}); settings = d.settings; renderAft(); note($('aftNote'), d.ok ? (EN ? '✓ fetched' : '✓ abgerufen') : (EN ? 'Error: ' : 'Fehler: ') + I18N.t(d.error || ''), !d.ok); }
+    catch (e) { note($('aftNote'), (EN ? 'Error: ' : 'Fehler: ') + I18N.t(e.message), true); } });
+  const ownRep = { list: [], offset: 0, per: 25 };
+  const REP_MODE = m => /^FM$/i.test(m) ? 'fm' : /DMR|D-?STAR|C4FM|YSF|FUSION|M17|NXDN|TETRA|DV/i.test(m) ? 'dv' : null;
+  async function loadOwnRep() {
+    let d; try { d = await api('/api/afutools/repeaters'); } catch (e) { return; }
+    ownRep.list = d.repeaters || [];
+    const bands = [...new Set(ownRep.list.map(r => r.band).filter(Boolean))], cur = $('ownRepBand').value;
+    $('ownRepBand').innerHTML = `<option value="">${EN ? 'all' : 'alle'}</option>` + bands.map(b => `<option>${esc(b)}</option>`).join('');
+    if (bands.includes(cur)) $('ownRepBand').value = cur;
+    $('ownRepMeta').textContent = d.fetched ? `· ${d.km} km · ${EN ? 'as of' : 'Stand'} ${fmtTime(d.fetched)}` : '';
+    $('ownRepNote').textContent = d.tone_note ? I18N.t(d.tone_note) : '';
+    $('ownRepSrc').innerHTML = aftSrc(d.attribution);
+    renderOwnRep();
+  }
+  function renderOwnRep() {
+    const b = $('ownRepBand').value, l = ownRep.list.filter(r => !b || r.band === b), total = l.length;
+    if (ownRep.offset >= total) ownRep.offset = 0;
+    $('ownRepList').innerHTML = l.slice(ownRep.offset, ownRep.offset + ownRep.per).map((r, i) => {
+      const m = REP_MODE(r.mode), can = m && r.in_band && !r.own;
+      return `<tr><td><b class="no-i18n">${r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.call)}</a>` : esc(r.call)}</b><small class="muted rep-m no-i18n">${esc(r.qth || '')}${r.km != null ? ' · ' + String(r.km).replace('.', DS) + ' km' : ''}${r.tone_hz ? ' · ' + String(r.tone_hz).replace('.', DS) + ' Hz' : ''}</small></td><td class="no-i18n">${esc(r.qth || '–')}</td>`
+        + `<td class="mono-num">${(r.out_hz / 1e6).toFixed(4).replace('.', DS)}</td><td>${esc(r.mode)}</td><td class="mono-num">${r.tone_hz ? String(r.tone_hz).replace('.', DS) + ' Hz' : '–'}</td>`
+        + `<td class="mono-num">${r.km != null ? String(r.km).replace('.', DS) + ' km' : '–'}</td>`
+        + `<td>${r.own ? `<span class="muted">★ ${EN ? 'added' : 'übernommen'}</span>` : can ? `<button type="button" class="btn btn-small" data-rep="${ownRep.offset + i}">★ ${EN ? 'add' : 'übernehmen'}</button>`
+          : `<span class="muted" title="${!r.in_band ? (EN ? 'outside the band plan' : 'außerhalb des Bandplans') : (EN ? 'mode cannot be scanned' : 'Betriebsart nicht scanbar')}">–</span>`}</td></tr>`;
+    }).join('') || `<tr><td colspan="7" class="muted">${EN ? 'No repeaters.' : 'Keine Relais.'}</td></tr>`;
+    const a = total ? ownRep.offset + 1 : 0, z = Math.min(total, ownRep.offset + ownRep.per);
+    $('ownRepPos').textContent = EN ? `${a}–${z} of ${total}` : `${a}–${z} von ${total}`;
+    $('ownRepPrev').disabled = ownRep.offset === 0; $('ownRepNext').disabled = z >= total;
+    $('ownRepList').querySelectorAll('[data-rep]').forEach(btn => btn.addEventListener('click', async () => {
+      const r = l[Number(btn.dataset.rep)];
+      const name = `${r.call} ${r.qth || ''}`.trim().slice(0, 24);
+      const items = (settings.own_frequencies || []).concat([{ name, mhz: (r.out_hz / 1e6).toFixed(4), mode: REP_MODE(r.mode) }]);
+      if (await saveOwn(items, EN ? `✓ ${r.call} added – switch it on under Scan → Bands & modes` : `✓ ${r.call} übernommen – unter Scan → Bänder & Betriebsarten einschalten`)) loadOwnRep();
+    }));
+  }
+  $('ownRepBand').addEventListener('change', () => { ownRep.offset = 0; renderOwnRep(); });
+  $('ownRepPrev').addEventListener('click', () => { ownRep.offset = Math.max(0, ownRep.offset - ownRep.per); renderOwnRep(); });
+  $('ownRepNext').addEventListener('click', () => { ownRep.offset += ownRep.per; renderOwnRep(); });
 
   function renderWatch() {
     const list = (settings && settings.watchlist) || [], ev = (settings && settings.watch_events) || {};
