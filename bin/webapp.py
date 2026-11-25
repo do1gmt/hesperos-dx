@@ -952,8 +952,11 @@ def afutools_save(data):
             raise ValueError("Schlüssel sieht nicht richtig aus (eine Zeile ohne Leerzeichen)")
         c["api_key"] = k
         changed.append("Schlüssel gesetzt")
-    if "km" in data:
-        km = int(data["km"])
+    if data.get("km") not in (None, "", 0):          # leer = unverändert (1.8.65: leere Auswahl verhinderte das Speichern)
+        try:
+            km = int(data["km"])
+        except (TypeError, ValueError):
+            km = -1
         if km not in AFT.RADII:
             raise ValueError("Umkreis: " + ", ".join(map(str, AFT.RADII)) + " km")
         if km != c.get("km"):

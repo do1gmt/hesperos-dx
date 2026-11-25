@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.8.65 – 2026-11-25
+
+- **Fix: afu.tools key not saved the first time** ("Error: Radius: 10, 25, 50, 100, 200 km"). When the page was
+  loaded before the Pi had restarted after the update, the radius list was empty, the empty radius was sent along
+  and refused – and with it the key. The list now always has its five radii, an empty radius means "unchanged", and
+  the key is saved regardless. Self-test section 122 checks it.
+
 ## 1.8.64 – 2026-11-25
 
 - **afu.tools, step 2 – locators for heard stations that do not send one.** With the afu.tools key the Pi asks

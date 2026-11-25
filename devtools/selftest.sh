@@ -4574,6 +4574,9 @@ try:
         except ValueError:
             pass
     W.afutools_save({"km": 100}); assert json.loads(W.SETTINGS.read_text())["afutools"] == {"api_key": "afu_test", "km": 100}
+    W.afutools_save({"km": "", "api_key": "afu_neu"}); W.afutools_save({"km": 0, "api_key": "afu_test"})   # leere Umkreis-Auswahl: Schlüssel trotzdem gespeichert
+    assert json.loads(W.SETTINGS.read_text())["afutools"] == {"api_key": "afu_test", "km": 100}
+    js_ = (Path(sys.argv[1]) / "web" / "app.js").read_text(); assert "[10, 25, 50, 100, 200];   // nie leer" in js_ and "if (Number($('aftKm').value)) b.km" in js_
     # Backup: einfach ohne Schlüssel, verschlüsselte Zugangsdaten mit
     cf = dict(BK._config_files()); ws = json.loads(cf["config/web_settings.json"])
     assert "api_key" not in ws.get("afutools", {}) and BK.current_secrets()["afutools"]["api_key"] == "afu_test"

@@ -3160,8 +3160,8 @@
     return l.length ? `${EN ? 'Sources' : 'Quellen'}: ${l.join('; ')}` : esc(att.text);
   }
   function renderAft() {
-    const a = settings.afutools || {};
-    if ($('aftKm').options.length !== (a.radii || []).length) $('aftKm').innerHTML = (a.radii || []).map(k => `<option value="${k}">${k} km</option>`).join('');
+    const a = settings.afutools || {}, radii = a.radii && a.radii.length ? a.radii : [10, 25, 50, 100, 200];   // nie leer (1.8.65)
+    if ($('aftKm').options.length !== radii.length) $('aftKm').innerHTML = radii.map(k => `<option value="${k}">${k} km</option>`).join('');
     if (document.activeElement !== $('aftKm')) $('aftKm').value = String(a.km || 50);
     $('aftKey').placeholder = a.has_key ? (EN ? 'set – leave empty to keep' : 'gesetzt – leer lassen = unverändert') : 'afu_…';
     $('aftClear').hidden = !a.has_key; $('aftRefresh').hidden = !a.has_key;
@@ -3178,7 +3178,8 @@
     catch (e) { note($('aftNote'), (EN ? 'Error: ' : 'Fehler: ') + I18N.t(e.message), true); }
   }
   // wie überall: gespeichert wird beim Ändern (Schlüssel beim Verlassen des Feldes oder mit Enter)
-  const aftSave = () => { const b = { km: Number($('aftKm').value), refresh: true }; if ($('aftKey').value.trim()) b.api_key = $('aftKey').value.trim();
+  const aftSave = () => { const b = { refresh: true }; if (Number($('aftKm').value)) b.km = Number($('aftKm').value);
+    if ($('aftKey').value.trim()) b.api_key = $('aftKey').value.trim();
     aftPost(b, EN ? '✓ saved – the repeaters are fetched in a few seconds' : '✓ gespeichert – die Relais werden in ein paar Sekunden geholt'); };
   $('aftKm').addEventListener('change', aftSave);
   $('aftKey').addEventListener('change', () => { if ($('aftKey').value.trim()) aftSave(); });
