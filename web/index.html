@@ -272,8 +272,8 @@
         <button type="button" class="btn" id="meshSend">Senden</button>
       </div>
       <div class="mesh-set-row">
-        <button type="button" class="btn btn-small" id="meshAdvert">Jetzt ankündigen</button>
-        <select id="meshAdvertHow" aria-label="Reichweite der Ankündigung"><option value="0">nur direkte Nachbarn</option><option value="1">übers ganze Mesh (über Repeater)</option></select>
+        <button type="button" class="btn btn-small" id="meshAdvert">Advert versenden</button>
+        <select id="meshAdvertHow" aria-label="Reichweite des Adverts"><option value="0">nur direkte Nachbarn</option><option value="1">übers ganze Mesh (über Repeater)</option></select>
         <span class="save-note" id="meshSendNote" aria-live="polite"></span>
       </div>
     </div>
@@ -306,7 +306,7 @@
     <p class="hint">Jede Ankündigung (Advert), die der Node empfängt: Name, Art, Position, Signal und Weg – „direkt“ oder über welche Repeater (Name, wenn bekannt, sonst ihr Kürzel). Dieselbe Ankündigung über einen weiteren Weg zählt nicht noch einmal. Bleiben 30 Tage. Braucht eine Companion-Firmware, die empfangene Pakete meldet.</p>
     <label class="field mesh-port"><span>Node am USB</span><select id="meshPort"><option value="auto">automatisch erkennen (alle Geräte)</option><option value="off">aus</option></select></label>
     <div class="save-note" id="meshNote" aria-live="polite"></div>
-    <p class="hint">Ein MeshCore-Node mit der Firmware „Companion Radio (USB)“ (z. B. Heltec V3/V4, RAK) am USB des Pi: Hesperos DX liest mit, was er empfängt – Nachrichten in seinen Kanälen, Direktnachrichten an ihn und die Nodes in Reichweite. Ins Mesh gesendet wird nur, was du oben schreibst oder ankündigst; am Node geändert wird nur, was du unter „Konfiguration Node“ wählst, und die Uhr. Nachrichten bleiben 90 Tage, Positionen zeigt die Karte oben unter „Mesh“.</p>
+    <p class="hint">Ein MeshCore-Node mit der Firmware „Companion Radio (USB)“ (z. B. Heltec V3/V4, RAK) am USB des Pi: Hesperos DX liest mit, was er empfängt – Nachrichten in seinen Kanälen, Direktnachrichten an ihn und die Nodes in Reichweite. Ins Mesh gesendet wird nur, was du oben schreibst oder als Advert versendest; am Node geändert wird nur, was du unter „Konfiguration Node“ wählst, und die Uhr. Nachrichten bleiben 90 Tage, Positionen zeigt die Karte oben unter „Mesh“.</p>
   </section>
   <section class="panel" id="panel-meshsrv" hidden>
     <h2 id="meshSrvTitle">MeshCore Room-Server</h2>

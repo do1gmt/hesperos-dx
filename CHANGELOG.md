@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.8.61 – 2026-11-25
+
+- MeshCore: the button *Announce now* (*Jetzt ankündigen*) is now called *Send advert* (*Advert versenden*); the log
+  event reads *Mesh: advert sent*.
+
 ## 1.8.60 – 2026-11-25
 
 - **MeshCore: writing from the dashboard.** The companion card has an input above the message list: choose a

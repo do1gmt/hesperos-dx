@@ -632,7 +632,7 @@ makers are tried; GPS receivers and other serial devices are left alone) and sho
 **Writing:** above the message list you write into a channel of the node or – after ↩ on a direct message or ✉
 next to a heard companion – directly to a node. Your own messages appear in the list (tinted); a direct message
 gets ✓✓ when the recipient confirms it, ✗ if no confirmation came within 2 minutes. ↩ on a channel message answers
-in that channel with `@[name]`. *Announce now* sends the node's advert to its direct neighbours or across the mesh
+in that channel with `@[name]`. *Send advert* sends the node's advert to its direct neighbours or across the mesh
 (via repeaters). The length counter allows 150 bytes (channel messages minus the node name the node puts in
 front). Every send is logged. Messages that cannot be decoded (another key, binary data) are shown as
 *(not readable)* instead of garbled characters.

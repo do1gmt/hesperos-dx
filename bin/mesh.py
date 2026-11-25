@@ -412,12 +412,12 @@ class Session:
             return {"ok": ok(r)}
         if name == "send":                                   # Nachricht ins Mesh (1.8.60)
             return self.send_text(kw)
-        if name == "advert":                                 # Jetzt ankündigen: 0 = nur direkte Nachbarn, 1 = übers Mesh
+        if name == "advert":                                 # Advert versenden: 0 = nur direkte Nachbarn, 1 = übers Mesh
             flood = bool(kw.get("flood"))
             r = self.request(b"\x07" + bytes([1 if flood else 0]), (0, 1))
             if ok(r):
                 self.log("INFO", "mesh", "mesh_advert_sent", flood=flood)
-            return {"ok": ok(r)} if ok(r) else {"ok": False, "error": "Node hat die Ankündigung abgelehnt"}
+            return {"ok": ok(r)} if ok(r) else {"ok": False, "error": "Node hat das Advert abgelehnt"}
         return {"ok": False, "error": "unbekannter Auftrag"}
 
     def send_text(self, kw):

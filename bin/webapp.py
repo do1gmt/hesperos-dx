@@ -3333,7 +3333,7 @@ class Handler(BaseHTTPRequestHandler):
                 elif cmd == "send":                              # Nachricht ins Mesh (Kanal oder direkt, 1.8.60)
                     res = MESH.command("send", text=str(data.get("text", ""))[:400], channel=data.get("channel"),
                                        to=str(data.get("to") or "")[:12] or None)
-                elif cmd == "advert":                            # Jetzt ankündigen
+                elif cmd == "advert":                            # Advert versenden
                     res = MESH.command("advert", flood=bool(data.get("flood")))
                 else:
                     return self.send_json({"ok": False, "error": "unbekannter Befehl"}, 400)

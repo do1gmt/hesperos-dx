@@ -4535,6 +4535,7 @@ assert M._unreadable("ï¿½lï¿½ï¿½ï¿½ Tï¿½A ï¿½ï¿½ï¿½") and not M._unreadable("GrÃ
 src = Path(sys.argv[1]); html = (src / "web" / "index.html").read_text(); js = (src / "web" / "app.js").read_text(); w = (src / "bin" / "webapp.py").read_text()
 assert 'id="meshCompose"' in html and 'id="meshAdvert"' in html and 'elif cmd == "send":' in w and 'elif cmd == "advert":' in w
 assert "data-reply=" in js and "data-dm=" in js and "'mesh_sent': 'Mesh: Nachricht gesendet'" in js and "m.unreadable" in js
+assert 'id="meshAdvert">Advert versenden</button>' in html and "'mesh_advert_sent': 'Mesh: Advert versendet'" in js and "Jetzt ankÃ¼ndigen" not in html + js
 PY
 pkill -f "mesh_fake.py $MF" 2>/dev/null; rm -rf "$MF"
 
