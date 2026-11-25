@@ -940,6 +940,11 @@ def afutools_save(data):
     if data.get("clear_key"):
         c.pop("api_key", None)
         AFT.forget()
+        db = db_connect()
+        try:
+            AFT.qth_forget(db)                                 # ohne Schlüssel keine Nutzung der Daten
+        finally:
+            db.close()
         changed.append("Schlüssel entfernt")
     elif str(data.get("api_key") or "").strip():
         k = str(data["api_key"]).strip()
@@ -1302,14 +1307,19 @@ def stations(days=30, q="", band="", limit=100, offset=0):
                                      MAX(snr) best_snr, MAX(grid) grid, NULL lat, NULL lon
                               FROM heard WHERE {w} GROUP BY call ORDER BY last DESC LIMIT ? OFFSET ?""",
                            args + [limit, offset]).fetchall()
+    import afutools as AFT
+    ext = AFT.qth_for(db, [r["call"] for r in rows if not r["grid"]])   # Locator laut afu.tools (1.8.64)
     db.close()
     loc = load_settings().get("my_locator", "")
     out = []
     for r in rows:
         d = dict(r)
-        d["distance_km"], d["bearing"] = ST.distance_bearing(r["grid"], loc) if r["grid"] and loc else (None, None)
-        if r["grid"] and d.get("lat") is None:
-            d["lat"], d["lon"] = ST._latlon(r["grid"])
+        g = r["grid"] or (ext.get(r["call"]) or {}).get("loc")
+        if not r["grid"] and g:
+            d["grid_ext"] = ext[r["call"]]
+        d["distance_km"], d["bearing"] = ST.distance_bearing(g, loc) if g and loc else (None, None)
+        if g and d.get("lat") is None:
+            d["lat"], d["lon"] = ST._latlon(g)
         out.append(d)
     home = None
     try:
@@ -1317,7 +1327,8 @@ def stations(days=30, q="", band="", limit=100, offset=0):
         home = [round(x, 3) for x in SAT.locator_to_latlon(loc)] if loc else None
     except Exception:
         pass
-    return {"stations": out, "total": total, "offset": offset, "limit": limit, "home": home}
+    return {"stations": out, "total": total, "offset": offset, "limit": limit, "home": home,
+            "qth_sources": AFT.qth_attribution() if any(d.get("grid_ext") for d in out) else None}
 
 
 def station_detail(call, limit=200, offset=0):
@@ -1491,6 +1502,24 @@ def stations_map(days=0, q="", band=""):
             la, lo = ST._latlon(grid)
             if la is not None:
                 rows.append((call, la, lo, grid, snr, modes, bands, last))
+    # Stationen ohne eigenen Locator, deren Standort afu.tools kennt (PSK Reporter/RBN) – als 9. Feld die Herkunft
+    import afutools as AFT
+    if not days and not band:
+        w, args = ("(lat IS NULL)" + (" AND call LIKE ?" if like else ""), [like] if like else [])
+        miss = db.execute(f"SELECT call, best_snr, modes, bands, last FROM station WHERE {w}", args).fetchall()
+    else:
+        where2 = [x for x in where if x not in ("grid IS NOT NULL", "grid != ''")]
+        miss = db.execute(f"""SELECT call, MAX(snr), group_concat(DISTINCT mode), group_concat(DISTINCT band), MAX(time)
+                              FROM heard WHERE {' AND '.join(where2)} GROUP BY call
+                              HAVING COALESCE(MAX(grid), '') = ''""", args).fetchall()
+    ext = AFT.qth_for(db, [m[0] for m in miss])
+    n_ext = 0
+    for call, snr, modes, bands, last in miss:
+        e = ext.get(call)
+        la, lo = ST._latlon(e["loc"]) if e else (None, None)
+        if la is not None:
+            rows.append((call, la, lo, e["loc"], snr, modes, bands, last, f"{e['src']} · {e['age_days']}"))
+            n_ext += 1
     total = db.execute("SELECT COUNT(*) FROM station").fetchone()[0]
     db.close()
     loc = load_settings().get("my_locator", "")
@@ -1500,7 +1529,8 @@ def stations_map(days=0, q="", band=""):
         home = [round(x, 3) for x in SAT.locator_to_latlon(loc)] if loc else None
     except Exception:
         pass
-    return {"points": rows, "home": home, "total_stations": total}
+    return {"points": rows, "home": home, "total_stations": total, "ext": n_ext,
+            "qth_sources": AFT.qth_attribution() if n_ext else None}
 
 
 def activity(days=30):
@@ -4000,6 +4030,10 @@ def main():
                 __import__("afutools").refresh(read_json(SETTINGS, {}), APPLOG.log)
             except Exception as e:
                 APPLOG.log("WARN", "afutools", "afutools_failed", what="Relais", error=f"{type(e).__name__}: {e}")
+            try:                                             # afu.tools: Locator zu gehörten Rufzeichen (bis 100 je 15 min)
+                __import__("afutools").qth_refresh(db_connect, read_json(SETTINGS, {}), APPLOG.log)
+            except Exception as e:
+                APPLOG.log("WARN", "afutools", "afutools_failed", what="Locator", error=f"{type(e).__name__}: {e}")
             time.sleep(900)
     threading.Thread(target=housekeeping_loop, daemon=True).start()
 

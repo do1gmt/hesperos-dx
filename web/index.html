@@ -240,6 +240,7 @@
       <label class="field"><span>Pro Seite</span><select id="stPerPage"><option selected>25</option><option>50</option><option>100</option><option>250</option></select></label>
       <button type="button" class="btn btn-small" id="stPrev">◀</button><span class="hint" id="stPos"></span><button type="button" class="btn btn-small" id="stNext">▶</button>
     </div>
+    <p class="hint src-note" id="stExtSrc" hidden></p>
     <p class="hint">ADIF ist das Austauschformat der Logbuchprogramme. Der Export ist ein SWL-Log (jede gehörte Aussendung ein Eintrag, SWL=Y) – mit deinem Rufzeichen und Locator aus den Einstellungen.</p>
   </section>
   <section class="panel" id="panel-mesh" hidden>
@@ -814,7 +815,7 @@
       </section>
       <section class="panel" id="panel-afutools">
         <h2>afu.tools</h2>
-        <p class="hint">Offene Datenquelle für Amateurfunk (<a href="https://afu.tools/api" target="_blank" rel="noopener">afu.tools/api</a>). Mit einem kostenlosen Schlüssel aus deinem afu.tools-Konto holt Hesperos DX einmal am Tag die Relais im Umkreis deines Locators: Treffer auf einer Relaisausgabe zeigen dann Rufzeichen und Standort des Relais, und unter „Eigene Frequenzen“ lassen sich Relais in der Nähe mit einem Klick übernehmen. Der Schlüssel bleibt auf dem Pi – er wird nie angezeigt, nicht protokolliert und nicht ins einfache Backup geschrieben.</p>
+        <p class="hint">Offene Datenquelle für Amateurfunk (<a href="https://afu.tools/api" target="_blank" rel="noopener">afu.tools/api</a>). Mit einem kostenlosen Schlüssel aus deinem afu.tools-Konto holt Hesperos DX einmal am Tag die Relais im Umkreis deines Locators: Treffer auf einer Relaisausgabe zeigen dann Rufzeichen und Standort des Relais, und unter „Eigene Frequenzen“ lassen sich Relais in der Nähe mit einem Klick übernehmen. Außerdem fragt er für gehörte Stationen, die selbst keinen Locator senden, deren Standort nach (aus PSK Reporter und RBN) – so bekommen sie Entfernung und Kartenpunkt. Der Schlüssel bleibt auf dem Pi – er wird nie angezeigt, nicht protokolliert und nicht ins einfache Backup geschrieben.</p>
         <div class="mesh-set-row">
           <label class="field"><span>Schlüssel</span><input type="password" id="aftKey" autocomplete="new-password" placeholder="afu_…"></label>
           <label class="field"><span>Umkreis</span><select id="aftKm"></select></label>

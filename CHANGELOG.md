@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.8.64 – 2026-11-25
+
+- **afu.tools, step 2 – locators for heard stations that do not send one.** With the afu.tools key the Pi asks
+  `/qth` (PSK Reporter / Reverse Beacon Network, never the callsign register) for stations of the last 30 days
+  without a locator: at most one request per 15 minutes for up to 100 callsigns, found ones again after 7 days,
+  unknown ones after 2 days (table `afu_qth`). *Stations* shows `≈ locator` and `≈ distance` with source and age in
+  the tooltip, the map shows them as pale dashed points; the sources are named below the list and the map. A locator
+  the station sends itself always wins; *Remove key* deletes these locators as well. Logged as *afu.tools: locators
+  looked up*.
+- Test helpers: `devtools/afutools_fixture_qth.json` (sources as in a real answer, made-up callsigns).
+- Self-test section 123.
+
 ## 1.8.63 – 2026-11-25
 
 - **afu.tools, step 1 – repeaters.** New card *Settings → afu.tools*: API key (free, from an afu.tools account)

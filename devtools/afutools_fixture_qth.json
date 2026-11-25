@@ -1,0 +1,77 @@
+{
+ "quellenangabe": {
+  "nennung": "Quellen: afu.tools; PSK Reporter (Philip Gladstone, N1DQ), eigener Mitschnitt für Sender aus DACH, sonst Abfrage je Rufzeichen; MQTT-Strom des PSK Reporter (Tom M0LTE); Reverse Beacon Network, eigener Mitschnitt über afu.tools; Reverse Beacon Network, Skimmerliste mit Locator; Natural Earth, Landflächen und Grenzen; Protomaps (Basiskarte aus OpenStreetMap-Daten)",
+  "hinweis": "Wer diese Daten weitergibt oder anzeigt, nennt die hier aufgeführten Quellen sichtbar für den, der das Ergebnis sieht: die ursprüngliche Quelle und afu.tools.",
+  "doku": "https://afu.tools/api#quellenangabe",
+  "zusammenstellung": {
+   "name": "afu.tools",
+   "url": "https://afu.tools",
+   "lizenz": "Nennung von afu.tools"
+  },
+  "datensaetze": [
+   {
+    "id": "pskspots",
+    "datensatz": "PSK-Reporter-Meldungen",
+    "wofuer": "Wer hört mich (/rbn): Empfänger in FT8, FT4, JS8, WSPR und anderen Digitalbetriebsarten, mit Locator",
+    "stand": null,
+    "quellen": [
+     {
+      "name": "PSK Reporter (Philip Gladstone, N1DQ), eigener Mitschnitt für Sender aus DACH, sonst Abfrage je Rufzeichen",
+      "url": "https://pskreporter.info/",
+      "lizenz": "öffentlich angeboten, Abfrage höchstens alle fünf Minuten"
+     },
+     {
+      "name": "MQTT-Strom des PSK Reporter (Tom M0LTE)",
+      "url": "https://www.mqtt.pskreporter.info/",
+      "lizenz": "mit Erlaubnis des PSK Reporter weiterverteilt"
+     }
+    ]
+   },
+   {
+    "id": "rbnspots",
+    "datensatz": "RBN-Live-Spots",
+    "wofuer": "Wer hört mich (/rbn): Skimmer in CW, RTTY, FT8 und FT4, mit Signal-Rausch-Abstand und Tempo, Karte der Empfänger",
+    "stand": null,
+    "quellen": [
+     {
+      "name": "Reverse Beacon Network, eigener Mitschnitt über afu.tools",
+      "url": "https://afu.tools/rbn",
+      "lizenz": "Nennung von afu.tools"
+     },
+     {
+      "name": "Reverse Beacon Network, Skimmerliste mit Locator",
+      "url": "https://www.reversebeacon.net/",
+      "lizenz": "einmal am Tag abgeholt"
+     },
+     {
+      "name": "Natural Earth, Landflächen und Grenzen",
+      "url": "https://www.naturalearthdata.com/",
+      "lizenz": "gemeinfrei"
+     },
+     {
+      "name": "Protomaps (Basiskarte aus OpenStreetMap-Daten)",
+      "url": "https://protomaps.com",
+      "lizenz": "ODbL"
+     }
+    ]
+   }
+  ]
+ },
+ "qth": {
+  "DK0ND": {
+   "loc": "JN59",
+   "quelle": "psk",
+   "alter_tage": 0
+  },
+  "DL1ABC": {
+   "loc": "JO62QM",
+   "quelle": "rbn",
+   "alter_tage": 3
+  },
+  "EA8XYZ": {
+   "loc": "IL18",
+   "quelle": "psk",
+   "alter_tage": 1
+  }
+ }
+}

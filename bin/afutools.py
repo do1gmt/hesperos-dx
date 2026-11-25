@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """afu.tools – offene Lese-API für Amateurfunkdaten (https://afu.tools/api), 1.8.63.
 
-Schritt 1: Relais im Umkreis des eigenen Locators. Einmal am Tag (oder nach Änderung von Schlüssel, Locator oder
+Schritt 1 (1.8.63): Relais im Umkreis des eigenen Locators. Einmal am Tag (oder nach Änderung von Schlüssel, Locator oder
 Umkreis) abgeholt und unter data/afutools_repeaters.json zwischengespeichert; daraus
   * Relais-Name an Treffern auf einer Relaisausgabe (nächstes Relais auf der Frequenz),
   * die Liste „Relais in der Nähe“ in den Einstellungen (als eigene Frequenz übernehmen).
+
+Schritt 2 (1.8.64): Locator zu gehörten Rufzeichen, die selbst keinen senden (/qth – aus PSK Reporter und RBN,
+nie aus der Rufzeichenliste). Höchstens 100 Rufzeichen je Abfrage, alle 15 min eine; gefundene werden nach 7 Tagen
+neu gefragt, nicht gefundene nach 2 Tagen. Ergebnis in der Tabelle afu_qth der Datenbank.
 
 Der Schlüssel liegt in config/web_settings.json unter afutools.api_key, wird nie ans Dashboard gegeben, nie
 protokolliert und nicht ins einfache Backup geschrieben (wie die anderen Zugangsdaten). Jede Antwort bringt unter
@@ -24,6 +28,7 @@ from pathlib import Path
 BASE = Path(os.environ.get("HSP_BASE", Path(__file__).resolve().parent.parent))
 SETTINGS = BASE / "config" / "web_settings.json"
 CACHE = BASE / "data" / "afutools_repeaters.json"
+QTH_SRC = BASE / "data" / "afutools_qth_src.json"       # Quellenangabe der letzten /qth-Antwort
 API = os.environ.get("HSP_AFUTOOLS_URL", "https://afu.tools/api/v1")
 UA = "HesperosDX (afu.tools API; https://github.com/do1gmt/hesperos-dx)"
 REFRESH_S = 24 * 3600
@@ -180,3 +185,127 @@ def repeaters():
     return {"repeaters": sorted(d.get("repeaters") or [], key=lambda r: (r["km"] if r["km"] is not None else 1e9, r["out_hz"])),
             "fetched": d.get("fetched"), "error": d.get("error"), "attribution": d.get("attribution"),
             "tone_note": d.get("tone_note"), "km": d.get("km"), "near": d.get("near")}
+
+
+# ---------------------------------------------------------------- Schritt 2: Locator zu Rufzeichen (/qth)
+QTH_BATCH, QTH_FOUND_DAYS, QTH_MISS_DAYS, QTH_HEARD_DAYS = 100, 7, 2, 30
+_QTH = {"fail_ts": 0.0, "src": None, "src_mtime": None}
+
+
+def ensure_qth(db):
+    db.execute("""CREATE TABLE IF NOT EXISTS afu_qth (call TEXT PRIMARY KEY, loc TEXT, quelle TEXT, alter_tage INTEGER,
+                  fetched TEXT)""")
+
+
+def _iso(t=None):
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(t if t is not None else time.time()))
+
+
+def _base(call):
+    """Rufzeichen für die Abfrage: ohne APRS-SSID (-9) und ohne /P, /M, /QRP."""
+    c = call.upper().split("-")[0]
+    parts = [p for p in c.split("/") if p]
+    return max(parts, key=lambda p: (any(ch.isdigit() for ch in p) and any(ch.isalpha() for ch in p), len(p))) if parts else c
+
+
+def qth_candidates(db, now=None):
+    """Bis zu 100 Stationen der letzten 30 Tage ohne eigenen Locator, die noch nicht (oder zu lange nicht) gefragt wurden."""
+    now = now or time.time()
+    ensure_qth(db)
+    return [r[0] for r in db.execute(
+        """SELECT s.call FROM station s LEFT JOIN afu_qth a ON a.call = s.call
+           WHERE (s.grid IS NULL OR s.grid = '') AND s.last >= ?
+             AND (a.call IS NULL OR (a.loc IS NOT NULL AND a.fetched < ?) OR (a.loc IS NULL AND a.fetched < ?))
+           ORDER BY s.last DESC LIMIT ?""",
+        (_iso(now - QTH_HEARD_DAYS * 86400)[:19], _iso(now - QTH_FOUND_DAYS * 86400), _iso(now - QTH_MISS_DAYS * 86400),
+         QTH_BATCH)).fetchall()]
+
+
+def qth_refresh(db_connect, settings=None, log=None):
+    """Eine Abfrage für die nächsten bis zu 100 Rufzeichen. Gibt (gefragt, gefunden) oder None (nichts zu tun)."""
+    c = config(settings)
+    if not c["api_key"] or time.time() - _QTH["fail_ts"] < RETRY_S:
+        return None
+    db = db_connect()
+    try:
+        calls = qth_candidates(db)
+        if not calls:
+            return None
+        ask = {}
+        for call in calls:
+            ask.setdefault(_base(call), []).append(call)
+        try:
+            r = _get("/qth", {"rufe": ",".join(ask)}, c["api_key"])
+        except Exception as e:
+            _QTH["fail_ts"] = time.time()
+            if log:
+                log("WARN", "afutools", "afutools_failed", what="Locator", error=str(e)[:200])
+            return None
+        got = {str(k).upper(): v for k, v in (r.get("qth") or {}).items() if isinstance(v, dict)}
+        now, found = _iso(), 0
+        for b, orig in ask.items():
+            v = got.get(b) or {}
+            loc = str(v.get("loc") or "").upper()
+            ok = 4 <= len(loc) <= 8 and loc[:2].isalpha() and loc[2:4].isdigit() and "A" <= loc[0] <= "R" and "A" <= loc[1] <= "R"
+            found += bool(ok)
+            for call in orig:
+                db.execute("INSERT OR REPLACE INTO afu_qth (call, loc, quelle, alter_tage, fetched) VALUES (?,?,?,?,?)",
+                           (call, loc if ok else None, str(v.get("quelle") or "")[:20] if ok else None,
+                            int(v.get("alter_tage") or 0) if ok else None, now))
+        db.commit()
+        if r.get("quellenangabe"):
+            QTH_SRC.parent.mkdir(parents=True, exist_ok=True)
+            tmp = QTH_SRC.with_suffix(".tmp")
+            tmp.write_text(json.dumps(attribution(r["quellenangabe"]), ensure_ascii=False), encoding="utf-8")
+            os.replace(tmp, QTH_SRC)
+        if log:
+            log("INFO", "afutools", "afutools_qth", asked=len(ask), found=found)
+        return len(ask), found
+    finally:
+        db.close()
+
+
+SRC_NAMES = {"psk": "PSK Reporter", "rbn": "RBN", "log": "Log"}
+
+
+def qth_for(db, calls):
+    """{Rufzeichen: {loc, src, age_days}} für die gefragten Rufzeichen, soweit afu.tools einen Locator kannte."""
+    calls = [c for c in calls if c]
+    if not calls:
+        return {}
+    ensure_qth(db)
+    out = {}
+    for i in range(0, len(calls), 400):
+        part = calls[i:i + 400]
+        for call, loc, q, age, fetched in db.execute(
+                f"SELECT call, loc, quelle, alter_tage, fetched FROM afu_qth WHERE loc IS NOT NULL AND call IN ({','.join('?' * len(part))})", part):
+            try:
+                since = (time.time() - __import__("calendar").timegm(time.strptime(fetched, "%Y-%m-%dT%H:%M:%SZ"))) / 86400
+            except (TypeError, ValueError):
+                since = 0
+            out[call] = {"loc": loc, "src": SRC_NAMES.get(q, q or "?"), "age_days": int((age or 0) + since)}
+    return out
+
+
+def qth_attribution():
+    try:
+        m = QTH_SRC.stat().st_mtime
+    except OSError:
+        return None
+    if _QTH["src_mtime"] != m:
+        try:
+            _QTH["src"] = json.loads(QTH_SRC.read_text(encoding="utf-8"))
+        except Exception:
+            _QTH["src"] = None
+        _QTH["src_mtime"] = m
+    return _QTH["src"]
+
+
+def qth_forget(db):
+    ensure_qth(db)
+    db.execute("DELETE FROM afu_qth")
+    db.commit()
+    try:
+        QTH_SRC.unlink()
+    except OSError:
+        pass

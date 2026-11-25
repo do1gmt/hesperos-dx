@@ -673,9 +673,10 @@ and restarts the server.
 ## Data sources
 
 - Orbital elements: [CelesTrak](https://celestrak.org) (fallback: AMSAT).
-- Repeaters (optional, with your own free key): [afu.tools](https://afu.tools/api), compiled from
-  [repeatermap.de](https://repeatermap.de) and [FM-FunkNetz](https://fm-funknetz.de). The sources each answer names
-  are shown wherever the data appears (hit card, repeater list).
+- Repeaters and locators of heard stations (optional, with your own free key): [afu.tools](https://afu.tools/api),
+  compiled from [repeatermap.de](https://repeatermap.de), [FM-FunkNetz](https://fm-funknetz.de),
+  [PSK Reporter](https://pskreporter.info/) and the [Reverse Beacon Network](https://www.reversebeacon.net/). The
+  sources each answer names are shown wherever the data appears (hit card, repeater list, stations, map).
 
 ### afu.tools (optional)
 
@@ -690,8 +691,16 @@ hour). Then
 
 The key is sent as `X-API-Key`, never shown in the dashboard, never logged, not written into the simple backup
 (only into the encrypted credentials) and removed together with the cached repeaters by *Remove key*. Without a key
-nothing is fetched and everything works as before. Further afu.tools data (locators for heard callsigns, radio
-weather, contest calendar) will follow step by step.
+nothing is fetched and everything works as before. Further afu.tools data (radio weather, contest calendar) will
+follow step by step.
+
+**Locators for heard stations.** Many stations (FT8 outside CQ calls, CW, RTTY) never send a locator. With a key
+the Pi asks afu.tools (`/qth`) for their location as reported to PSK Reporter or the Reverse Beacon Network –
+never from the callsign register: every 15 minutes at most one request for up to 100 callsigns heard in the last
+30 days (APRS SSIDs and /P etc. reduced to the base callsign); found ones are asked again after 7 days, unknown ones
+after 2 days. *Stations* then shows them with `≈ locator` and `≈ distance` (tooltip: source and age), the map as
+pale dashed points, each with the sources. A locator the station sends itself always wins. *Remove key* deletes
+these locators too.
 - TMC traffic messages: *Location Code List* LCL 22.0 and *Event Code List* ECL 4.01 of the
   Bundesanstalt für Straßenwesen (BASt), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/);
   converted to `share/tmc/` (see the README there).

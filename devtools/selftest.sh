@@ -4586,5 +4586,47 @@ assert "'afutools_repeaters': 'afu.tools: Relais abgerufen'" in js and '"X-API-K
 PY
 pkill -f "afutools_fake.py 8097" 2>/dev/null; rm -f "$AFL"
 
+echo "== 123 afu.tools: Locator zu gehörten Rufzeichen ohne eigenen (Liste, Karte, Quellen, sparsam nachgefragt)"
+AFL=$(mktemp); (python3 "$SRC/devtools/afutools_fake.py" 8098 "$AFL" > /dev/null 2>&1 &); sleep 1
+(cd bin && HSP_AFUTOOLS_URL=http://127.0.0.1:8098/api/v1 timeout 60 python3 - "$SRC" "$AFL" <<'PY') && ok "nur Stationen ohne Locator gefragt (SSID und /P als Grundrufzeichen, eine Abfrage), gefundene in Liste (≈, Entfernung) und Karte (blass, gestrichelt) mit Quellen, eigener Locator geht vor, nicht gefundene erst nach 2 Tagen wieder; Schlüssel entfernt = Daten weg" || bad "afu.tools Locator"
+import sys, json, time
+from datetime import datetime, timezone
+from pathlib import Path
+import afutools as AFT, webapp as W, stations as ST
+logs = []; log = lambda *a, **k: logs.append((a, k))
+bak = W.SETTINGS.read_text()
+try:
+    st = json.loads(bak); st["my_locator"] = "JN59LL"; st["afutools"] = {"api_key": "afu_test", "km": 50}
+    W.SETTINGS.write_text(json.dumps(st))
+    import tempfile; W.DB = Path(tempfile.mkdtemp()) / "t.db"            # eigene Datenbank (ohne die Stationen der anderen Abschnitte)
+    W.ensure_schema(); db = W.db_connect(); ST.ensure_tables(db); ST.ensure_summary(db)       # Übersicht anlegen, sonst neu gebaut
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    for call, grid in (("DK0ND", None), ("DL1ABC-9", None), ("EA8XYZ/P", None), ("XX9NONE", None), ("DF1OWN", "JO31")):
+        ST.upsert_station(db, call, now, "20m", "FT8", grid, -10)
+    db.commit(); db.close()
+    assert AFT.qth_refresh(W.db_connect, st, log) == (4, 3), logs
+    q = [json.loads(l) for l in Path(sys.argv[2]).read_text().splitlines()]
+    assert len(q) == 1 and sorted(q[0]["qs"]["rufe"][0].split(",")) == ["DK0ND", "DL1ABC", "EA8XYZ", "XX9NONE"] and q[0]["key"] == "afu_test"
+    assert AFT.qth_refresh(W.db_connect, st, log) is None                      # alles gefragt – nichts zu tun
+    d = W.stations(days=0, limit=50)
+    by = {r["call"]: r for r in d["stations"]}
+    assert by["DK0ND"]["grid_ext"]["loc"] == "JN59" and by["DK0ND"]["grid_ext"]["src"] == "PSK Reporter" and by["DK0ND"]["distance_km"] is not None
+    assert by["DL1ABC-9"]["grid_ext"]["src"] == "RBN" and by["DL1ABC-9"]["grid_ext"]["age_days"] == 3 and "grid_ext" not in by["XX9NONE"]
+    assert by["DF1OWN"]["grid"] == "JO31" and "grid_ext" not in by["DF1OWN"]
+    assert "PSK Reporter" in json.dumps(d["qth_sources"]) and d["qth_sources"]["sources"][0]["name"] == "afu.tools"
+    m = W.stations_map()
+    ext = [p for p in m["points"] if len(p) > 8]
+    assert m["ext"] == 3 and sorted(p[0] for p in ext) == ["DK0ND", "DL1ABC-9", "EA8XYZ/P"] and ext[0][8].split(" · ")[0] in ("PSK Reporter", "RBN")
+    assert [e[0][2] for e in logs] == ["afutools_qth"] and logs[0][1] == {"asked": 4, "found": 3}
+    W.afutools_save({"clear_key": True})
+    db = W.db_connect(); assert db.execute("SELECT COUNT(*) FROM afu_qth").fetchone()[0] == 0; db.close()
+    assert "grid_ext" not in json.dumps(W.stations(days=0, limit=50))
+finally:
+    W.SETTINGS.write_text(bak); AFT.forget()
+src = Path(sys.argv[1]); js = (src / "web" / "app.js").read_text()
+assert "function extTip(e)" in js and "dashArray: ext ? '2 3' : null" in js and "'afutools_qth': 'afu.tools: Locator nachgefragt'" in js and 'id="stExtSrc"' in (src / "web" / "index.html").read_text()
+PY
+pkill -f "afutools_fake.py 8098" 2>/dev/null; rm -f "$AFL"
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi
