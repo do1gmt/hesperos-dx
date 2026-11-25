@@ -116,6 +116,16 @@
         <p class="hint" id="intervalHint"></p>
         <div class="save-note" id="scanSaveNote" aria-live="polite"></div>
       </section>
+      <section class="panel" id="panel-wx" hidden>
+        <h2>Funkwetter <small class="muted" id="rwTag"></small></h2>
+        <div class="wx-head" id="rwHead"></div>
+        <p class="hint" id="rwLage"></p>
+        <div class="table-wrap"><table class="table wx-table">
+          <thead><tr><th>Band</th><th>jetzt</th><th>Tag</th><th>Nacht</th><th>gemessen offen von DL <small class="muted" id="rwOpenAge"></small></th></tr></thead>
+          <tbody id="rwBands"></tbody></table></div>
+        <p class="hint" id="rwVhf"></p>
+        <p class="hint src-note" id="rwSrc"></p>
+      </section>
       <section class="panel" id="panel-sat">
         <h2>Satelliten-Überflüge <small class="muted" id="satPreviewTag"></small></h2>
         <div id="satBody">

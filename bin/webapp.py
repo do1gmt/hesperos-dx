@@ -2859,6 +2859,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json({"hits": hits, "total": total, "server_time": now_iso(),
                                        "last_run": {"from": lf, "to": lt if lt != "9999" else None,
                                                     "status": (lr or {}).get("status")} if lf else None})
+            if path == "/api/afutools/wx":                 # Funkwetter (afu.tools, zwischengespeichert)
+                return self.send_json(__import__("afutools").wx())
             if path == "/api/afutools/repeaters":          # Relais in der Nähe (afu.tools, zwischengespeichert)
                 import afutools as AFT
                 d = AFT.repeaters()
@@ -3450,10 +3452,13 @@ class Handler(BaseHTTPRequestHandler):
                     return self.send_json({"ok": False, "error": str(e)}, 400)
                 threading.Thread(target=AFT.refresh, args=(st, APPLOG.log), kwargs={"force": bool(data.get("refresh"))},
                                  daemon=True).start()
+                if (data.get("features") or {}).get("wx"):        # gerade eingeschaltet: gleich holen
+                    threading.Thread(target=AFT.wx_refresh, args=(st, APPLOG.log), kwargs={"force": True}, daemon=True).start()
                 return self.send_json({"ok": True, "settings": load_settings()})
             if path == "/api/afutools/refresh":                # jetzt abrufen
                 import afutools as AFT
                 d = AFT.refresh(read_json(SETTINGS, {}), APPLOG.log, force=True)
+                AFT.wx_refresh(read_json(SETTINGS, {}), APPLOG.log, force=True)
                 return self.send_json({"ok": not d.get("error"), "error": d.get("error"), "settings": load_settings()})
             if path == "/api/own-frequencies":                 # Einstellungen → Eigene Frequenzen
                 try:
@@ -4046,6 +4051,10 @@ def main():
                 __import__("afutools").refresh(read_json(SETTINGS, {}), APPLOG.log)
             except Exception as e:
                 APPLOG.log("WARN", "afutools", "afutools_failed", what="Relais", error=f"{type(e).__name__}: {e}")
+            try:                                             # afu.tools: Funkwetter (alle 30 min, nur eingeschaltet)
+                __import__("afutools").wx_refresh(read_json(SETTINGS, {}), APPLOG.log)
+            except Exception as e:
+                APPLOG.log("WARN", "afutools", "afutools_failed", what="Funkwetter", error=f"{type(e).__name__}: {e}")
             try:                                             # afu.tools: Locator zu gehörten Rufzeichen (bis 100 je 15 min)
                 __import__("afutools").qth_refresh(db_connect, read_json(SETTINGS, {}), APPLOG.log)
             except Exception as e:

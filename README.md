@@ -702,8 +702,12 @@ Sources are named as afu.tools requires, in short form: "Sources: afu.tools · P
 
 The key is sent as `X-API-Key`, never shown in the dashboard, never logged, not written into the simple backup
 (only into the encrypted credentials) and removed together with the cached repeaters by *Remove key*. Without a key
-nothing is fetched and everything works as before. Further afu.tools data (radio weather, contest calendar) will
-follow step by step.
+nothing is fetched and everything works as before. **Radio weather** (switch it on below the key): a card on the *Scan* page with solar flux, sunspots, Kp (with
+"very quiet" … "storm"), A, MUF over DL (measured or modelled), X-ray, noise level and day/night in DL; afu.tools'
+short assessment; per band *now / day / night* (good, fair, poor, closed) and – measured from RBN and PSK Reporter
+over the last 30 minutes – to which continents signals from DL are being heard and by how many receivers;
+sporadic E on 6/4/2 m and aurora. Fetched every 30 minutes (two requests), sources below the card (NOAA SWPC, GFZ,
+GIRO, RBN, PSK Reporter). Contest and DX calendars will follow.
 
 **Locators for heard stations.** Many stations (FT8 outside CQ calls, CW, RTTY) never send a locator. With a key
 the Pi asks afu.tools (`/qth`) for their location as reported to PSK Reporter or the Reverse Beacon Network –

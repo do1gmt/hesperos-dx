@@ -1,0 +1,445 @@
+{
+ "funkwetter": {
+  "quellenangabe": {
+   "nennung": "Quellen: afu.tools; NOAA Space Weather Prediction Center; GFZ Helmholtz-Zentrum für Geoforschung, Kp-Index; GIRO, Lowell GIRO Data Center (UMass Lowell); Reverse Beacon Network; PSK Reporter (Philip Gladstone); GIRO: Reinisch, B. W., and I. A. Galkin (2011), Global Ionospheric Radio Observatory (GIRO), Earth Planets Space, 63, 377-381, doi:10.5047/eps.2011.03.001",
+   "hinweis": "Wer diese Daten weitergibt oder anzeigt, nennt die hier aufgeführten Quellen sichtbar für den, der das Ergebnis sieht: die ursprüngliche Quelle und afu.tools.",
+   "doku": "https://afu.tools/api#quellenangabe",
+   "zusammenstellung": {
+    "name": "afu.tools",
+    "url": "https://afu.tools",
+    "lizenz": "Nennung von afu.tools"
+   },
+   "datensaetze": [
+    {
+     "id": "solar",
+     "datensatz": "Funkwetter und Ausbreitungsdaten",
+     "wofuer": "Funkwetter (MUF-Karte, Bandbewertung, Bilder zum Einbauen), Bedingungen im Portabel-Planer",
+     "stand": "2026-11-25T21:35:09Z",
+     "quellen": [
+      {
+       "name": "NOAA Space Weather Prediction Center",
+       "url": "https://www.swpc.noaa.gov/",
+       "lizenz": "gemeinfrei (US-Regierung)"
+      },
+      {
+       "name": "GFZ Helmholtz-Zentrum für Geoforschung, Kp-Index",
+       "url": "https://kp.gfz.de/",
+       "lizenz": "CC BY 4.0"
+      },
+      {
+       "name": "GIRO, Lowell GIRO Data Center (UMass Lowell)",
+       "url": "https://giro.uml.edu/",
+       "lizenz": "CC BY-NC-SA 4.0"
+      },
+      {
+       "name": "Reverse Beacon Network",
+       "url": "https://www.reversebeacon.net/",
+       "lizenz": "Nutzung mit Nennung"
+      },
+      {
+       "name": "PSK Reporter (Philip Gladstone)",
+       "url": "https://pskreporter.info/",
+       "lizenz": "Nutzung mit Nennung"
+      },
+      {
+       "name": "GIRO: Reinisch, B. W., and I. A. Galkin (2011), Global Ionospheric Radio Observatory (GIRO), Earth Planets Space, 63, 377-381, doi:10.5047/eps.2011.03.001",
+       "url": "https://giro.uml.edu/",
+       "lizenz": "CC BY-NC-SA 4.0, Betreiber je Sonde auf /funkwetter"
+      }
+     ]
+    }
+   ]
+  },
+  "generated": "2026-11-25T21:35:09Z",
+  "kopf": {
+   "sfi": 87,
+   "ssn": 36,
+   "a": 5,
+   "kp": 0.667,
+   "xray": "B1.4",
+   "xray_max24": "B6.4",
+   "wind": 367.0,
+   "dichte": 1.5,
+   "bz": -0.9,
+   "bt": 4.8,
+   "muf_dl": 8.4,
+   "muf_dl_gemessen": true,
+   "fof2_dl": 2.7,
+   "foes_dl": 2.55,
+   "aurora_eu": 19,
+   "aurora_nord": 19,
+   "drap_dl": 0.0,
+   "magnetfeld": "sehr ruhig",
+   "magnetfeld_en": "very quiet",
+   "rauschen": "S0-S1",
+   "offen_jetzt": 4,
+   "tag_dl": false
+  },
+  "lage": "Ruhiges Magnetfeld (Kp 1-), Solarflux 87. Tagsüber gehen 60 bis 10 m gut, nachts 160 bis 40 m.",
+  "baender": [
+   {
+    "band": "160m",
+    "mhz": 1.84,
+    "tag": "schlecht",
+    "nacht": "gut",
+    "jetzt": "gut"
+   },
+   {
+    "band": "80m",
+    "mhz": 3.6,
+    "tag": "mittel",
+    "nacht": "gut",
+    "jetzt": "gut"
+   },
+   {
+    "band": "60m",
+    "mhz": 5.36,
+    "tag": "gut",
+    "nacht": "gut",
+    "jetzt": "gut"
+   },
+   {
+    "band": "40m",
+    "mhz": 7.1,
+    "tag": "gut",
+    "nacht": "gut",
+    "jetzt": "gut"
+   },
+   {
+    "band": "30m",
+    "mhz": 10.12,
+    "tag": "gut",
+    "nacht": "mittel",
+    "jetzt": "schlecht"
+   },
+   {
+    "band": "20m",
+    "mhz": 14.2,
+    "tag": "gut",
+    "nacht": "zu",
+    "jetzt": "zu"
+   },
+   {
+    "band": "17m",
+    "mhz": 18.1,
+    "tag": "gut",
+    "nacht": "zu",
+    "jetzt": "zu"
+   },
+   {
+    "band": "15m",
+    "mhz": 21.2,
+    "tag": "gut",
+    "nacht": "zu",
+    "jetzt": "zu"
+   },
+   {
+    "band": "12m",
+    "mhz": 24.9,
+    "tag": "gut",
+    "nacht": "zu",
+    "jetzt": "zu"
+   },
+   {
+    "band": "10m",
+    "mhz": 28.5,
+    "tag": "gut",
+    "nacht": "zu",
+    "jetzt": "zu"
+   }
+  ],
+  "vhf": {
+   "es": {
+    "6m": "zu",
+    "4m": "zu",
+    "2m": "zu"
+   },
+   "es_na": "unbekannt",
+   "aurora": "zu"
+  },
+  "muf_dl": {
+   "jetzt": 8.4,
+   "weg_jetzt": 10.0,
+   "tag": 36.8,
+   "nacht": 11.6,
+   "tag_stunden_gemessen": 11,
+   "nacht_stunden_gemessen": 13,
+   "luf_tag": 2.9,
+   "luf_nacht": 1.0
+  },
+  "quellen": [
+   {
+    "name": "NOAA Space Weather Prediction Center",
+    "url": "https://www.swpc.noaa.gov/",
+    "lizenz": "gemeinfrei (US-Regierung)",
+    "was": "Solarflux, Sonnenflecken, Regionen, Kp-Vorhersage, 27-Tage-Ausblick, Röntgen, Sonnenwind, D-RAP, Polarlicht"
+   },
+   {
+    "name": "GFZ Helmholtz-Zentrum für Geoforschung, Kp-Index",
+    "url": "https://kp.gfz.de/",
+    "lizenz": "CC BY 4.0",
+    "was": "Kp und ap"
+   },
+   {
+    "name": "GIRO, Lowell GIRO Data Center (UMass Lowell)",
+    "url": "https://giro.uml.edu/",
+    "lizenz": "CC BY-NC-SA 4.0",
+    "was": "foF2, foEs, MUF(3000) der Ionosonden"
+   },
+   {
+    "name": "Reverse Beacon Network",
+    "url": "https://www.reversebeacon.net/",
+    "lizenz": "Nutzung mit Nennung",
+    "was": "gemessene Öffnungen (CW, RTTY, FT8)"
+   },
+   {
+    "name": "PSK Reporter (Philip Gladstone)",
+    "url": "https://pskreporter.info/",
+    "lizenz": "Nutzung mit Nennung",
+    "was": "gemessene Öffnungen (Digitalbetrieb)"
+   }
+  ]
+ },
+ "offen": {
+  "quellenangabe": {
+   "nennung": "Quellen: afu.tools",
+   "hinweis": "Wer diese Daten weitergibt oder anzeigt, nennt die hier aufgeführten Quellen sichtbar für den, der das Ergebnis sieht: die ursprüngliche Quelle und afu.tools.",
+   "doku": "https://afu.tools/api#quellenangabe",
+   "zusammenstellung": {
+    "name": "afu.tools",
+    "url": "https://afu.tools",
+    "lizenz": "Nennung von afu.tools"
+   },
+   "datensaetze": []
+  },
+  "baender": [
+   "160m",
+   "80m",
+   "60m",
+   "40m",
+   "30m",
+   "20m",
+   "17m",
+   "15m",
+   "12m",
+   "10m",
+   "6m",
+   "4m",
+   "2m"
+  ],
+  "kontinente": [
+   "EU",
+   "NA",
+   "SA",
+   "AS",
+   "AF",
+   "OC"
+  ],
+  "matrix": {
+   "10m": {
+    "EU": {
+     "empf": 3,
+     "meldungen": 4,
+     "snr": 15
+    }
+   },
+   "40m": {
+    "AS": {
+     "empf": 226,
+     "meldungen": 1383,
+     "snr": 26
+    },
+    "EU": {
+     "empf": 655,
+     "meldungen": 5586,
+     "snr": 33
+    },
+    "SA": {
+     "empf": 10,
+     "meldungen": 64,
+     "snr": 6
+    },
+    "AF": {
+     "empf": 10,
+     "meldungen": 417,
+     "snr": 26
+    },
+    "OC": {
+     "empf": 7,
+     "meldungen": 94,
+     "snr": 9
+    },
+    "NA": {
+     "empf": 422,
+     "meldungen": 4396,
+     "snr": 21
+    }
+   },
+   "20m": {
+    "EU": {
+     "empf": 36,
+     "meldungen": 53,
+     "snr": 26
+    },
+    "NA": {
+     "empf": 3,
+     "meldungen": 3,
+     "snr": -14
+    }
+   },
+   "17m": {
+    "EU": {
+     "empf": 2,
+     "meldungen": 2,
+     "snr": -23
+    }
+   },
+   "160m": {
+    "EU": {
+     "empf": 405,
+     "meldungen": 5400,
+     "snr": 39
+    },
+    "AS": {
+     "empf": 68,
+     "meldungen": 248,
+     "snr": 2
+    },
+    "SA": {
+     "empf": 1,
+     "meldungen": 1,
+     "snr": -22
+    },
+    "AF": {
+     "empf": 3,
+     "meldungen": 75,
+     "snr": 18
+    },
+    "NA": {
+     "empf": 38,
+     "meldungen": 211,
+     "snr": 26
+    }
+   },
+   "30m": {
+    "AS": {
+     "empf": 7,
+     "meldungen": 17,
+     "snr": -13
+    },
+    "EU": {
+     "empf": 31,
+     "meldungen": 46,
+     "snr": 25
+    },
+    "AF": {
+     "empf": 2,
+     "meldungen": 31,
+     "snr": 0
+    },
+    "NA": {
+     "empf": 12,
+     "meldungen": 21,
+     "snr": -5
+    },
+    "SA": {
+     "empf": 1,
+     "meldungen": 1,
+     "snr": -19
+    },
+    "OC": {
+     "empf": 4,
+     "meldungen": 20,
+     "snr": -3
+    }
+   },
+   "15m": {
+    "EU": {
+     "empf": 12,
+     "meldungen": 13,
+     "snr": 10
+    },
+    "AS": {
+     "empf": 1,
+     "meldungen": 1,
+     "snr": -12
+    },
+    "AF": {
+     "empf": 1,
+     "meldungen": 3,
+     "snr": -13
+    }
+   },
+   "2m": {
+    "EU": {
+     "empf": 44,
+     "meldungen": 81,
+     "snr": 22
+    },
+    "NA": {
+     "empf": 1,
+     "meldungen": 1,
+     "snr": -24
+    }
+   },
+   "80m": {
+    "AS": {
+     "empf": 118,
+     "meldungen": 438,
+     "snr": 23
+    },
+    "EU": {
+     "empf": 655,
+     "meldungen": 19923,
+     "snr": 46
+    },
+    "AF": {
+     "empf": 9,
+     "meldungen": 471,
+     "snr": 38
+    },
+    "NA": {
+     "empf": 80,
+     "meldungen": 881,
+     "snr": 47
+    },
+    "OC": {
+     "empf": 1,
+     "meldungen": 8,
+     "snr": -7
+    }
+   },
+   "60m": {
+    "AS": {
+     "empf": 9,
+     "meldungen": 40,
+     "snr": -5
+    },
+    "EU": {
+     "empf": 236,
+     "meldungen": 1640,
+     "snr": 28
+    },
+    "AF": {
+     "empf": 7,
+     "meldungen": 112,
+     "snr": 16
+    },
+    "NA": {
+     "empf": 82,
+     "meldungen": 685,
+     "snr": 19
+    },
+    "SA": {
+     "empf": 1,
+     "meldungen": 1,
+     "snr": -18
+    }
+   }
+  },
+  "sender": 307,
+  "minuten": 30,
+  "von": "dl",
+  "stand": "2026-11-25T21:51:41Z"
+ }
+}

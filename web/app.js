@@ -1592,7 +1592,7 @@
     // 1.8.53
     'own_frequencies_set': 'Eigene Frequenzen geändert',
     // 1.8.42: Ereignisse ohne Beschreibung (sonst stand im Protokoll der Rohname)
-    'mesh_connected': 'Mesh: verbunden', 'mesh_lost': 'Mesh: Verbindung weg', 'mesh_no_access': 'Mesh: kein Zugriff auf den Node', 'mesh_no_answer': 'Mesh: Gerät antwortet nicht', 'mesh_stopped': 'Mesh: beendet', 'mesh_msg': 'Mesh-Nachricht', 'mesh_open_failed': 'Mesh: Gerät ließ sich nicht öffnen', 'mesh_start_failed': 'Mesh ließ sich nicht starten', 'mesh_port_set': 'Mesh: Anschluss gewählt', 'mesh_alert_failed': 'Mesh-Warnung ließ sich nicht melden', 'mesh_set': 'Mesh-Node eingestellt', 'mesh_set_failed': 'Mesh-Node ließ sich nicht einstellen', 'mesh_clock_set': 'Mesh: Uhr des Nodes gestellt', 'mesh_sent': 'Mesh: Nachricht gesendet', 'afutools_set': 'afu.tools: Einstellung geändert', 'afutools_repeaters': 'afu.tools: Relais abgerufen', 'afutools_failed': 'afu.tools: Abruf fehlgeschlagen', 'afutools_qth': 'afu.tools: Locator nachgefragt', 'mesh_advert_sent': 'Mesh: Advert versendet', 'mesh_clock_failed': 'Mesh: Uhr ließ sich nicht stellen', 'mesh_server_connected': 'Mesh: Repeater/Room-Server verbunden', 'mesh_room_login': 'Mesh: am Room-Server angemeldet', 'mesh_room_login_failed': 'Mesh: Anmeldung am Room-Server abgelehnt', 'mesh_server_set': 'Mesh: Server eingestellt', 'mesh_server_set_failed': 'Mesh: Server ließ sich nicht einstellen',
+    'mesh_connected': 'Mesh: verbunden', 'mesh_lost': 'Mesh: Verbindung weg', 'mesh_no_access': 'Mesh: kein Zugriff auf den Node', 'mesh_no_answer': 'Mesh: Gerät antwortet nicht', 'mesh_stopped': 'Mesh: beendet', 'mesh_msg': 'Mesh-Nachricht', 'mesh_open_failed': 'Mesh: Gerät ließ sich nicht öffnen', 'mesh_start_failed': 'Mesh ließ sich nicht starten', 'mesh_port_set': 'Mesh: Anschluss gewählt', 'mesh_alert_failed': 'Mesh-Warnung ließ sich nicht melden', 'mesh_set': 'Mesh-Node eingestellt', 'mesh_set_failed': 'Mesh-Node ließ sich nicht einstellen', 'mesh_clock_set': 'Mesh: Uhr des Nodes gestellt', 'mesh_sent': 'Mesh: Nachricht gesendet', 'afutools_set': 'afu.tools: Einstellung geändert', 'afutools_repeaters': 'afu.tools: Relais abgerufen', 'afutools_failed': 'afu.tools: Abruf fehlgeschlagen', 'afutools_qth': 'afu.tools: Locator nachgefragt', 'afutools_wx': 'afu.tools: Funkwetter abgerufen', 'mesh_advert_sent': 'Mesh: Advert versendet', 'mesh_clock_failed': 'Mesh: Uhr ließ sich nicht stellen', 'mesh_server_connected': 'Mesh: Repeater/Room-Server verbunden', 'mesh_room_login': 'Mesh: am Room-Server angemeldet', 'mesh_room_login_failed': 'Mesh: Anmeldung am Room-Server abgelehnt', 'mesh_server_set': 'Mesh: Server eingestellt', 'mesh_server_set_failed': 'Mesh: Server ließ sich nicht einstellen',
     'analysis_skipped': 'Auswertung übersprungen', 'auto_backup': 'Automatische Sicherung', 'backup_now': 'Sicherung von Hand', 'decode_skipped': 'Dekodieren übersprungen', 'stick_main_auto': 'Stick automatisch Haupt-Stick', 'stick_new': 'Neuer Stick erkannt', 'stick_serial_written': 'Seriennummer geschrieben', 'stick_unsupported': 'Gerät nicht unterstützt', 'check_failed': 'Prüfung fehlgeschlagen', 'internet_back': 'Internet wieder da', 'network_changed': 'Netz gewechselt', 'live_gap': 'Live: Lücke im Empfang', 'live_heard_failed': 'Live: Gehörte nicht gespeichert', 'live_recorded': 'Live: Aufnahme gespeichert', 'live.start_failed': 'Live ließ sich nicht starten', 'watch_loop_failed': 'Dauerwache: Fehler', 'watch_off': 'Dauerwache aus', 'watch_on': 'Dauerwache an', 'watch_restarted': 'Dauerwache neu gestartet', 'outbox_sent': 'Nachgeholte Nachrichten verschickt', 'test_mail_sent': 'Test-Mail verschickt', 'test_push_sent': 'Test-Push verschickt', 'sstv_upload_failed': 'SSTV-Bild: Upload fehlgeschlagen', 'sstv_uploaded': 'SSTV-Bild hochgeladen', 'rds_decoded': 'RDS dekodiert', 'rds_failed': 'RDS: Fehler', 'rundir_recreated': 'Arbeitsordner neu angelegt', 'pass_stick_restart': 'Überflug: Stick neu gestartet', 'publish_prepare_failed': 'Überflug: Webseiten-Upload nicht vorbereitet', 'waterfall_failed': 'Wasserfall ließ sich nicht erzeugen', 'band_summary_failed': 'Bandübersicht: Fehler', 'fm_watch_failed': 'UKW-Beobachtung: Fehler', 'pmsdr_fifo_reconnect': 'PMSDR: Datenstrom neu verbunden', 'pmsdr_input_set': 'PMSDR: Eingang umgestellt', 'rtl_orphans_killed': 'Verwaiste RTL-Prozesse beendet', 'run_exception': 'Scan: unerwarteter Fehler', 'scan_yielded': 'Scan gibt den Stick frei', 'health_failed': 'Selbstprüfung: Fehler', 'publish_failed': 'Webseiten-Upload: Fehler', 'restore_done': 'Sicherung eingespielt', 'restore_failed': 'Einspielen fehlgeschlagen', 'restore_stick_adopt_failed': 'Einspielen: Stick nicht übernommen', 'restore_stick_adopted': 'Einspielen: Stick übernommen', 'satellite_arming': 'Satelliten werden scharfgeschaltet', 'satellite_watchdog': 'Überflug hängt – beendet', 'scan_yield_requested': 'Scan soll den Stick freigeben', 'settings_unreadable': 'Einstellungen nicht lesbar', 'sticks_failed': 'Sticks: Fehler', 'sysmon_failed': 'Systemwerte: Fehler', 'reboot_requested': 'Neustart angefordert', 'restart_requested': 'Dienst-Neustart angefordert', 'dir_move_failed': 'Programmordner nicht umgezogen', 'dir_move_skipped': 'Programmordner-Umzug ausgelassen', 'dir_moved': 'Programmordner umgezogen', 'hostname_change_failed': 'Rechnername nicht geändert', 'hostname_changed': 'Rechnername geändert', 'hostname_notice_failed': 'Rechnername: Hinweis fehlgeschlagen', 'services_rename_failed': 'Dienste nicht umbenannt', 'services_renamed': 'Dienste umbenannt', 'backup_dir_move_failed': 'Sicherungsordner nicht umgezogen', 'backup_dir_rename_failed': 'Sicherungsordner nicht umbenannt', 'backup_dir_renamed': 'Sicherungsordner umbenannt', 'update_failed': 'Update fehlgeschlagen', 'auto_backup_set': 'Automatische Sicherung eingestellt', 'backup_downloaded': 'Sicherung heruntergeladen', 'backup_from_target': 'Sicherung vom Ziel eingespielt', 'backup_target_nas': 'Sicherungsziel: Netzwerkfreigabe', 'backup_target_nas_removed': 'Netzwerkfreigabe entfernt', 'backup_target_usb': 'Sicherungsziel: USB-Stick', 'backup_uploaded': 'Sicherung hochgeladen', 'backup_usb_ejected': 'USB-Stick ausgeworfen', 'diagnose_downloaded': 'Diagnose heruntergeladen', 'eibi_refresh_failed': 'EiBi: Herunterladen fehlgeschlagen', 'eibi_uploaded': 'EiBi-Liste hochgeladen', 'follow_updated': 'Satelliten-Nachführung eingestellt', 'hf_device_updated': 'Kurzwellengerät eingestellt', 'interference_changed': 'Störlinie geändert', 'live_favorites_saved': 'Live-Favoriten gespeichert', 'location_confirmed': 'Standort bestätigt', 'publish_set': 'Webseiten-Upload eingestellt', 'restore_requested': 'Einspielen angefordert', 'satellites_armed_now': 'Satelliten sofort scharf', 'satellites_arming': 'Satelliten in 1 Minute scharf', 'scan_stop_requested': 'Scan-Abbruch angefordert', 'scheduler_dead_fallback': 'Zeitplaner antwortet nicht – Scan direkt gestartet', 'sstv_event_added': 'SSTV-Termin eingetragen', 'sstv_event_deleted': 'SSTV-Termin gelöscht', 'sstv_events_failed': 'SSTV-Termine: Abruf fehlgeschlagen', 'sstv_manual_queued': 'SSTV-Bild für die Webseite vorgemerkt', 'stick_updated': 'Stick-Einstellungen gespeichert', 'time_mode_set': 'Zeitangaben umgestellt', 'ui_prefs_failed': 'Ansicht-Profil: Fehler', 'update_started': 'Update gestartet', 'watchdog_ping_failed': 'Watchdog-Meldung fehlgeschlagen', 'webapp_stall': 'Dashboard hing kurz', 'webapp_stall_probe_failed': 'Dashboard-Hänger: Prüfung fehlgeschlagen', 'wifi_fallback_added': 'Ersatz-WLAN eingetragen', 'wifi_fallback_removed': 'Ersatz-WLAN entfernt', 'wsjtx_udp_set': 'Weitergabe im Netz (WSJT-X) eingestellt',
     'notice_raised': 'Hinweis gemeldet', 'notice_resolved': 'Hinweis behoben', 'notice_event': 'Ereignis gemeldet', 'update_done': 'Update fertig', 'rescue.start': 'Notfallseite gestartet', 'sysupdate_checked': 'Systemupdates geprüft', 'sysupgrade_requested': 'Systemupdate angefordert', 'sysupgrade_started': 'Systemupdate gestartet', 'sysupgrade_done': 'Systemupdate fertig', 'sysupgrade_failed': 'Systemupdate fehlgeschlagen', 'sysupgrade_waiting': 'Systemupdate wartet auf eine freie Minute', 'sysupgrade_cancelled': 'Systemupdate nicht mehr angefordert', 'sysupgrade_start_failed': 'Systemupdate ließ sich nicht starten', 'reboot_after_update': 'Neustart nach Systemupdate', 'reboot_postponed': 'Neustart verschoben', 'reboot_done': 'Neustart nach Systemupdate erledigt', 'sysupdate_settings': 'Systemupdates eingestellt', 'sysupdate_failed': 'Systemupdates: Fehler', 'foreign_request_blocked': 'Anfrage einer fremden Webseite abgewiesen', 'backup_key_set': 'Passwort der Zugangsdaten gesetzt', 'backup_key_cleared': 'Passwort der Zugangsdaten gelöscht', 'live_image_keep': 'Bild aus Live behalten (★)', 'live_image_unkeep': 'Bild aus Live nicht mehr behalten', 'live_image_delete': 'Bild aus Live gelöscht', 'live_image_publish': 'Bild aus Live für die Webseite vorgemerkt', 'ui_prefs_replaced': 'Ansicht-Profil übernommen', 'ui_prefs_copied': 'Ansicht-Profil kopiert', 'backup_dir_moved': 'Sicherungsordner umgezogen', 'writewatch_failed': 'Schreib-Zählung: Fehler', 'db_keeper_failed': 'Ruhende Datenbank-Verbindung: Fehler', 'live_yield': 'Live hält kurz an', 'live_resumed': 'Live läuft weiter', 'auth_none': 'Dashboard ohne Passwort', 'live_thumb_failed': 'Vorschaubild ließ sich nicht erzeugen',
     run_start: 'Scan gestartet', run_done: 'Scan fertig', run_failed: 'Scan fehlgeschlagen', run_cancelled: 'Scan abgebrochen',
@@ -1841,6 +1841,7 @@
     setTimeout(jumpCurrent, 400);
     if (name === 'logs') loadLogs();
     if (name === 'hits') loadHits();
+    if (name === 'scan') setTimeout(() => loadRadioWx(), 0);
     if (name === 'system') setTimeout(() => { loadSysLive(); loadHistory(); loadSystem(); loadSticks(); loadBackup(); loadPsk(); loadServices(); loadAntennas(); loadUpdate(); loadWifi(); loadSysupd(); }, 0);
   }
   document.querySelectorAll('.tabs-main button').forEach(b => b.addEventListener('click', e => {
@@ -2069,6 +2070,42 @@
 
   // ---------- Satelliten ----------
   let satData = null;
+  // Funkwetter (afu.tools, 1.8.68): nur wenn unter Einstellungen → afu.tools eingeschaltet (nicht verwechseln mit
+  // loadWx = WSJT-X-Weitergabe)
+  const WXQ = { gut: ['good', 'wx-good'], mittel: ['fair', 'wx-fair'], schlecht: ['poor', 'wx-poor'], zu: ['closed', 'wx-closed'] };
+  const wxCell = v => v ? `<span class="wx-q ${WXQ[v][1]}">${EN ? WXQ[v][0] : v}</span>` : '–';
+  async function loadRadioWx() {
+    let d; try { d = await api('/api/afutools/wx'); } catch (e) { return; }
+    $('panel-wx').hidden = !d.on || !d.head;
+    if ($('panel-wx').hidden) return;
+    const h = d.head, n = v => v == null ? '–' : String(v).replace('.', DS);
+    const kp = h.kp != null ? (Math.round(h.kp * 10) / 10) : null;
+    $('rwTag').textContent = `· ${EN ? 'as of' : 'Stand'} ${fmtTime(d.generated || d.fetched)}`;
+    $('rwHead').innerHTML = [
+      [n(h.sfi), EN ? 'solar flux' : 'Solarflux'], [n(h.ssn), EN ? 'sunspots' : 'Sonnenflecken'],
+      [`${n(kp)} <small>${esc(EN ? h.magnetfeld_en : h.magnetfeld)}</small>`, 'Kp'], [n(h.a), 'A'],
+      [`${n(h.muf_dl)} MHz`, `MUF DL${h.muf_gemessen ? (EN ? ' (measured)' : ' (gemessen)') : ''}`],
+      [esc(h.xray || '–'), EN ? 'X-ray' : 'Röntgen'], [esc(h.rauschen || '–'), EN ? 'noise' : 'Rauschen'],
+      [h.tag_dl ? (EN ? 'day' : 'Tag') : (EN ? 'night' : 'Nacht'), EN ? 'in DL' : 'in DL']]
+      .map(([v, l]) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
+    $('rwLage').textContent = d.lage ? I18N.t(d.lage) : '';
+    const o = d.open || {}, m = o.matrix || {};
+    $('rwOpenAge').textContent = o.stand ? `(${EN ? 'last' : 'letzte'} ${o.minuten} min, ${o.sender} ${EN ? 'senders' : 'Sender'})` : '';
+    const rows = (d.bands || []).map(b => b.band);
+    Object.keys(m).forEach(b => { if (!rows.includes(b)) rows.push(b); });
+    const order = o.baender && o.baender.length ? o.baender : rows;
+    rows.sort((x, y) => order.indexOf(x) - order.indexOf(y));
+    $('rwBands').innerHTML = rows.map(band => {
+      const b = (d.bands || []).find(x => x.band === band) || {}, cs = m[band] || {};
+      const conts = (o.kontinente || Object.keys(cs)).filter(c => cs[c]).map(c => `<span class="wx-cont" title="${cs[c].empf} ${EN ? 'receivers' : 'Empfänger'}${cs[c].snr != null ? ', SNR ' + cs[c].snr + ' dB' : ''}">${c} <small>${cs[c].empf}</small></span>`).join(' ');
+      return `<tr><td><b>${esc(band)}</b></td><td>${wxCell(b.jetzt)}</td><td>${wxCell(b.tag)}</td><td>${wxCell(b.nacht)}</td><td>${conts || '<span class="muted">–</span>'}</td></tr>`;
+    }).join('');
+    const es = Object.entries(d.es || {}).map(([b, v]) => `${b} ${wxCell(v)}`).join(' · ');
+    $('rwVhf').innerHTML = es ? `${EN ? 'Sporadic E' : 'Sporadic-E'}: ${es}${d.aurora ? ` · ${EN ? 'Aurora' : 'Aurora'} ${wxCell(d.aurora)}` : ''}` : '';
+    $('rwSrc').innerHTML = aftSrc(d.attribution);
+  }
+  setInterval(() => { if (!document.hidden && document.querySelector('section.view[data-view="scan"]:not([hidden])')) loadRadioWx(); }, 5 * 60000);
+
   async function loadSatPasses() {
     const root = $('satPasses'); if (!root) return;
     try { satData = await api('/api/sat/passes'); } catch (e) { return; }
@@ -3183,7 +3220,7 @@
     $('aftFeatures').hidden = !a.has_key;
     const fh = `<p class="hint">${EN ? 'What Hesperos fetches from afu.tools:' : 'Was Hesperos von afu.tools holt:'}</p>` + Object.keys(fl).map(k => `<label class="check"><input type="checkbox" data-aft="${k}"${fs[k] ? ' checked' : ''}> ${esc(I18N.t(fl[k]))}</label>`).join('');
     if ($('aftFeatures').dataset.h !== fh) { $('aftFeatures').innerHTML = fh; $('aftFeatures').dataset.h = fh;
-      $('aftFeatures').querySelectorAll('[data-aft]').forEach(x => x.addEventListener('change', () => aftPost({ features: { [x.dataset.aft]: x.checked } }, x.checked ? (EN ? '✓ switched on' : '✓ eingeschaltet') : (EN ? '✓ switched off' : '✓ ausgeschaltet')))); }
+      $('aftFeatures').querySelectorAll('[data-aft]').forEach(x => x.addEventListener('change', async () => { await aftPost({ features: { [x.dataset.aft]: x.checked } }, x.checked ? (EN ? '✓ switched on' : '✓ eingeschaltet') : (EN ? '✓ switched off' : '✓ ausgeschaltet')); setTimeout(loadRadioWx, 5000); })); }
     $('ownRepBox').hidden = !(a.has_key && a.count && fs.repeaters);
     if (!$('ownRepBox').hidden) loadOwnRep();
   }
@@ -4285,7 +4322,7 @@
   $('country').addEventListener('change', async e => {
     try {
       await post('/api/settings', { country: e.target.value });
-      await loadSettings(); await loadBandplan(); renderBands(); loadSatPasses();
+      await loadSettings(); await loadBandplan(); renderBands(); loadSatPasses(); loadRadioWx();
       note($('stationNote'), '✓ Bandplan gewechselt – Bänder neu wählen, gilt ab dem nächsten Scan');
     } catch (err) { note($('stationNote'), 'Fehler: ' + err.message, true); }
   });
@@ -4329,6 +4366,7 @@
     setInterval(pollLive, 1000);
     setInterval(pollStatus, 2000);
     loadSatPasses(); setInterval(loadSatPasses, 30000);
+    loadRadioWx();                                       // Funkwetter (afu.tools), alle 5 min bei offenem Scan-Reiter
     loadEibiScan();
     loadScanSummary(); setInterval(() => { if (document.visibilityState === 'visible') loadScanSummary(); }, 30000);
     setInterval(renderNextPass, 15000);

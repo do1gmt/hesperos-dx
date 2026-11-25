@@ -10,6 +10,7 @@ from urllib.parse import urlparse, parse_qs
 
 FIX = json.loads((Path(__file__).parent / "afutools_fixture.json").read_text(encoding="utf-8"))
 FIXQ = json.loads((Path(__file__).parent / "afutools_fixture_qth.json").read_text(encoding="utf-8"))
+FIXW = json.loads((Path(__file__).parent / "afutools_fixture_wx.json").read_text(encoding="utf-8"))
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8099
 LOG = Path(sys.argv[2]) if len(sys.argv) > 2 else None
 
@@ -27,6 +28,10 @@ class H(BaseHTTPRequestHandler):
             return self._send(401, {"error": "Schlüssel fehlt oder ungültig", "status": 401})
         if u.path == "/api/v1/repeaters":
             return self._send(200, FIX)
+        if u.path == "/api/v1/funkwetter":
+            return self._send(200, FIXW["funkwetter"])
+        if u.path == "/api/v1/funkwetter/offen":
+            return self._send(200, FIXW["offen"])
         if u.path == "/api/v1/qth":                  # nur die gefragten Rufzeichen, die die Vorlage kennt
             rufe = [c.strip().upper() for c in (parse_qs(u.query).get("rufe") or [""])[0].split(",") if c.strip()]
             if len(rufe) > 100:

@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.8.68 – 2026-11-25
+
+- **afu.tools, step 3 – radio weather** (switched off by default; *Settings → afu.tools*): a card *Radio weather* on
+  the *Scan* page – solar flux, sunspots, Kp with the field state, A, MUF over DL, X-ray, noise, day/night; the
+  short assessment; per band now/day/night (good · fair · poor · closed) and the measured openings from DL per
+  continent with the number of receivers (RBN/PSK Reporter, last 30 min); sporadic E and aurora. Fetched every 30
+  minutes, at once when switched on; sources below the card. Phones: compact tiles, now + measured only.
+- Self-test section 126; section 43 (satellite horizon) uses all satellites, so it no longer fails at times of
+  day without a pass above 20° among the first twelve.
+
 ## 1.8.67 – 2026-11-25
 
 - **afu.tools parts can be switched off one by one** (*Settings → afu.tools*, below the key): repeaters and

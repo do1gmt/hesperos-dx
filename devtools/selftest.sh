@@ -1355,7 +1355,7 @@ PY
 echo "== 43 Satelliten: Horizont rundherum und Mindesthöhe"
 (cd bin && timeout 120 python3 - <<'PY') && ok "aufgenommen wird nur über dem Horizont, zu niedrige Überflüge stehen ungeplant in der Liste" || bad "Horizont/Mindesthöhe"
 import satellites as S
-ids = [s["id"] for s in S.SATELLITES][:12]
+ids = [s["id"] for s in S.SATELLITES]          # alle (1.8.68: mit nur zwölf gab es je nach Uhrzeit keinen Überflug über 20°)
 a = S.upcoming(ids, "JN59HH", fetch=False, past_s=0, settings={})
 b = S.upcoming(ids, "JN59HH", fetch=False, past_s=0, settings={"sat_horizon": 20, "sat_min_el": 30})
 assert a["horizon"] == 0 and a["min_max_el"] == 10 and b["horizon"] == 20 and b["min_max_el"] == 30
@@ -4655,7 +4655,7 @@ try:
     st = json.loads(bak); st["my_locator"] = "JN59LL"; st["afutools"] = {"api_key": "afu_test", "km": 50}
     W.SETTINGS.write_text(json.dumps(st))
     AFT._write({"repeaters": [{"call": "DB0FUE", "out_hz": 145637500, "km": 3.8}], "near": "JN59LL", "km": 50, "fetched_ts": 9e12})
-    assert AFT.config()["features"] == {"repeaters": True, "qth": True} and AFT.repeater_at(145637500)["call"] == "DB0FUE"
+    assert AFT.config()["features"] == {"repeaters": True, "qth": True, "wx": False} and AFT.repeater_at(145637500)["call"] == "DB0FUE"
     W.afutools_save({"features": {"repeaters": False}})
     assert AFT.config()["features"]["repeaters"] is False and AFT.repeater_at(145637500) is None
     assert AFT.refresh(json.loads(W.SETTINGS.read_text()), force=True).get("repeaters")      # abgeschaltet: nicht geholt (alter Stand)
@@ -4676,6 +4676,34 @@ out = subprocess.run(["node", "-e", "const EN=false, esc=s=>String(s);" + f + "c
 assert ">afu.tools</a> · " in out and ">PSK Reporter</a>" in out and ">PSK Reporter MQTT</a>" in out and out.count(">Reverse Beacon Network</a>") == 1, out
 assert 'title="Reverse Beacon Network, eigener Mitschnitt über afu.tools · Reverse Beacon Network, Skimmerliste mit Locator"' in out and 'target="_blank" rel="noopener"' in out
 PY
+
+echo "== 126 afu.tools: Funkwetter (nur eingeschaltet, alle 30 min, Quellen)"
+AFL=$(mktemp); (python3 "$SRC/devtools/afutools_fake.py" 8096 "$AFL" > /dev/null 2>&1 &); sleep 1
+(cd bin && HSP_AFUTOOLS_URL=http://127.0.0.1:8096/api/v1 timeout 60 python3 - "$SRC" "$AFL" <<'PY') && ok "aus: nichts geholt und keine Karte; an: Solarflux 87, Kp, MUF, Bandbewertung, gemessene Öffnungen je Kontinent, Quellen NOAA/GFZ/GIRO/RBN/PSK Reporter; nicht öfter als alle 30 min; Karte auf der Scan-Seite (eigener Name, WSJT-X-Weitergabe unberührt)" || bad "Funkwetter"
+import sys, json, re
+from pathlib import Path
+import afutools as AFT, webapp as W
+bak = W.SETTINGS.read_text()
+try:
+    st = json.loads(bak); st["my_locator"] = "JN59LL"; st["afutools"] = {"api_key": "afu_test", "km": 50}
+    W.SETTINGS.write_text(json.dumps(st))
+    assert AFT.wx_refresh(st) is None and AFT.wx() == {"on": False}                   # ausgeschaltet (Vorgabe)
+    W.afutools_save({"features": {"wx": True}}); st = json.loads(W.SETTINGS.read_text())
+    d = AFT.wx_refresh(st)
+    assert not d["error"] and d["head"]["sfi"] == 87 and d["head"]["magnetfeld"] == "sehr ruhig" and d["head"]["muf_gemessen"] is True
+    b = {x["band"]: x for x in d["bands"]}; assert b["40m"]["jetzt"] == "gut" and b["20m"]["jetzt"] == "zu" and len(d["bands"]) == 10
+    assert d["open"]["matrix"]["40m"]["EU"]["empf"] == 655 and d["open"]["sender"] == 307 and d["lage"].startswith("Ruhiges Magnetfeld")
+    names = [x["name"] for x in d["attribution"]["sources"]]; assert names[0] == "afu.tools" and "NOAA Space Weather Prediction Center" in names and any(n.startswith("GFZ") for n in names)
+    n = len(Path(sys.argv[2]).read_text().splitlines()); AFT.wx_refresh(st); assert len(Path(sys.argv[2]).read_text().splitlines()) == n == 2
+    w = AFT.wx(); assert w["on"] and w["head"]["kp"] == 0.667 and "tried_ts" not in w
+    W.afutools_save({"clear_key": True}); assert not AFT.WX.exists()
+finally:
+    W.SETTINGS.write_text(bak); AFT.forget()
+src = Path(sys.argv[1]); js = (src / "web" / "app.js").read_text(); html = (src / "web" / "index.html").read_text()
+assert len(re.findall(r"async function loadWx\(", js)) == 1 and "async function loadRadioWx()" in js and 'id="panel-wx" hidden' in html and 'id="rwBands"' in html
+assert "if (name === 'scan') setTimeout(() => loadRadioWx(), 0);" in js and "'afutools_wx': 'afu.tools: Funkwetter abgerufen'" in js
+PY
+pkill -f "afutools_fake.py 8096" 2>/dev/null; rm -f "$AFL"
 
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi

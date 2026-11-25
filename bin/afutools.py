@@ -10,6 +10,9 @@ Schritt 2 (1.8.64): Locator zu gehörten Rufzeichen, die selbst keinen senden (/
 nie aus der Rufzeichenliste). Höchstens 100 Rufzeichen je Abfrage, alle 15 min eine; gefundene werden nach 7 Tagen
 neu gefragt, nicht gefundene nach 2 Tagen. Ergebnis in der Tabelle afu_qth der Datenbank.
 
+Schritt 3 (1.8.68): Funkwetter (/funkwetter?kurz=true und /funkwetter/offen?von=dl) alle 30 min, zwischengespeichert
+unter data/afutools_wx.json – Kopf-Werte, Lage, Bandbewertung und die gemessenen Öffnungen von DL aus.
+
 Der Schlüssel liegt in config/web_settings.json unter afutools.api_key, wird nie ans Dashboard gegeben, nie
 protokolliert und nicht ins einfache Backup geschrieben (wie die anderen Zugangsdaten). Jede Antwort bringt unter
 `quellenangabe` mit, welche Quellen sichtbar zu nennen sind – das Dashboard zeigt genau diese Nennung.
@@ -56,7 +59,8 @@ def config(settings=None):
 # Was Hesperos von afu.tools holt – einzeln abschaltbar, damit das Dashboard nicht überladen wird (1.8.67).
 # Neue Teile kommen ausgeschaltet dazu; Relais und Standorte waren schon da und bleiben an.
 FEATURES = {"repeaters": (True, "Relais in der Nähe und an Treffern"),
-            "qth": (True, "Standort gehörter Stationen ohne eigenen Locator")}
+            "qth": (True, "Standort gehörter Stationen ohne eigenen Locator"),
+            "wx": (False, "Funkwetter auf der Scan-Seite (Sonne, Magnetfeld, welche Bänder offen sind)")}
 
 
 def public_config(settings=None):
@@ -171,11 +175,12 @@ def cached():
 
 
 def forget():
-    """Schlüssel entfernt: zwischengespeicherte Relais mit löschen (ohne Schlüssel keine Nutzung der Daten)."""
-    try:
-        CACHE.unlink()
-    except OSError:
-        pass
+    """Schlüssel entfernt: zwischengespeicherte Daten mit löschen (ohne Schlüssel keine Nutzung der Daten)."""
+    for f in (CACHE, BASE / "data" / "afutools_wx.json"):
+        try:
+            f.unlink()
+        except OSError:
+            pass
     _MEM.update(mtime=None, data=None)
 
 
@@ -335,3 +340,88 @@ def qth_forget(db):
         QTH_SRC.unlink()
     except OSError:
         pass
+
+
+# ---------------------------------------------------------------- Schritt 3: Funkwetter
+WX = BASE / "data" / "afutools_wx.json"
+WX_REFRESH_S = 30 * 60
+_WX = {"mtime": None, "data": None}
+
+
+def _num(v):
+    try:
+        return float(v) if v is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def wx_refresh(settings=None, log=None, force=False):
+    """Funkwetter holen, wenn eingeschaltet und älter als 30 min. Nur was angezeigt wird, kommt in den Speicher."""
+    c = config(settings)
+    if not c["api_key"] or not c["features"]["wx"]:
+        return None
+    d = wx_cached()
+    if not force and (time.time() - float(d.get("tried_ts") or 0) < (RETRY_S if d.get("error") else WX_REFRESH_S)):
+        return d
+    new = dict(d, tried_ts=time.time())
+    try:
+        w = _get("/funkwetter", {"kurz": "true"}, c["api_key"])
+        o = _get("/funkwetter/offen", {"von": "dl"}, c["api_key"])
+        k = w.get("kopf") or {}
+        head = {x: _num(k.get(x)) for x in ("sfi", "ssn", "a", "kp", "muf_dl", "fof2_dl", "wind", "bz", "aurora_eu")}
+        head.update({"xray": str(k.get("xray") or "")[:8], "magnetfeld": str(k.get("magnetfeld") or "")[:30],
+                     "magnetfeld_en": str(k.get("magnetfeld_en") or "")[:30], "rauschen": str(k.get("rauschen") or "")[:12],
+                     "muf_gemessen": bool(k.get("muf_dl_gemessen")), "tag_dl": bool(k.get("tag_dl"))})
+        ok = {"gut", "mittel", "schlecht", "zu"}
+        bands = [{"band": str(b.get("band"))[:6], "tag": b.get("tag") if b.get("tag") in ok else None,
+                  "nacht": b.get("nacht") if b.get("nacht") in ok else None, "jetzt": b.get("jetzt") if b.get("jetzt") in ok else None}
+                 for b in w.get("baender") or [] if b.get("band")]
+        es = ((w.get("vhf") or {}).get("es") or {})
+        matrix = {}
+        for band, conts in (o.get("matrix") or {}).items():
+            if isinstance(conts, dict):
+                matrix[str(band)[:6]] = {str(ct)[:2]: {"empf": int(v.get("empf") or 0), "snr": _num(v.get("snr"))}
+                                         for ct, v in conts.items() if isinstance(v, dict)}
+        src = attribution(w.get("quellenangabe"))
+        for x in attribution(o.get("quellenangabe"))["sources"]:
+            if not any(y["name"] == x["name"] for y in src["sources"]):
+                src["sources"].append(x)
+        new = {"fetched": _iso(), "tried_ts": time.time(), "error": None, "head": head, "lage": str(w.get("lage") or "")[:300],
+               "bands": bands, "es": {b: v for b, v in es.items() if v in ok}, "aurora": (w.get("vhf") or {}).get("aurora"),
+               "open": {"matrix": matrix, "minuten": int(o.get("minuten") or 30), "sender": int(o.get("sender") or 0),
+                        "stand": str(o.get("stand") or "")[:20], "baender": list(o.get("baender") or [])[:20],
+                        "kontinente": list(o.get("kontinente") or [])[:8]},
+               "generated": str(w.get("generated") or "")[:20], "attribution": src}
+        if log:
+            log("INFO", "afutools", "afutools_wx", sfi=head["sfi"], kp=head["kp"])
+    except Exception as e:
+        new["error"] = str(e)[:200]
+        if log:
+            log("WARN", "afutools", "afutools_failed", what="Funkwetter", error=new["error"])
+    WX.parent.mkdir(parents=True, exist_ok=True)
+    tmp = WX.with_suffix(".tmp")
+    tmp.write_text(json.dumps(new, ensure_ascii=False), encoding="utf-8")
+    os.replace(tmp, WX)
+    return new
+
+
+def wx_cached():
+    try:
+        m = WX.stat().st_mtime
+    except OSError:
+        return {}
+    if _WX["mtime"] != m:
+        try:
+            _WX["data"] = json.loads(WX.read_text(encoding="utf-8"))
+        except Exception:
+            _WX["data"] = {}
+        _WX["mtime"] = m
+    return _WX["data"] or {}
+
+
+def wx():
+    """Fürs Dashboard: Funkwetter aus dem Zwischenspeicher, nur wenn eingeschaltet."""
+    if not _on("wx"):
+        return {"on": False}
+    d = wx_cached()
+    return dict({k: v for k, v in d.items() if k != "tried_ts"}, on=True)
