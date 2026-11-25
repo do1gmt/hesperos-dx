@@ -173,16 +173,25 @@ def stack_summary(txt, n=4):
     return " ← ".join(frames[:n]) if frames else None
 
 
+_SCAN_SEEN = [None]                                  # seit wann der Wächter den laufenden Scan sieht
+
+
 def scan_watchdog():
     """Hängender Scan: der Scanner meldet sich je Fenster/Schritt (data/scanner.heartbeat). Kam 10 min kein
     Lebenszeichen, obwohl er den Stick hält, wird der Lauf beendet (sauber, sonst mit Gewalt) – mit Hinweis, wo
     er stand. Gilt nur für die Scan-Phase (Überflüge haben ihren eigenen Wächter, die Auswertung braucht den
     Stick nicht)."""
     if not (cycle_running() and scan_running()) or sat_pass_active():
+        _SCAN_SEEN[0] = None
         return
+    if _SCAN_SEEN[0] is None:
+        _SCAN_SEEN[0] = time.time()
     hb = _RD.path("scanner.heartbeat")
     try:
-        age = time.time() - hb.stat().st_mtime
+        # gezählt ab dem letzten Lebenszeichen – frühestens ab dem Start dieses Laufs: das Lebenszeichen des vorigen
+        # Laufs (nach einem Neustart des Zeitplaners auch viel älter) galt sonst schon Sekunden nach dem Start als
+        # „16 min still“, und der neue Scan wurde beendet, bevor er überhaupt angefangen hatte (1.8.53)
+        age = time.time() - max(hb.stat().st_mtime, _SCAN_SEEN[0])
     except OSError:
         return
     if age < SCAN_HANG_S:

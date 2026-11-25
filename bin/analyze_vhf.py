@@ -23,6 +23,9 @@ DB = BASE / "data" / "scanner.db"
 OUT = BASE / "reports"
 MULTIMON = shutil.which("multimon-ng")
 
+# APRS (AFSK1200) wird in jedem FM-Treffer gesucht, nicht nur auf der APRS-Frequenz: ISS-Digipeater 145.825,
+# Satelliten mit Doppler, abweichende Frequenzen anderer Länder (1.8.53). multimon-ng auf ein paar Sekunden Ton ist billig.
+FM_DATA = {"fm", "relais", "dv", "aprs", "sat", "data"}
 AUDIO_MODE = {"fm": "nfm", "relais": "nfm", "dv": "nfm", "aprs": "nfm", "pocsag": "nfm",
               "sat": "nfm", "data": "nfm", "am": "am", "wfm": "wfm"}
 
@@ -64,17 +67,26 @@ def run_multimon(audio, rate, decoder):
     return lines
 
 
+def _checked(jpath):
+    """Wurde dieser Treffer schon auf APRS geprüft? (sonst einmal nachholen – nur Treffer der letzten 3 Tage)"""
+    try:
+        return "AFSK1200" in json.loads(jpath.read_text(encoding="utf-8")).get("checked", [])
+    except Exception:
+        return False
+
+
 def main():
     db = sqlite3.connect(DB)
     rows = db.execute("""
-        SELECT p.id, p.rf_hz, p.recording_path, COALESCE(p.rec_center_hz, s.center_hz), s.band, COALESCE(p.mode,'')
+        SELECT p.id, p.rf_hz, p.recording_path, COALESCE(p.rec_center_hz, s.center_hz), s.band, COALESCE(p.mode,''),
+               s.time >= datetime('now', '-3 days')
         FROM peak p JOIN scan s ON s.id = p.scan_id
         WHERE p.recording_path IS NOT NULL
           AND COALESCE(p.rec_center_hz, s.center_hz) >= 30000000
         ORDER BY p.id""").fetchall()
     db.close()
     done = 0
-    for peak_id, rf_hz, recpath, center_hz, band, mode in rows:
+    for peak_id, rf_hz, recpath, center_hz, band, mode, recent in rows:
         src = Path(recpath)
         if not src.exists():
             continue
@@ -84,7 +96,8 @@ def main():
         suffix = "_AM.wav" if amode == "am" else "_FM.wav"
         out = OUT / f"{src.stem}{suffix}"
         jpath = OUT / f"{src.stem}_decode.json"
-        if out.exists() and (mode not in ("aprs", "pocsag") or jpath.exists()):
+        afsk = bool(MULTIMON) and mode in FM_DATA
+        if out.exists() and (mode not in ("aprs", "pocsag") or jpath.exists()) and not (afsk and recent and not _checked(jpath)):
             continue
         try:
             # stückweise laden und mischen (complex64, ohne Herunterrechnen) – Aufnahmen verfolgter QSOs sind bis
@@ -94,7 +107,7 @@ def main():
             audio, arate = W.demodulate(bb, rate, amode)
             write_wav(out, audio, arate)
             print(f"{band:9s} {rf_hz/1e6:10.4f} MHz  {mode:7s} -> {out.name}")
-            if mode in ("aprs", "pocsag"):
+            if mode in ("aprs", "pocsag") or afsk:
                 data = {"peak_id": peak_id, "band": band, "frequency_hz": rf_hz, "decoders": []}
                 if jpath.exists():
                     try:
@@ -102,16 +115,18 @@ def main():
                     except Exception:
                         pass
                 if MULTIMON:
-                    dec = "AFSK1200" if mode == "aprs" else "POCSAG1200"
-                    lines = run_multimon(audio, arate, dec)
-                    if mode == "pocsag":
+                    pocsag = mode == "pocsag"
+                    lines = run_multimon(audio, arate, "POCSAG1200" if pocsag else "AFSK1200")
+                    if pocsag:
                         lines += run_multimon(audio, arate, "POCSAG512")
                     data["decoders"] = [d for d in data.get("decoders", []) if d.get("type") not in ("APRS", "POCSAG")]
+                    data["checked"] = sorted(set(data.get("checked", [])) | {"POCSAG" if pocsag else "AFSK1200"})
                     if lines:
                         data["decoders"].insert(0, {
-                            "type": "APRS" if mode == "aprs" else "POCSAG",
+                            "type": "POCSAG" if pocsag else "APRS",
                             "confidence": 95, "text": "\n".join(lines[:40]),
-                            "detail": f"multimon-ng, {len(lines)} Pakete", "messages": []})
+                            "detail": f"multimon-ng, {len(lines)} Pakete" + ("" if mode in ("aprs", "pocsag") else " (außerhalb der APRS-Frequenz)"),
+                            "messages": []})
                         print(f"          {len(lines)} Pakete dekodiert")
                 else:
                     data.setdefault("notes", []).append("multimon-ng nicht installiert (sudo apt install multimon-ng)")

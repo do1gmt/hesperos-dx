@@ -884,7 +884,8 @@ logs = []
 BASE = Path("..").resolve()
 g = {"BASE": BASE, "LOCK": BASE / "data" / "scan.lock", "time": time, "json": json, "subprocess": subprocess,
      "applog": lambda lv, comp, ev, **d: logs.append(ev), "sat_pass_active": lambda: False, "SCAN_HANG_S": 600,
-     "_RD": __import__("rundir"), "os": os, "Path": Path, "SCANNER_STALL": BASE / "log" / "scanner_stall.txt"}
+     "_RD": __import__("rundir"), "os": os, "Path": Path, "SCANNER_STALL": BASE / "log" / "scanner_stall.txt",
+     "_SCAN_SEEN": [time.time() - 700]}                    # Wächter sieht den Lauf seit 11+ min
 exec(compile(ast.Module(fns, []), "sched", "exec"), g)
 # Scanner-Attrappe: hält Lauf- und Stick-Sperre, gibt bei scan_yield frei (wie der echte Scanner)
 dummy = f"""
@@ -4316,6 +4317,104 @@ assert 'id="panel-meshsrv" hidden' in html and '<h2>MeshCore-Node (Companion)</h
 assert html.index('id="meshServers"') > html.index('id="panel-meshsrv"')
 assert '<select id="meshNodesPer"><option selected>25</option>' in html and "'meshnodes.per'," in (src / "web" / "prefs.js").read_text()
 assert "&nlimit=${meshNodesPage.per}&noffset=${meshNodesPage.offset}" in js and "Knoten" not in html
+PY
+
+echo "== 113 Eigene Frequenzen: als ★-Segment im passenden Band, gezielt abgestimmt, geprüft gespeichert"
+(cd bin && timeout 60 python3 - "$SRC" <<'PY') && ok "Vereinsfrequenz 145,550 erscheint als ★-Knopf im 2-m-Band und wird als einziges Segment gezielt abgestimmt; Frequenz außerhalb aller Bänder abgelehnt; Einstellungskarte und Protokolltext" || bad "Eigene Frequenzen"
+import sys, json
+from pathlib import Path
+import bandplan as BP, scan_plan as SP
+cfg = json.load(open("../config/scanner.json"))
+st = {"own_frequencies": [{"id": "a1", "name": "Verein", "freq_hz": 145550000, "mode": "fm"}, {"id": "b2", "name": "Runde", "freq_hz": 3650000, "mode": "voice"}],
+      "active_device": "rtlsdr", "selected_bands": ["2m"], "selected_segments": {"2m": ["own_a1"]}}
+eff = BP.apply(cfg, st)
+two = next(r for r in eff["ranges"] if r["name"] == "2m"); eighty = next(r for r in eff["ranges"] if r["name"] == "80m")
+seg = next(s for s in two["segments"] if s["id"] == "own_a1")
+assert seg["frequencies_hz"] == [145550000] and seg["label"].startswith("★ Verein") and seg["mode"] == "fm"
+assert next(s for s in eighty["segments"] if s["id"] == "own_b2")["sideband"] == "lsb"
+assert not any(s["id"].startswith("own_") for r in cfg["ranges"] for s in r.get("segments", []))   # Datei bleibt unverändert
+plan = SP.make_plan(eff, st)
+p2 = next(p for p in plan if p["name"] == "2m")
+assert p2["labels"] == [seg["label"]] and any(abs(c - 145550000) < 1_000_000 for c in p2["centers_hz"]), p2
+import webapp as W
+W.SETTINGS = Path(W.SETTINGS); bak = W.SETTINGS.read_text()
+try:
+    out = W.save_own_frequencies([{"name": "Verein", "mhz": "145,550", "mode": "fm"}])
+    assert out[0]["freq_hz"] == 145550000 and out[0]["id"].isalnum()
+    assert W.load_settings()["own_frequencies"][0]["band"] == "2m"
+    for bad_item in ({"name": "X", "mhz": "1000", "mode": "fm"}, {"name": "", "mhz": "145.5", "mode": "fm"}, {"name": "X", "mhz": "abc", "mode": "fm"}, {"name": "X", "mhz": "145.5", "mode": "zz"}):
+        try:
+            W.save_own_frequencies([bad_item]); raise SystemExit(f"angenommen: {bad_item}")
+        except ValueError:
+            pass
+finally:
+    W.SETTINGS.write_text(bak)
+src = Path(sys.argv[1]); html = (src / "web" / "index.html").read_text(); js = (src / "web" / "app.js").read_text(); i18n = (src / "web" / "i18n.js").read_text()
+assert 'id="panel-ownfreq"' in html and "'/api/own-frequencies'" in js and "'own_frequencies_set': 'Eigene Frequenzen geändert'" in js
+assert "'Eigene Frequenzen geändert': 'Own frequencies changed'" in i18n and '"Eigene Frequenzen": "Own frequencies"' in i18n
+PY
+
+echo "== 114 Zeitplaner: kein falscher „Scan hängt“ durch das Lebenszeichen des vorigen Laufs"
+(cd bin && timeout 30 python3 - <<'PY') && ok "altes Lebenszeichen (16 min) direkt nach dem Start beendet den neuen Scan nicht; 10 min wirklich still sehr wohl" || bad "Scan-Wächter"
+import ast, os, time, tempfile
+from pathlib import Path
+src = open("scheduler.py").read(); tree = ast.parse(src)          # scheduler.py startet beim Import – nur den Wächter holen
+fn = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "scan_watchdog")
+hang = next(n for n in tree.body if isinstance(n, ast.Assign) and getattr(n.targets[0], "id", "") == "SCAN_HANG_S")
+stopped, d = [], Path(tempfile.mkdtemp())
+hb = d / "scanner.heartbeat"; hb.write_text("x"); old = time.time() - 16 * 60; os.utime(hb, (old, old))
+class RD:
+    path = staticmethod(lambda n: d / n)
+ns = {"time": time, "json": __import__("json"), "BASE": d, "_RD": RD, "_SCAN_SEEN": [None], "applog": lambda *a, **k: None,
+      "cycle_running": lambda: True, "scan_running": lambda: True, "sat_pass_active": lambda: False,
+      "scanner_stack": lambda: None, "stop_running_scan": lambda why: stopped.append(why) or True}
+exec(compile(ast.Module([hang, fn], []), "scheduler", "exec"), ns)
+ns["scan_watchdog"]()
+assert not stopped, "frischer Lauf als hängend beendet"
+ns["_SCAN_SEEN"][0] = time.time() - ns["SCAN_HANG_S"] - 5
+ns["scan_watchdog"]()
+assert stopped == ["Scan hing"], stopped
+ns["scan_running"] = lambda: False; ns["scan_watchdog"](); assert ns["_SCAN_SEEN"][0] is None
+PY
+
+echo "== 115 APRS auch außerhalb der APRS-Frequenz (jeder FM-Treffer, die letzten 3 Tage nachträglich)"
+(cd bin && timeout 60 python3 - <<'PY') && ok "FM-Treffer auf 145,825 (ISS) wird auf AFSK1200 geprüft, Pakete als APRS mit Hinweis; schon geprüfte und ältere Treffer bleiben unangetastet" || bad "APRS in FM-Treffern"
+import json, sqlite3, tempfile
+from pathlib import Path
+import numpy as np
+import analyze_vhf as A, iqload as IQ
+d = Path(tempfile.mkdtemp()); A.DB = d / "t.db"; A.OUT = d
+db = sqlite3.connect(A.DB)
+db.execute("CREATE TABLE scan (id INTEGER PRIMARY KEY, time TEXT, band TEXT, center_hz INTEGER)")
+db.execute("CREATE TABLE peak (id INTEGER PRIMARY KEY, scan_id INTEGER, rf_hz REAL, recording_path TEXT, rec_center_hz REAL, mode TEXT)")
+for i, (age, mode) in enumerate([("-1 hours", "fm"), ("-10 days", "fm"), ("-1 hours", "wfm")], 1):
+    (d / f"r{i}.wav").write_bytes(b"x")
+    db.execute("INSERT INTO scan VALUES (?, datetime('now', ?), '2m', 145800000)", (i, age))
+    db.execute("INSERT INTO peak VALUES (?, ?, 145825000, ?, NULL, ?)", (i, i, str(d / f"r{i}.wav"), mode))
+    (d / f"r{i}_FM.wav").write_bytes(b"x")                  # Ton gab es schon (älterer Stand)
+db.commit(); db.close()
+calls = []
+A.MULTIMON = "/bin/true"
+IQ.baseband = lambda src, off, n: (np.zeros(100, np.complex64), 48000)
+A.W.demodulate = lambda bb, rate, mode: (np.zeros(100), 48000)
+A.write_wav = lambda *a: None
+A.run_multimon = lambda audio, rate, dec: calls.append(dec) or ["RS0ISS>CQ,ARISS:>Hallo"]
+A.main()
+j = json.loads((d / "r1_decode.json").read_text())
+assert calls == ["AFSK1200"] and j["checked"] == ["AFSK1200"] and j["decoders"][0]["type"] == "APRS"
+assert "außerhalb der APRS-Frequenz" in j["decoders"][0]["detail"] and not (d / "r2_decode.json").exists() and not (d / "r3_decode.json").exists()
+A.main(); assert calls == ["AFSK1200"]                       # nur einmal nachholen
+PY
+
+echo "== 116 Handy: Hinweis bei der Diagnose sichtbar, Satelliten-Karte mit dem üblichen Klapp-Knopf"
+(timeout 30 python3 - "$SRC" <<'PY') && ok "Hinweis oben statt unter der Download-Abfrage, Notiz am Knopf, Notfall-Seite lädt während der Diagnose nicht neu; Satelliten-Karte ohne eigenen Klapp-Haken" || bad "Diagnose-Hinweis/Satelliten-Klappknopf"
+import sys
+from pathlib import Path
+src = Path(sys.argv[1]); css = (src / "web" / "style.css").read_text(); html = (src / "web" / "index.html").read_text(); js = (src / "web" / "app.js").read_text()
+r = (src / "bin" / "rescue.py").read_text()
+assert ".toast { bottom: auto; top: calc(.6rem + env(safe-area-inset-top))" in css and 'id="svcDiagNote"' in html
+assert "satCollapse" not in html and "collapse-btn" not in html[html.index('id="panel-sat"'):html.index('id="panel-sat"') + 300]
+assert "http-equiv=refresh" not in r and "onsubmit=\"return diag()\"" in r
 PY
 
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt

@@ -104,7 +104,7 @@ def page(msg=""):
     sudo = "" if st["sudo"] else ("<div class='note bad'>Neu starten ist noch nicht freigegeben (sudo-Regel fehlt). "
                                    "Update erneut einspielen.</div>")
     return f"""<!doctype html><html lang=de><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
-<meta http-equiv=refresh content=20><title>Hesperos DX – Notfall</title><style>{CSS}</style>
+<title>Hesperos DX – Notfall</title><style>{CSS}</style>
 <h1>Hesperos DX – Notfall-Seite</h1>
 <p class=muted>Läuft unabhängig vom Dashboard. <a href="http://{host}:8080/" id=dash>Zum Dashboard</a></p>
 {f"<div class=note>{html.escape(msg)}</div>" if msg else ""}{sudo}
@@ -112,9 +112,13 @@ def page(msg=""):
 <h2>Pi</h2><p>Speicher verfügbar <b>{m.get('MemAvailable', '?')} MB</b> von {m.get('MemTotal', '?')} MB ·
 Swap belegt {m.get('SwapTotal', 0) - m.get('SwapFree', 0)} MB · Last {' '.join(load)} · läuft seit {up / 3600:.1f} h</p>
 <form method=post action='/reboot'><button class=danger onclick="return confirm('Den Raspberry Pi wirklich neu starten? Laufende Scans und Aufnahmen werden abgebrochen.')">Pi neu starten</button></form>
-<form method=get action='/diagnose'><button>Diagnose herunterladen</button></form>
+<form method=get action='/diagnose' onsubmit="return diag()"><button>Diagnose herunterladen</button></form>
+<div class=note id=diagnote hidden>Diagnosepaket wird erstellt (bis 20 s) – der Download startet von selbst. Bitte die Seite so lange offen lassen.</div>
 <h2>Protokoll (neueste zuerst)</h2><table>{logs or "<tr><td class=muted>leer</td></tr>"}</table>
-<script>document.getElementById('dash').href = location.protocol + '//' + location.hostname + ':8080/';</script>
+<script>document.getElementById('dash').href = location.protocol + '//' + location.hostname + ':8080/';
+// alle 20 s neu laden – aber nicht, während das Diagnosepaket entsteht (das Neuladen bräche den Download ab)
+var busy = 0, t = setInterval(function () {{ if (Date.now() - busy > 40000) location.replace('/'); }}, 20000);   // nie ein Formular erneut senden
+function diag() {{ if (Date.now() - busy < 25000) return false; busy = Date.now(); document.getElementById('diagnote').hidden = false; return true; }}</script>
 </html>"""
 
 

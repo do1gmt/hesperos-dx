@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.8.53 – 2026-11-25
+
+- **Own frequencies** (*Settings → Own frequencies*): name, frequency in MHz and mode, up to 50 entries. Each one
+  appears under *Scan → Bands & modes* in the band it lies in as its own ★ button (e.g. *★ Verein 145.55*) and,
+  when switched on, is tuned to directly – e.g. to scan the club frequency regularly. Frequencies outside every
+  band of the band plan or in a blocked range are refused; changes are logged (*Own frequencies changed*).
+- **APRS outside the APRS frequency:** packets were only decoded on hits classified as APRS (e.g. 144.800). Now
+  every FM hit (FM, repeater, satellite, data, digital voice) is checked for AFSK1200 – e.g. the ISS digipeater on
+  145.825 or APRS on a satellite with Doppler. Hits of the last 3 days are checked once afterwards.
+- **Fix: false "scan hung" right after a restart of the scheduler.** The watchdog counted from the heartbeat of the
+  previous run (16 min old) and stopped the new scan 10 s after its start. It now counts from the start of the
+  current run at the earliest.
+- **Phone: diagnostics notice visible.** The notice appeared at the bottom of the screen, hidden by the tabs and
+  the browser's download prompt; on phones it now appears at the top, stays 8 s, and a note next to the button
+  says what happens (and after 25 s what to do if no download came). The rescue page (port 8081) shows a note too
+  and no longer reloads itself while the package is being built.
+- **Satellite passes:** the card used its own fold tick on the left; it now has the usual fold button on the right
+  like every other card (a folded state is taken over once).
+- Self-test sections 113–116.
+
 ## 1.8.52 – 2026-11-25
 
 - **German wording for MeshCore:** "Knoten" replaced by **"Node"**, as the German MeshCore community says (Node

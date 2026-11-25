@@ -51,9 +51,49 @@ def profile(code):
     return p
 
 
+OWN_MODES = {"fm": "FM", "voice": "Sprache (SSB)", "am": "AM", "cw": "CW", "ft8": "FT8", "digital": "Digital",
+             "aprs": "APRS", "pocsag": "Pager", "dv": "Digitalfunk"}
+
+
+def own_frequencies(settings=None):
+    """Eigene Frequenzen (Einstellungen → Eigene Frequenzen): [{id, name, freq_hz, mode}]."""
+    if settings is None:
+        try:
+            settings = json.loads(SETTINGS.read_text(encoding="utf-8"))
+        except Exception:
+            settings = {}
+    return [f for f in (settings.get("own_frequencies") or []) if isinstance(f, dict) and f.get("freq_hz")]
+
+
+def add_own(cfg, settings=None):
+    """Eigene Frequenzen als Segmente („★ Name“, eine Kanalfrequenz) in das Band legen, in dem sie liegen – damit
+    erscheinen sie unter Bänder & Betriebsarten als Knopf und werden wie FT8 7.074 gezielt abgestimmt."""
+    own = own_frequencies(settings)
+    if not own or not isinstance(cfg, dict):
+        return cfg
+    out = dict(cfg)
+    out["ranges"] = [dict(r, segments=list(r.get("segments", []))) for r in cfg.get("ranges", [])]
+    for f in own:
+        hz = int(f["freq_hz"])
+        band = next((r for r in out["ranges"] if not r.get("satellite") and int(r.get("start_hz", 0)) <= hz <= int(r.get("stop_hz", 0))), None)
+        if not band:
+            continue
+        mode = f.get("mode") if f.get("mode") in OWN_MODES else "fm"
+        seg = {"id": "own_" + str(f.get("id")), "label": f"★ {f.get('name') or 'eigene'} {hz / 1e6:.4f}".rstrip("0").rstrip("."),
+               "mode": mode, "frequencies_hz": [hz], "note": "eigene Frequenz (Einstellungen → Eigene Frequenzen)", "own": True}
+        if mode == "voice":
+            seg["sideband"] = "lsb" if hz < 10_000_000 else "usb"
+        band["segments"].append(seg)
+    return out
+
+
 def apply(cfg, settings=None, code=None):
-    """Wirksamer Bandplan: cfg (aus config/scanner.json) mit der Überlagerung des gewählten Landes.
-    Gibt eine Kopie zurück; ohne Überlagerung das unveränderte cfg."""
+    """Wirksamer Bandplan: cfg (aus config/scanner.json) mit der Überlagerung des gewählten Landes und den eigenen
+    Frequenzen. Gibt eine Kopie zurück; ohne Überlagerung und eigene Frequenzen das unveränderte cfg."""
+    return add_own(_apply_country(cfg, settings, code), settings)
+
+
+def _apply_country(cfg, settings=None, code=None):
     code = code or country(settings)
     p = profile(code)
     if not p or not isinstance(cfg, dict):

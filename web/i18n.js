@@ -334,6 +334,9 @@
     'Passwort zu kurz (mindestens 8 Zeichen)': 'Password too short (at least 8 characters)',
     'Anmeldung': 'Login', 'Abgemeldet': 'Logged out', 'Anmeldung fehlgeschlagen': 'Login failed', 'Anmeldung gesperrt': 'Login blocked',
     'Passwort gesetzt': 'Password set', 'Zugangsschutz ausgeschaltet': 'Access protection switched off',
+    // 1.8.53
+    'Diagnosepaket wird erstellt (bis 20 s) – der Download startet von selbst': 'Preparing diagnostics package (up to 20 s) – the download starts by itself',
+    'Eigene Frequenzen geändert': 'Own frequencies changed', "Kein Download gekommen? Nochmal antippen – oder über die Notfall-Seite (Port 8081).": "No download? Tap again – or use the rescue page (port 8081).", "Eigene Frequenzen": "Own frequencies", "Frequenzen, die regelmäßig abgescannt werden sollen – etwa die Vereinsfrequenz, ein Relais oder ein Treffpunkt. Jede erscheint unter Scan → Bänder & Betriebsarten im passenden Band als eigener Knopf (★) und wird, wenn er an ist, gezielt abgestimmt.": "Frequencies to be scanned regularly – e.g. your club frequency, a repeater or a meeting point. Each appears under Scan → Bands & modes in its band as its own button (★) and, when it is on, is tuned to directly.", "Name": "Name", "Hinzufügen": "Add", "z. B. Vereinsfrequenz": "e.g. club frequency", "Sprache (SSB)": "Voice (SSB)", "Höchstens 50 eigene Frequenzen": "At most 50 own frequencies", "Frequenz in MHz angeben, z. B. 145.5500": "Enter the frequency in MHz, e.g. 145.5500", "Name angeben (z. B. Vereinsfrequenz)": "Enter a name (e.g. club frequency)", "Unbekannte Betriebsart": "Unknown mode", "eigene Frequenz (Einstellungen → Eigene Frequenzen)": "own frequency (Settings → Own frequencies)", " (außerhalb der APRS-Frequenz)": " (outside the APRS frequency)",
     // 1.8.52: zwei Karten
     'MeshCore-Node (Companion)': 'MeshCore node (companion)', 'MeshCore Room-Server': 'MeshCore room server', 'MeshCore-Server': 'MeshCore servers', 'MeshCore-Repeater': 'MeshCore repeater',
     'Ein Room-Server oder Repeater mit MeshCore-Firmware am USB des Pi (eigenes Gerät, neben dem Companion-Node). Hesperos DX zeigt Firmware, Funkdaten, Akku, Laufzeit, Rauschen, Sendezeit und Paketzähler, stellt die Uhr und verwaltet ihn über seine Konsole. Das schwarze Brett eines Room-Servers kommt nur über einen Companion-Node am Pi, den Hesperos DX dafür am Server anmeldet.':
@@ -404,6 +407,8 @@
 
   // Textteile mit eingesetzten Werten (Reihenfolge zählt)
   const P = [
+    [/^([\d.,]+) MHz liegt in keinem Band des Bandplans – nur Frequenzen in einem Band lassen sich abscannen$/, '$1 MHz is in no band of the band plan – only frequencies inside a band can be scanned'],
+    [/^★ (.+)$/, (m, x) => '★ ' + x],
     [/^steckt · Port (.+)$/, 'connected · port $1'], [/^zuletzt gesehen (.+)$/, 'last seen $1'], [/ · Seriennummer$/, ' · serial number'],
     [/^ · Tuner $/, ' · tuner '], [/^Haupt-Stick: $/, 'Main stick: '],
     [/^(.+) – dieser Eintrag kann vergessen werden\.$/, (m, x) => x.replace(/^neue Seriennummer (.+) geschrieben$/, 'new serial number $1 written') + ' – this entry can be forgotten.'],

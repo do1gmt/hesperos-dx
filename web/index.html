@@ -117,7 +117,7 @@
         <div class="save-note" id="scanSaveNote" aria-live="polite"></div>
       </section>
       <section class="panel" id="panel-sat">
-        <h2 class="collapsible"><button type="button" class="collapse-btn" id="satCollapse" aria-expanded="true">▾</button> Satelliten-Überflüge <small class="muted" id="satPreviewTag"></small></h2>
+        <h2>Satelliten-Überflüge <small class="muted" id="satPreviewTag"></small></h2>
         <div id="satBody">
         <div class="sat-arm" id="satArm" hidden><span id="satArmText"></span> <button type="button" class="btn btn-small" id="satArmNow">sofort</button></div>
         <p class="hint" id="satHint"></p>
@@ -485,6 +485,7 @@
         <div class="table-wrap"><table class="table"><thead><tr><th>Dienst</th><th>Zustand</th><th>Speicher</th><th>Neustarts</th><th></th></tr></thead>
           <tbody id="svcList"><tr><td colspan="5" class="muted">–</td></tr></tbody></table></div>
         <div class="actions"><button type="button" class="btn btn-danger" id="svcReboot">Pi neu starten</button><a class="btn" id="svcDiag" href="/api/diagnose" download>↓ Diagnose herunterladen</a></div>
+        <div class="save-note" id="svcDiagNote" aria-live="polite"></div>
         <div class="save-note" id="svcNote" aria-live="polite"></div>
         <p class="hint" id="svcMdns"></p>
         <p class="hint" id="svcHint">Hängt das Dashboard, hilft die <a id="svcRescue" href="#" target="_blank" rel="noopener">Notfall-Seite</a> (eigener Dienst, Port 8081): dort lassen sich die Dienste und der Pi ebenso neu starten und die Diagnose herunterladen. Zusätzlich starten Webserver und Zeitplaner von selbst neu, wenn sie 3 bzw. 5 Minuten nicht mehr reagieren. Die Diagnose (Protokolle, Kernel- und Dienstmeldungen der letzten 2 Tage, Systemverlauf, Einstellungen ohne Zugangsdaten) hilft bei der Fehlersuche.</p>
@@ -762,6 +763,18 @@
         <div class="save-note" id="authNote" aria-live="polite"></div>
         <p class="hint">Ohne Passwort kann jeder, der das Dashboard erreicht, scannen, Treffer löschen und die Einstellungen ändern. Spätestens wenn der Pi aus dem Internet erreichbar ist, ein Passwort setzen. Passwort vergessen: auf dem Pi <span class="mono">python3 bin/auth.py set</span>.</p>
         <p class="hint">Von unterwegs: über ein VPN (Tailscale oder WireGuard am Router) statt einer Portfreigabe – <a href="https://github.com/do1gmt/hesperos-dx/blob/main/docs/remote-access.md" target="_blank" rel="noopener">Anleitung</a>.</p>
+      </section>
+      <section class="panel" id="panel-ownfreq">
+        <h2>Eigene Frequenzen</h2>
+        <p class="hint">Frequenzen, die regelmäßig abgescannt werden sollen – etwa die Vereinsfrequenz, ein Relais oder ein Treffpunkt. Jede erscheint unter Scan → Bänder &amp; Betriebsarten im passenden Band als eigener Knopf (★) und wird, wenn er an ist, gezielt abgestimmt.</p>
+        <div id="ownList"></div>
+        <div class="mesh-set-row">
+          <label class="field"><span>Name</span><input type="text" id="ownName" maxlength="24" placeholder="z. B. Vereinsfrequenz" autocomplete="off"></label>
+          <label class="field"><span>Frequenz (MHz)</span><input type="text" id="ownMhz" inputmode="decimal" placeholder="145.5500" autocomplete="off"></label>
+          <label class="field"><span>Betriebsart</span><select id="ownMode"></select></label>
+          <button type="button" class="btn" id="ownAdd">Hinzufügen</button>
+        </div>
+        <div class="save-note" id="ownNote" aria-live="polite"></div>
       </section>
       <section class="panel" id="panel-raster">
         <h2>Frequenzraster</h2>

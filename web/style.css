@@ -277,7 +277,9 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
   .tabs-main button { flex: 1; padding: .5rem .2rem; font-size: .78rem; border-bottom: 0; border-top: 3px solid transparent; }
   .tabs-main button.on { border-top-color: var(--accent); }
   .views { padding-bottom: 5rem; }
-  .toast { bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
+  /* Handy: oben einblenden – unten liegen die Reiter und oft die Download-Abfrage des Browsers darüber */
+  .toast { bottom: auto; top: calc(.6rem + env(safe-area-inset-top)); transform: translateX(-50%) translateY(-20px); }
+  .toast.show { transform: translateX(-50%) translateY(0); }
 }
 .column-controls, .layout { all: unset; }
 .view[hidden] { display: none; }

@@ -275,6 +275,51 @@ def bandplan():
 
 # ------------------------------------------------------------------ Einstellungen
 
+def own_frequencies_out(data, plan):
+    """Eigene Frequenzen mit dem Band, in dem sie liegen (oder None – dann erscheinen sie nirgends)."""
+    out = []
+    for f in data.get("own_frequencies") or []:
+        hz = int(f.get("freq_hz", 0))
+        band = next((b["name"] for b in plan if b["start_hz"] <= hz <= b["stop_hz"] and not b.get("eibi")
+                     and any(sg["id"] == "own_" + str(f.get("id")) for sg in b["segments"])), None)
+        out.append(dict(f, band=band))
+    return out
+
+
+def save_own_frequencies(items):
+    """Liste prüfen und speichern: Name 1–24 Zeichen, Frequenz in MHz in einem Band des Bandplans (nicht in einem
+    gesperrten Bereich), Betriebsart aus der Liste; höchstens 50."""
+    import bandplan as BP
+    if not isinstance(items, list) or len(items) > 50:
+        raise ValueError("Höchstens 50 eigene Frequenzen")
+    cfg = BP._apply_country(read_json(SCANNER_CONFIG, {"ranges": []}))
+    out, seen = [], set()
+    for i, f in enumerate(items):
+        name = str(f.get("name", "")).strip()[:24]
+        try:
+            hz = int(round(float(str(f.get("mhz", f.get("freq_hz", 0) / 1e6 if f.get("freq_hz") else 0)).replace(",", ".")) * 1e6))
+        except (TypeError, ValueError):
+            raise ValueError("Frequenz in MHz angeben, z. B. 145.5500")
+        if not name:
+            raise ValueError("Name angeben (z. B. Vereinsfrequenz)")
+        band = next((r for r in cfg.get("ranges", []) if not r.get("satellite") and int(r.get("start_hz", 0)) <= hz <= int(r.get("stop_hz", 0))), None)
+        if not band:
+            raise ValueError(f"{hz / 1e6:.4f} MHz liegt in keinem Band des Bandplans – nur Frequenzen in einem Band lassen sich abscannen")
+        check_not_restricted(hz)
+        mode = str(f.get("mode") or "fm")
+        if mode not in BP.OWN_MODES:
+            raise ValueError("Unbekannte Betriebsart")
+        fid = str(f.get("id") or "")
+        if not fid or fid in seen or not fid.isalnum():
+            fid = f"{int(time.time() * 1000) % 10**9}{i}"
+        seen.add(fid)
+        out.append({"id": fid, "name": name, "freq_hz": hz, "mode": mode})
+    st = read_json(SETTINGS, {})
+    st["own_frequencies"] = out
+    write_json(SETTINGS, st)
+    return out
+
+
 def load_settings():
     plan = bandplan()
     names = [b["name"] for b in plan]
@@ -309,6 +354,8 @@ def load_settings():
         "station_hostname": __import__("socket").gethostname(),
         "pskreporter": bool(data.get("pskreporter")),
         "watchlist": data.get("watchlist") or [],
+        "own_frequencies": own_frequencies_out(data, plan),
+        "own_modes": __import__("bandplan").OWN_MODES,
         "schedules": data.get("schedules") or [],
         "watch_events": ST.EVENTS,
         "pi_time": time.strftime("%H:%M", time.localtime()), "pi_tz": time.strftime("%Z"),
@@ -3277,6 +3324,14 @@ class Handler(BaseHTTPRequestHandler):
                            what=cmd, **{k: v for k, v in data.items() if k in ("name", "where", "index")},
                            **({"error": res.get("error")} if not res.get("ok") else {}))
                 return self.send_json(dict(res, status=MESH.status()), 200 if res.get("ok") else 400)
+            if path == "/api/own-frequencies":                 # Einstellungen → Eigene Frequenzen
+                try:
+                    res = save_own_frequencies(data.get("items"))
+                except ValueError as e:
+                    return self.send_json({"ok": False, "error": str(e)}, 400)
+                APPLOG.log("INFO", "webapp", "own_frequencies_set", count=len(res),
+                           items=", ".join(f"{x['name']} {x['freq_hz'] / 1e6:.4f}" for x in res)[:300])
+                return self.send_json({"ok": True, "settings": load_settings()})
             if path == "/api/mesh/server":                      # Repeater/Room-Server am USB verwalten
                 key, cmd = str(data.get("key", "")), str(data.get("cmd", ""))
                 kw = {}

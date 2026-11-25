@@ -294,6 +294,7 @@
     $('pskOn').checked = !!settings.pskreporter;
     renderSchedules();
     renderWatch();
+    renderOwn();
     const o833 = $('liveStep').querySelector('option[value="8333"]');     // 8,33-kHz-Raster gibt es nur im Flugfunk
     if (o833) o833.hidden = o833.disabled = !settings.allow_restricted;
     renderDeviceSwitch();
@@ -1568,6 +1569,8 @@
 
   // ---------- Protokoll ----------
   const EVENT_TEXT = {
+    // 1.8.53
+    'own_frequencies_set': 'Eigene Frequenzen geändert',
     // 1.8.42: Ereignisse ohne Beschreibung (sonst stand im Protokoll der Rohname)
     'mesh_connected': 'Mesh: verbunden', 'mesh_lost': 'Mesh: Verbindung weg', 'mesh_no_access': 'Mesh: kein Zugriff auf den Node', 'mesh_no_answer': 'Mesh: Gerät antwortet nicht', 'mesh_stopped': 'Mesh: beendet', 'mesh_msg': 'Mesh-Nachricht', 'mesh_open_failed': 'Mesh: Gerät ließ sich nicht öffnen', 'mesh_start_failed': 'Mesh ließ sich nicht starten', 'mesh_port_set': 'Mesh: Anschluss gewählt', 'mesh_alert_failed': 'Mesh-Warnung ließ sich nicht melden', 'mesh_set': 'Mesh-Node eingestellt', 'mesh_set_failed': 'Mesh-Node ließ sich nicht einstellen', 'mesh_clock_set': 'Mesh: Uhr des Nodes gestellt', 'mesh_clock_failed': 'Mesh: Uhr ließ sich nicht stellen', 'mesh_server_connected': 'Mesh: Repeater/Room-Server verbunden', 'mesh_room_login': 'Mesh: am Room-Server angemeldet', 'mesh_room_login_failed': 'Mesh: Anmeldung am Room-Server abgelehnt', 'mesh_server_set': 'Mesh: Server eingestellt', 'mesh_server_set_failed': 'Mesh: Server ließ sich nicht einstellen',
     'analysis_skipped': 'Auswertung übersprungen', 'auto_backup': 'Automatische Sicherung', 'backup_now': 'Sicherung von Hand', 'decode_skipped': 'Dekodieren übersprungen', 'stick_main_auto': 'Stick automatisch Haupt-Stick', 'stick_new': 'Neuer Stick erkannt', 'stick_serial_written': 'Seriennummer geschrieben', 'stick_unsupported': 'Gerät nicht unterstützt', 'check_failed': 'Prüfung fehlgeschlagen', 'internet_back': 'Internet wieder da', 'network_changed': 'Netz gewechselt', 'live_gap': 'Live: Lücke im Empfang', 'live_heard_failed': 'Live: Gehörte nicht gespeichert', 'live_recorded': 'Live: Aufnahme gespeichert', 'live.start_failed': 'Live ließ sich nicht starten', 'watch_loop_failed': 'Dauerwache: Fehler', 'watch_off': 'Dauerwache aus', 'watch_on': 'Dauerwache an', 'watch_restarted': 'Dauerwache neu gestartet', 'outbox_sent': 'Nachgeholte Nachrichten verschickt', 'test_mail_sent': 'Test-Mail verschickt', 'test_push_sent': 'Test-Push verschickt', 'sstv_upload_failed': 'SSTV-Bild: Upload fehlgeschlagen', 'sstv_uploaded': 'SSTV-Bild hochgeladen', 'rds_decoded': 'RDS dekodiert', 'rds_failed': 'RDS: Fehler', 'rundir_recreated': 'Arbeitsordner neu angelegt', 'pass_stick_restart': 'Überflug: Stick neu gestartet', 'publish_prepare_failed': 'Überflug: Webseiten-Upload nicht vorbereitet', 'waterfall_failed': 'Wasserfall ließ sich nicht erzeugen', 'band_summary_failed': 'Bandübersicht: Fehler', 'fm_watch_failed': 'UKW-Beobachtung: Fehler', 'pmsdr_fifo_reconnect': 'PMSDR: Datenstrom neu verbunden', 'pmsdr_input_set': 'PMSDR: Eingang umgestellt', 'rtl_orphans_killed': 'Verwaiste RTL-Prozesse beendet', 'run_exception': 'Scan: unerwarteter Fehler', 'scan_yielded': 'Scan gibt den Stick frei', 'health_failed': 'Selbstprüfung: Fehler', 'publish_failed': 'Webseiten-Upload: Fehler', 'restore_done': 'Sicherung eingespielt', 'restore_failed': 'Einspielen fehlgeschlagen', 'restore_stick_adopt_failed': 'Einspielen: Stick nicht übernommen', 'restore_stick_adopted': 'Einspielen: Stick übernommen', 'satellite_arming': 'Satelliten werden scharfgeschaltet', 'satellite_watchdog': 'Überflug hängt – beendet', 'scan_yield_requested': 'Scan soll den Stick freigeben', 'settings_unreadable': 'Einstellungen nicht lesbar', 'sticks_failed': 'Sticks: Fehler', 'sysmon_failed': 'Systemwerte: Fehler', 'reboot_requested': 'Neustart angefordert', 'restart_requested': 'Dienst-Neustart angefordert', 'dir_move_failed': 'Programmordner nicht umgezogen', 'dir_move_skipped': 'Programmordner-Umzug ausgelassen', 'dir_moved': 'Programmordner umgezogen', 'hostname_change_failed': 'Rechnername nicht geändert', 'hostname_changed': 'Rechnername geändert', 'hostname_notice_failed': 'Rechnername: Hinweis fehlgeschlagen', 'services_rename_failed': 'Dienste nicht umbenannt', 'services_renamed': 'Dienste umbenannt', 'backup_dir_move_failed': 'Sicherungsordner nicht umgezogen', 'backup_dir_rename_failed': 'Sicherungsordner nicht umbenannt', 'backup_dir_renamed': 'Sicherungsordner umbenannt', 'update_failed': 'Update fehlgeschlagen', 'auto_backup_set': 'Automatische Sicherung eingestellt', 'backup_downloaded': 'Sicherung heruntergeladen', 'backup_from_target': 'Sicherung vom Ziel eingespielt', 'backup_target_nas': 'Sicherungsziel: Netzwerkfreigabe', 'backup_target_nas_removed': 'Netzwerkfreigabe entfernt', 'backup_target_usb': 'Sicherungsziel: USB-Stick', 'backup_uploaded': 'Sicherung hochgeladen', 'backup_usb_ejected': 'USB-Stick ausgeworfen', 'diagnose_downloaded': 'Diagnose heruntergeladen', 'eibi_refresh_failed': 'EiBi: Herunterladen fehlgeschlagen', 'eibi_uploaded': 'EiBi-Liste hochgeladen', 'follow_updated': 'Satelliten-Nachführung eingestellt', 'hf_device_updated': 'Kurzwellengerät eingestellt', 'interference_changed': 'Störlinie geändert', 'live_favorites_saved': 'Live-Favoriten gespeichert', 'location_confirmed': 'Standort bestätigt', 'publish_set': 'Webseiten-Upload eingestellt', 'restore_requested': 'Einspielen angefordert', 'satellites_armed_now': 'Satelliten sofort scharf', 'satellites_arming': 'Satelliten in 1 Minute scharf', 'scan_stop_requested': 'Scan-Abbruch angefordert', 'scheduler_dead_fallback': 'Zeitplaner antwortet nicht – Scan direkt gestartet', 'sstv_event_added': 'SSTV-Termin eingetragen', 'sstv_event_deleted': 'SSTV-Termin gelöscht', 'sstv_events_failed': 'SSTV-Termine: Abruf fehlgeschlagen', 'sstv_manual_queued': 'SSTV-Bild für die Webseite vorgemerkt', 'stick_updated': 'Stick-Einstellungen gespeichert', 'time_mode_set': 'Zeitangaben umgestellt', 'ui_prefs_failed': 'Ansicht-Profil: Fehler', 'update_started': 'Update gestartet', 'watchdog_ping_failed': 'Watchdog-Meldung fehlgeschlagen', 'webapp_stall': 'Dashboard hing kurz', 'webapp_stall_probe_failed': 'Dashboard-Hänger: Prüfung fehlgeschlagen', 'wifi_fallback_added': 'Ersatz-WLAN eingetragen', 'wifi_fallback_removed': 'Ersatz-WLAN entfernt', 'wsjtx_udp_set': 'Weitergabe im Netz (WSJT-X) eingestellt',
@@ -2064,14 +2067,10 @@
     } else if (satArmTimer) { clearInterval(satArmTimer); satArmTimer = null; }
   }
   $('satArmNow').addEventListener('click', async () => { try { await post('/api/sat/arm', {}); satArmUntil = 0; satArmTick(); } catch (e) { toast(e.message); } });
-  // Überflugliste ein-/ausklappen (je Browser gemerkt)
-  function satCollapse(set) {
-    let c = false; try { c = localStorage.getItem('satCollapsed') === '1'; } catch (e) { }
-    if (set !== undefined) { c = set; try { localStorage.setItem('satCollapsed', c ? '1' : '0'); } catch (e) { } }
-    $('satBody').hidden = c; $('satCollapse').textContent = c ? '▸' : '▾'; $('satCollapse').setAttribute('aria-expanded', String(!c));
-  }
-  $('satCollapse').addEventListener('click', () => satCollapse($('satBody').hidden ? false : true));
-  satCollapse();
+  // Überflugliste: eigenes Einklappen links (alt) entfernt – es gilt das Einklappen rechts wie bei allen Karten.
+  // War die Liste eingeklappt, die Karte einmal einklappen (Layout, je Ansicht-Profil).
+  try { if (localStorage.getItem('satCollapsed') === '1') { localStorage.removeItem('satCollapsed');
+    setTimeout(() => { const p = $('panel-sat'); if (p && !p.classList.contains('folded')) { const b = p.querySelector('.pt-fold'); if (b) b.click(); } }, 500); } } catch (e) { }
   function renderSatPasses() {
     const d = satData; if (!d) return; const root = $('satPasses');
     satArmUntil = d.arm_until || 0; satArmTick();
@@ -2958,6 +2957,32 @@
 
   // ---------- Beobachtungsliste ----------
   const W_TYPES = { freq: 'Frequenz', call: 'Rufzeichen', dx: 'Entfernung ab', event: 'Ereignis', traffic: 'Verkehr', mesh_node: 'Mesh-Node', mesh_text: 'Mesh-Stichwort' };
+  // Eigene Frequenzen (1.8.53): erscheinen als ★-Knopf im passenden Band unter Bänder & Betriebsarten
+  function renderOwn() {
+    const list = settings.own_frequencies || [], modes = settings.own_modes || {};
+    if ($('ownMode').options.length !== Object.keys(modes).length)
+      $('ownMode').innerHTML = Object.entries(modes).map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('');
+    $('ownList').innerHTML = list.length ? `<table class="table watch-table"><tbody>${list.map((f, i) => `<tr><td>★ <b class="no-i18n">${esc(f.name)}</b>
+        <small class="muted">${(f.freq_hz / 1e6).toFixed(4).replace('.', DS)} MHz · ${esc(I18N.t(modes[f.mode] || f.mode))} · `
+      + (f.band ? `${EN ? 'band' : 'Band'} ${esc(f.band)}` : `<span class="warn-text">${EN ? 'in no band – not scanned' : 'in keinem Band – wird nicht gescannt'}</span>`)
+      + `</small></td><td><button type="button" class="btn btn-small btn-danger" data-own="${i}" title="${EN ? 'remove' : 'entfernen'}">✕</button></td></tr>`).join('')}</tbody></table>`
+      : `<p class="muted">${EN ? 'None yet.' : 'Noch keine.'}</p>`;
+    $('ownList').querySelectorAll('[data-own]').forEach(b => b.addEventListener('click', () => {
+      const l = list.filter((_, i) => i !== Number(b.dataset.own));
+      saveOwn(l, EN ? '✓ removed' : '✓ entfernt');
+    }));
+  }
+  async function saveOwn(items, okText) {
+    try {
+      const d = await post('/api/own-frequencies', { items });
+      settings = d.settings; renderOwn(); renderBands(); note($('ownNote'), okText); return true;
+    } catch (e) { note($('ownNote'), (EN ? 'Error: ' : 'Fehler: ') + I18N.t(e.message), true); return false; }
+  }
+  $('ownAdd').addEventListener('click', async () => {
+    const items = (settings.own_frequencies || []).concat([{ name: $('ownName').value.trim(), mhz: $('ownMhz').value.trim(), mode: $('ownMode').value }]);
+    if (await saveOwn(items, EN ? '✓ added – switch it on under Scan → Bands & modes' : '✓ hinzugefügt – unter Scan → Bänder & Betriebsarten einschalten')) { $('ownName').value = ''; $('ownMhz').value = ''; }
+  });
+
   function renderWatch() {
     const list = (settings && settings.watchlist) || [], ev = (settings && settings.watch_events) || {};
     if (!$('wEvent').options.length) $('wEvent').innerHTML = Object.entries(ev).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('');
@@ -3249,7 +3274,12 @@
   $('svcDiag').addEventListener('click', e => {
     if (Date.now() - diagAt < 25000) { e.preventDefault(); toast(EN ? 'Diagnostics package is being prepared …' : 'Diagnosepaket wird schon erstellt …', 3000, false); return; }
     diagAt = Date.now();
-    toast(EN ? 'Preparing diagnostics package (up to 20 s) – the download starts by itself' : 'Diagnosepaket wird erstellt (bis 20 s) – der Download startet von selbst', 6000, false);
+    const msg = EN ? 'Preparing diagnostics package (up to 20 s) – the download starts by itself' : 'Diagnosepaket wird erstellt (bis 20 s) – der Download startet von selbst';
+    toast(msg, 8000, false);
+    // zusätzlich direkt am Knopf (am Handy legt sich die Download-Abfrage des Browsers über die Einblendung)
+    $('svcDiagNote').textContent = msg;
+    setTimeout(() => { $('svcDiagNote').textContent = EN ? 'If no download appeared: tap again, or use the rescue page (port 8081).' : 'Kein Download gekommen? Nochmal antippen – oder über die Notfall-Seite (Port 8081).'; }, 25000);
+    setTimeout(() => { $('svcDiagNote').textContent = ''; }, 60000);
   });
   $('svcReboot').addEventListener('click', async () => {
     if (!confirm('Den Raspberry Pi wirklich neu starten? Laufende Scans und Aufnahmen werden abgebrochen. In etwa einer Minute ist er wieder da.')) return;

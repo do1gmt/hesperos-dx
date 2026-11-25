@@ -39,6 +39,7 @@ shortwave.
 - Decoders: **FT8/FT4** (via [ft8_lib](https://github.com/kgoba/ft8_lib)), **CW**, **RTTY**,
   **APRS** and **POCSAG** (via multimon-ng), **SSTV** on shortwave (14.230, 21.340, 28.680 USB,
   3.730 and 7.165 LSB) – including images whose start was missed and stations that are off-frequency.
+  APRS is searched in every FM hit, not only on the APRS frequency (ISS digipeater, satellites, other countries).
 - Live listening with favourites (drop-down, stored on the Pi; the name is suggested as mode, name and frequency,
   e.g. "RTTY DWD Pinneberg 7.646 MHz"), waterfall (tap to tune), seek function,
   signal-to-noise display and overload warning;
@@ -60,6 +61,8 @@ shortwave.
   the last run with its hits. A schedule whose bands the selected SDR stick cannot receive is framed in red and
   does not apply.
 - On repeaters and FM channels the scanner stays until the QSO ends and records it as a whole.
+- **Own frequencies** (*Settings → Own frequencies*): e.g. the club frequency or a local repeater – each appears
+  under *Bands & modes* in its band as a ★ button and, when on, is tuned to directly in every scan.
 
 **Stations and alerts**
 - *Stations* tab: every transmitting callsign from FT8/FT4, APRS, CW and RTTY with locator, distance,
