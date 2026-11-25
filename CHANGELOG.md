@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.8.55 – 2026-11-25
+
+- **Fix: own frequencies did not show up under Bands & modes.** The dashboard loaded the band plan only once when
+  the page opened, so a newly added own frequency got its ★ button only after reloading the page. Adding or
+  removing one now reloads the band plan at once. Self-test section 113 checks it.
+- Publishing: a `&` in the commit text was replaced by a line of the script (`set -e`); the text is now inserted
+  as it is, including quotes, `$` and backslashes.
+
 ## 1.8.54 – 2026-11-25
 
 - **Notice board: new posts are noticed even with the card folded.** The board was only refreshed while its card

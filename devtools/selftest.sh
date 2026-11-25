@@ -4350,6 +4350,7 @@ try:
 finally:
     W.SETTINGS.write_text(bak)
 src = Path(sys.argv[1]); html = (src / "web" / "index.html").read_text(); js = (src / "web" / "app.js").read_text(); i18n = (src / "web" / "i18n.js").read_text()
+assert "await loadBandplan(); renderBands();" in js[js.index("async function saveOwn"):js.index("async function saveOwn") + 600]
 assert 'id="panel-ownfreq"' in html and "'/api/own-frequencies'" in js and "'own_frequencies_set': 'Eigene Frequenzen geändert'" in js
 assert "'Eigene Frequenzen geändert': 'Own frequencies changed'" in i18n and '"Eigene Frequenzen": "Own frequencies"' in i18n
 PY

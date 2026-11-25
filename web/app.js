@@ -3023,7 +3023,9 @@
   async function saveOwn(items, okText) {
     try {
       const d = await post('/api/own-frequencies', { items });
-      settings = d.settings; renderOwn(); renderBands(); note($('ownNote'), okText); return true;
+      settings = d.settings; renderOwn(); note($('ownNote'), okText);
+      await loadBandplan(); renderBands();             // Bandplan neu holen – sonst erschien der ★-Knopf erst nach dem Neuladen der Seite
+      return true;
     } catch (e) { note($('ownNote'), (EN ? 'Error: ' : 'Fehler: ') + I18N.t(e.message), true); return false; }
   }
   $('ownAdd').addEventListener('click', async () => {

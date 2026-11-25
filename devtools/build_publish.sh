@@ -61,7 +61,10 @@ if [ "$KIND" = full ]; then
         --exclude='./hesperos-migrate.sh' --exclude='./config/auth.json' --exclude='./config/scanner.json' \
         --exclude='./config/web_settings.json' --exclude='*.bak*' --exclude='./fake_rtl_hf.*' .
 fi
-{ sed "0,/^set -e\$/s//set -e\nHSP_MSG=\"${MSG//\//\\/}\"/" devtools/publish_head.sh; base64 "$TMP/payload.tgz"; } > "$OUT"
+# Commit-Text als Shell-Zeichenkette einsetzen – ohne sed, das „&“ im Text durch die gefundene Zeile ersetzte
+# (1.8.55: aus „Bänder & Betriebsarten“ wurde „Bänder set -e Betriebsarten“)
+{ MSG="$MSG" awk '!d && $0 == "set -e" { print; m = ENVIRON["MSG"]; gsub(/\\/, "\\\\", m); gsub(/"/, "\\\"", m); gsub(/\$/, "\\$", m); gsub(/`/, "\\`", m)
+    print "HSP_MSG=\"" m "\""; d = 1; next } { print }' devtools/publish_head.sh; base64 "$TMP/payload.tgz"; } > "$OUT"
 bash -n "$OUT"
 if [ "$KIND" = delta ]; then
     echo "gebaut: $OUT  (Version $(cat VERSION), nur Änderungen seit $(cat "$TMP/pl/.hsp-delta/BASE_VERSION"): $CHANGED Dateien, $(du -h "$OUT" | cut -f1))"
