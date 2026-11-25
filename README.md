@@ -613,8 +613,10 @@ firmwares do not talk over USB). Hesperos DX finds it by itself (only USB serial
 makers are tried; GPS receivers and other serial devices are left alone) and shows the card *MeshCore node (companion)* under
 *Stations*:
 
-- messages in the node's channels (e.g. *Public*) and direct messages to the node, with SNR and hops,
-- the nodes it has heard (name, type, distance, last advert) – nodes with a position also on the map (*Mesh*),
+- messages in the node's channels (e.g. *Public*) and direct messages to the node, with SNR and hops – page by
+  page, 25 (default), 50, 100 or 250 per page, filtered by channel,
+- the nodes it has heard (name, type, distance, last advert), page by page like the messages – nodes with a
+  position also on the map (*Mesh*),
 - the radio settings of the node and how many packets it received in the last hour.
 - alerts by mail/push through the watchlist (*Settings → Watchlist*): *Mesh node (name)* – a node announces
   itself or writes in a channel (`*` as wildcard, e.g. `DB0FRK*`); *Mesh keyword* – a word in a message;

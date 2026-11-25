@@ -2715,7 +2715,12 @@
   // ---------- Mesh (MeshCore-Node am USB, bin/mesh.py) ----------
   const meshType = t => EN ? t : ({ Companion: 'Companion', Repeater: 'Repeater', Room: 'Raum', Sensor: 'Sensor' }[t] || t);
   const meshRole = r => EN ? ({ 'Room-Server': 'Room server' }[r] || r) : r;
-  const meshPage = { before: null, rows: [], total: 0, end: true };
+  // Nachrichten seitenweise wie die Nodes (1.8.56), „pro Seite“ im Ansicht-Profil (meshmsgs.per), Vorgabe 25
+  const meshPage = { offset: 0, per: [25, 50, 100, 250].includes(Number(localStorage.getItem('meshmsgs.per'))) ? Number(localStorage.getItem('meshmsgs.per')) : 25, rows: [], total: 0 };
+  $('meshMsgsPer').value = String(meshPage.per);
+  $('meshMsgsPer').addEventListener('change', e => { meshPage.per = Number(e.target.value); meshPage.offset = 0; localStorage.setItem('meshmsgs.per', e.target.value); loadMesh(); });
+  $('meshMsgsPrev').addEventListener('click', () => { meshPage.offset = Math.max(0, meshPage.offset - meshPage.per); loadMesh(); });
+  $('meshMsgsNext').addEventListener('click', () => { meshPage.offset += meshPage.per; loadMesh(); });
   // gehörte Nodes seitenweise, „pro Seite“ im Ansicht-Profil (meshnodes.per), Vorgabe 25
   const meshNodesPage = { offset: 0, per: [25, 50, 100, 250].includes(Number(localStorage.getItem('meshnodes.per'))) ? Number(localStorage.getItem('meshnodes.per')) : 25 };
   $('meshNodesPer').value = String(meshNodesPage.per);
@@ -2856,8 +2861,8 @@
     } catch (e) { note(n, (EN ? 'Error: ' : 'Fehler: ') + I18N.t(e.message), true); }
     loadMesh();
   }
-  async function loadMesh(more) {
-    let d; try { d = await api('/api/mesh?limit=100' + (more && meshPage.before ? '&before=' + meshPage.before : '') + `&nlimit=${meshNodesPage.per}&noffset=${meshNodesPage.offset}`); } catch (e) { return; }
+  async function loadMesh() {
+    let d; try { d = await api(`/api/mesh?limit=${meshPage.per}&offset=${meshPage.offset}&chan=${encodeURIComponent($('meshChan').value)}&nlimit=${meshNodesPage.per}&noffset=${meshNodesPage.offset}`); } catch (e) { return; }
     const st = d.status, me = st.self || {}, dev = st.device || {};
     // ohne Node und ohne Daten bleibt die Karte weg (nicht jeder Pi hat einen)
     const servers = st.servers || [];
@@ -2930,9 +2935,7 @@
         + `<option value="dm">${EN ? 'direct messages' : 'Direktnachrichten'}</option>`;
       chSel.value = want.includes(cur) ? cur : '';
     }
-    meshPage.rows = more ? meshPage.rows.concat(d.messages) : d.messages;
-    meshPage.before = d.messages.length ? d.messages[d.messages.length - 1].id : meshPage.before;
-    meshPage.total = d.total; meshPage.end = d.messages.length < 100;
+    meshPage.rows = d.messages; meshPage.total = d.total;
     renderMeshMsgs();
     // Knoten
     const rad = Math.PI / 180, home = d.home;
@@ -2955,18 +2958,16 @@
     }
   }
   function renderMeshMsgs() {
-    const total = meshPage.total, end = meshPage.end;
-    const f = $('meshChan').value;
-    const rows = meshPage.rows.filter(m => !f || (f === 'dm' ? m.kind === 'dm' : m.kind === 'chan' && m.channel_name === f));
+    const rows = meshPage.rows, total = meshPage.total;
     $('meshMsgs').innerHTML = rows.map(m => `<tr${m.kind === 'dm' ? ' class="mesh-dm"' : ''}><td class="mono-num">${fmtTime(m.time)}</td>`
       + `<td>${m.kind === 'dm' ? (EN ? 'direct' : 'direkt') : esc(m.channel_name || ('#' + m.channel))}</td><td><b class="no-i18n">${esc(m.sender || '?')}</b></td>`
       + `<td class="wrap no-i18n">${esc(m.text)}</td><td class="mono-num">${m.snr != null ? m.snr + ' dB' : '–'}</td><td class="mono-num">${m.hops ?? '–'}</td></tr>`).join('')
       || `<tr><td colspan="6" class="muted">${EN ? 'No messages yet.' : 'Noch keine Nachrichten.'}</td></tr>`;
-    $('meshPos').textContent = EN ? `${meshPage.rows.length} of ${total} messages` : `${meshPage.rows.length} von ${total} Nachrichten`;
-    $('meshMore').hidden = end || meshPage.rows.length >= total;
+    const a = total ? meshPage.offset + 1 : 0, b = Math.min(total, meshPage.offset + meshPage.per);
+    $('meshPos').textContent = EN ? `${a}–${b} of ${total} messages` : `${a}–${b} von ${total} Nachrichten`;
+    $('meshMsgsPrev').disabled = meshPage.offset === 0; $('meshMsgsNext').disabled = b >= total;
   }
-  $('meshChan').addEventListener('change', renderMeshMsgs);
-  $('meshMore').addEventListener('click', () => loadMesh(true));
+  $('meshChan').addEventListener('change', () => { meshPage.offset = 0; loadMesh(); });
   async function meshCmd(body, okText) {
     note($('meshSetNote'), EN ? 'sending to the node …' : 'an den Node …');
     try { await post('/api/mesh/cmd', body); note($('meshSetNote'), okText || (EN ? '✓ done' : '✓ erledigt')); }
@@ -2982,7 +2983,7 @@
     try { await post('/api/mesh/port', { port: $('meshPort').value }); note($('meshNote'), EN ? '✓ saved – takes effect within 30 s' : '✓ gespeichert – wirkt innerhalb von 30 s'); }
     catch (e) { note($('meshNote'), (EN ? 'Error: ' : 'Fehler: ') + e.message, true); }
   });
-  setInterval(() => { const v = document.querySelector('.view[data-view="stations"]'); if (v && !v.hidden && (!$('panel-mesh').classList.contains('folded') || !$('panel-meshsrv').hidden && !$('panel-meshsrv').classList.contains('folded')) && meshPage.rows.length <= 100) loadMesh(); }, 15000);   // „live“: neue Beiträge am Brett in Sekunden   // geblättert: nicht zurückspringen
+  setInterval(() => { const v = document.querySelector('.view[data-view="stations"]'); if (v && !v.hidden && (!$('panel-mesh').classList.contains('folded') || !$('panel-meshsrv').hidden && !$('panel-meshsrv').classList.contains('folded'))) loadMesh(); }, 15000);   // „live“: neue Beiträge am Brett in Sekunden   // geblättert: nicht zurückspringen
 
   // ---------- Aktivität ----------
   async function loadActivity() {

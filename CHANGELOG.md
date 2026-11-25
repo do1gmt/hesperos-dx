@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.8.56 – 2026-11-25
+
+- **MeshCore messages page by page like the heard nodes:** the message list of the *MeshCore node (companion)*
+  card showed the newest 100 messages with "older ▶". It now has *per page* 25 (default), 50, 100 or 250 with
+  ◀ ▶, kept in the view profile like the other lists. The channel choice filters on the Pi, so every page is
+  full and the count is right for the chosen channel.
+- Self-test section 118.
+
 ## 1.8.55 – 2026-11-25
 
 - **Fix: own frequencies did not show up under Bands & modes.** The dashboard loaded the band plan only once when

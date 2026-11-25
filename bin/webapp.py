@@ -1397,11 +1397,18 @@ def mesh_alert(kind, data):
     threading.Thread(target=run, daemon=True).start()
 
 
-def mesh_overview(limit=100, before=None, nlimit=25, noffset=0):
+def mesh_overview(limit=100, before=None, nlimit=25, noffset=0, offset=0, chan=""):
+    """Mesh-Karte: Nachrichten und gehörte Nodes je seitenweise (limit/offset, nlimit/noffset), Kanalwahl chan
+    („dm“ = Direktnachrichten, sonst Kanalname, leer = alle außer dem schwarzen Brett)."""
     nt = []
     out = {"status": MESH.status(), "port_setting": mesh_port(), "nodes": MESH.nodes(nlimit, noffset, nt),
            "board": MESH.messages(50, kind="room")["messages"]}          # schwarzes Brett (Room-Server)
-    out.update(MESH.messages(limit, before, not_kind="room"))
+    if chan == "dm":
+        out.update(MESH.messages(limit, before, kind="dm", offset=offset))
+    elif chan:
+        out.update(MESH.messages(limit, before, offset=offset, channel_name=chan))
+    else:
+        out.update(MESH.messages(limit, before, not_kind="room", offset=offset))
     out["nodes_total"], out["nodes_offset"] = nt[0], noffset
     loc = read_json(SETTINGS, {}).get("my_locator", "")          # leicht: wird alle 15 s gefragt
     try:
@@ -2769,7 +2776,8 @@ class Handler(BaseHTTPRequestHandler):
                                                      max(0, int(qs.get("offset", 0)))))
             if path == "/api/mesh":
                 return self.send_json(mesh_overview(max(1, min(int(qs.get("limit", 100)), 500)), qs.get("before"),
-                                                    max(1, min(int(qs.get("nlimit", 25)), 1000)), max(0, int(qs.get("noffset", 0)))))
+                                                    max(1, min(int(qs.get("nlimit", 25)), 1000)), max(0, int(qs.get("noffset", 0))),
+                                                    max(0, int(qs.get("offset", 0))), str(qs.get("chan", ""))[:40]))
             if path == "/api/stations/map":
                 return self.send_json(stations_map(_period_days(qs, 0), qs.get("q", ""), qs.get("band", "")))
             if path == "/api/stations":

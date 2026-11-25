@@ -251,7 +251,10 @@
     <div class="table-wrap"><table class="table mesh-table">
       <thead><tr><th>Zeit (<span class="tzl">UTC</span>)</th><th>Kanal</th><th>Von</th><th>Nachricht</th><th>SNR</th><th title="Weiterleitungen über Repeater">Hops</th></tr></thead>
       <tbody id="meshMsgs"></tbody></table></div>
-    <div class="row pager-row"><span class="hint" id="meshPos"></span><button type="button" class="btn btn-small" id="meshMore">älter ▶</button></div>
+    <div class="row pager-row">
+      <label class="field"><span>Pro Seite</span><select id="meshMsgsPer"><option selected>25</option><option>50</option><option>100</option><option>250</option></select></label>
+      <button type="button" class="btn btn-small" id="meshMsgsPrev">◀</button><span class="hint" id="meshPos"></span><button type="button" class="btn btn-small" id="meshMsgsNext">▶</button>
+    </div>
     <h3 class="sub">Gehörte Nodes</h3>
     <div class="table-wrap"><table class="table mesh-nodes">
       <thead><tr><th>Name</th><th>Art</th><th>Entfernung</th><th>Letzte Ankündigung (<span class="tzl">UTC</span>)</th><th>Zuletzt gehört (<span class="tzl">UTC</span>)</th></tr></thead>

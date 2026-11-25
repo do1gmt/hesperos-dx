@@ -641,25 +641,27 @@ def status():
     return s
 
 
-def messages(limit=100, before=None, kind=None, not_kind=None):
+def messages(limit=100, before=None, kind=None, not_kind=None, offset=0, channel_name=None):
+    """Nachrichten, neueste zuerst; seitenweise mit offset (1.8.56), wahlweise nur ein Kanal (channel_name)."""
     db = _db()
     try:
         ensure_tables(db)
         q, a, w = "SELECT id, time, kind, channel, channel_name, sender, text, snr, hops FROM mesh_msg", [], []
-        if before:
-            w.append("id < ?")
-            a.append(int(before))
         if kind:
             w.append("kind = ?")
             a.append(kind)
         if not_kind:
             w.append("kind != ?")
             a.append(not_kind)
-        if w:
-            q += " WHERE " + " AND ".join(w)
-        rows = db.execute(q + " ORDER BY id DESC LIMIT ?", a + [int(limit)]).fetchall()
-        tw = (" WHERE kind = ?", [kind]) if kind else (" WHERE kind != ?", [not_kind]) if not_kind else ("", [])
-        total = db.execute("SELECT COUNT(*) FROM mesh_msg" + tw[0], tw[1]).fetchone()[0]
+        if channel_name:
+            w.append("kind = 'chan' AND channel_name = ?")
+            a.append(channel_name)
+        where = (" WHERE " + " AND ".join(w)) if w else ""
+        total = db.execute("SELECT COUNT(*) FROM mesh_msg" + where, a).fetchone()[0]
+        if before:
+            where += (" AND " if where else " WHERE ") + "id < ?"
+            a = a + [int(before)]
+        rows = db.execute(q + where + " ORDER BY id DESC LIMIT ? OFFSET ?", a + [int(limit), int(offset)]).fetchall()
         names = dict(db.execute("SELECT substr(key,1,12), name FROM mesh_node"))
     finally:
         db.close()

@@ -4439,5 +4439,23 @@ assert "p.classList.toggle('board-new', show)" in js and "board-n" in js and "'m
 assert js.index("renderMeshServers(servers, st, d.board || []);") < js.index("    if (!any) return;")
 PY
 
+echo "== 118 MeshCore: Nachrichten seitenweise wie die Nodes, Kanalwahl auf dem Pi"
+(cd bin && timeout 30 python3 - "$SRC" <<'PY') && ok "Nachrichten 25/50/100/250 pro Seite mit ◀ ▶ (Ansicht-Profil), Kanal und Direktnachrichten auf dem Pi gefiltert, Zählung je Auswahl" || bad "MeshCore-Nachrichten seitenweise"
+import sys, tempfile
+from pathlib import Path
+import mesh as M
+M.DB = Path(tempfile.mkdtemp()) / "t.db"
+for i in range(60):
+    M.store_msg({"sender_ts": i, "kind": "chan" if i % 3 else "dm", "channel": 0, "channel_name": "Public" if i % 2 else "AFGN",
+                 "sender": f"N{i}", "text": f"m{i}", "snr": 5, "hops": 1})
+M.store_msg({"sender_ts": 99, "kind": "room", "channel": -2, "channel_name": "Ansbach", "sender": "X", "text": "brett", "snr": 5, "hops": 0})
+r = M.messages(25, offset=25, not_kind="room"); assert r["total"] == 60 and len(r["messages"]) == 25 and r["messages"][0]["text"] == "m34", r["messages"][0]
+assert M.messages(25, kind="dm")["total"] == 20
+pub = M.messages(100, channel_name="Public"); assert pub["total"] == sum(1 for i in range(60) if i % 3 and i % 2) and all(m["channel_name"] == "Public" and m["kind"] == "chan" for m in pub["messages"])
+src = Path(sys.argv[1]); html = (src / "web" / "index.html").read_text(); js = (src / "web" / "app.js").read_text()
+assert '<select id="meshMsgsPer"><option selected>25</option>' in html and "'meshmsgs.per'," in (src / "web" / "prefs.js").read_text()
+assert "limit=${meshPage.per}&offset=${meshPage.offset}&chan=" in js and "meshMore" not in html + js
+PY
+
 rm -f /tmp/hsp_*.u8 /tmp/hsp_hf.txt /tmp/hsp_lrpt.txt /tmp/hsp_ft.txt
 if [ "$FAIL" = 0 ]; then echo "Selbsttest fertig: alles ok."; else echo "Selbsttest: $FAIL FEHLER"; exit 1; fi
